@@ -1,0 +1,2303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Flow Calendar</title>
+    <link rel="stylesheet" href="css/flatpickr.min.css">
+    <link rel="stylesheet" href="css/popup.css">
+    <link rel="stylesheet" href="css/meow-confirm.css">
+    <link href="https://fonts.loli.net/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+    <!-- === 标题栏 === -->
+    <div class="panel-titlebar" id="panel-titlebar">
+        <span class="titlebar-drag-handle" id="titlebar-drag-handle">
+            <span class="material-icons" style="font-size:16px;">drag_indicator</span>
+            <span class="titlebar-title">Meow</span>
+        </span>
+        <div class="titlebar-buttons">
+            <button class="titlebar-btn" id="titlebar-minimize" title="收起面板">
+                <span class="material-icons" style="font-size:16px;">minimize</span>
+            </button>
+            <button class="titlebar-btn titlebar-close" id="titlebar-close" title="关闭面板 (Esc)">
+                <span class="material-icons" style="font-size:16px;">close</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- === 收起态迷你栏 === -->
+    <div class="panel-titlebar-mini" id="panel-titlebar-mini" title="展开面板">
+        <span class="material-icons" style="font-size:16px;">drag_indicator</span>
+        <span class="titlebar-title">Meow</span>
+        <span style="margin-left:auto;font-size:11px;color:#9ca3af;">点击展开</span>
+    </div>
+
+    <div class="container" id="main-container">
+        <!-- 左侧日历区域 -->
+        <div class="left-section" id="left-panel">
+            <header class="calendar-header">
+                <div class="current-date-wrapper" id="date-header-btn">
+                    <span id="current-date-text">...</span>
+                    <span class="material-icons" style="font-size: 1.2rem; color: #666;">arrow_drop_down</span>
+                </div>
+                <div class="icons">
+                    <button id="btn-open-big-calendar" class="big-calendar-mini-btn" title="大日历视图">
+                        <span class="material-icons">calendar_month</span>
+                    </button>
+                    <button id="btn-open-smoking-chart" class="big-calendar-mini-btn" title="月戒烟报表" style="margin-right: 4px;">
+                        <span class="material-icons">assessment</span>
+                    </button>
+                    <button id="today-btn" class="today-btn" data-i18n="today">今天</button>
+                    <span id="prev" class="material-icons nav-btn">chevron_left</span>
+                    <span id="next" class="material-icons nav-btn">chevron_right</span>
+                </div>
+            </header>
+
+            <div class="calendar-week-days">
+                <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+            </div>
+            
+            <div class="calendar-container">
+                <div class="calendar-days" id="calendar-days"></div>
+                <!-- 日期选择器面板 -->
+                <div id="date-picker-panel" class="picker-panel hidden">
+                    <div class="picker-years">
+                        <div class="picker-nav">
+                            <span class="material-icons nav-small" id="prev-years">chevron_left</span>
+                            <span id="picker-year-range"></span>
+                            <span class="material-icons nav-small" id="next-years">chevron_right</span>
+                        </div>
+                        <div class="picker-grid" id="year-grid"></div>
+                    </div>
+                    <div class="picker-separator"></div>
+                    <div class="picker-months">
+                        <div class="picker-grid" id="month-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            
+            <!-- 可滚动的消息显示区域 -->
+            <div class="left-summary-scroll-container">
+                <div class="month-summary-container">
+                    <div class="balance-row">
+                        <div class="ms-item">
+                            <span class="ms-label" data-i18n="month_begin">月初</span>
+                            <span class="ms-val" id="month-begin-val">0.00</span>
+                            <span class="material-icons edit-icon" id="edit-begin-btn">edit</span>
+                        </div>
+                        <div class="ms-item">
+                            <span class="ms-label" data-i18n="month_end">期末</span>
+                            <span class="ms-val" id="month-end-val">0.00</span>
+                        </div>
+                    </div>
+                    <div class="flow-row">
+                        <div class="ms-item">
+                            <span class="ms-label" data-i18n="month_summary">本月收支</span>
+                            <span class="material-icons chart-report-btn" id="open-finance-chart-btn" title="本月收支报表">show_chart</span>
+                        </div>
+                    </div>
+                    <div class="flow-row">
+                        <div class="ms-item">
+                            <span class="ms-label" data-i18n="income_short">收</span>
+                            <span class="ms-val inc">¥<span id="month-total-income">0.00</span></span>
+                        </div>
+                        <div class="ms-item">
+                            <span class="ms-label" data-i18n="expense_short">支</span>
+                            <span class="ms-val exp">¥<span id="month-total-expense">0.00</span></span>
+                        </div>
+                        <div class="ms-item">
+                            <span class="ms-label" data-i18n="balance_short">余</span>
+                            <span class="ms-val bal">¥<span id="month-total-balance">0.00</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pre-expense-summary-container" id="pre-expense-left-summary">
+                    <div class="pe-summary-row">
+                        <span class="pe-summary-label" data-i18n="pre_budget_plan">财务规划</span>
+                    </div>
+                    <div class="pe-summary-row">
+                        <div class="pe-summary-item necessary">
+                            <span class="pe-summary-label-small" data-i18n="pre_necessary">必要</span>
+                            <span class="pe-summary-val" id="pe-left-necessary">¥0.00</span>
+                        </div>
+                        <div class="pe-summary-item unnecessary">
+                            <span class="pe-summary-label-small" data-i18n="pre_unnecessary">非必要</span>
+                            <span class="pe-summary-val" id="pe-left-unnecessary">¥0.00</span>
+                        </div>
+                        <div class="pe-summary-item income">
+                            <span class="pe-summary-label-small" data-i18n="pre_income">收入</span>
+                            <span class="pe-summary-val" id="pe-left-income">¥0.00</span>
+                        </div>
+                        <div class="pe-summary-item total">
+                            <span class="pe-summary-label-small" data-i18n="total">总计</span>
+                            <span class="pe-summary-val" id="pe-left-total">¥0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="countdown-summary-card" class="hidden"></div>
+            </div>
+            <div class="copyright-footer">
+                <a href="https://blog.ctnis.com" target="_blank" id="copyright-link">Copyright Ctnis.COM</a>
+            </div>
+        </div>
+
+        <div class="toggle-sidebar-btn" id="toggle-sidebar-btn" title="收起/展开侧边栏">
+            <span class="material-icons">chevron_left</span>
+        </div>
+
+        <div class="toggle-right-btn" id="toggle-right-btn" title="收起/展开功能区">
+            <span class="material-icons">chevron_right</span>
+        </div>
+
+        <!-- 右侧区域 -->
+        <div class="right-section" id="task-panel">
+            <!-- 左侧垂直Tab导航栏 -->
+            <div class="vertical-tabs-container">
+                <div class="tab-group vertical-tabs">
+                    <div class="tab-tracker"></div>
+                    <button class="tab-btn active" data-tab="weather" title="天气预报"><span class="material-icons">cloud</span></button>
+                    <button class="tab-btn" data-tab="todo" title="待办事项"><span class="material-icons">check_circle</span></button>
+                    <button class="tab-btn" data-tab="finance" title="财务账本"><span class="material-icons">account_balance_wallet</span></button>
+                    <button class="tab-btn" data-tab="pre-expenses" title="财务规划"><span class="material-icons">pending_actions</span></button>
+                    <button class="tab-btn" data-tab="notes" title="网页备注"><span class="material-icons">article</span></button>
+                    <button class="tab-btn" data-tab="countdowns" title="倒数日"><span class="material-icons">event_available</span></button>
+                    <button class="tab-btn" data-tab="habits" title="习惯打卡"><span class="material-icons">verified</span></button>
+                    <button class="tab-btn" data-tab="alarms" title="闹钟提醒"><span class="material-icons">alarm</span></button>
+                    <button class="tab-btn" data-tab="scratchpad" title="全局暂存板"><span class="material-icons">edit_note</span></button>
+                    <button class="tab-btn" data-tab="smoking" title="戒烟规划"><span class="material-icons">smoke_free</span></button>
+                    <button class="tab-btn" data-tab="exchange" data-i18n-title="tab_exchange" title="实时汇率"><span class="material-icons">currency_exchange</span></button>
+                    <button class="tab-btn" data-tab="2fa" title="2FA验证"><span class="material-icons">vpn_key</span></button>
+                    <button class="tab-btn" data-tab="batch-timer" data-i18n-title="tab_batch_timer" title="批量定时"><span class="material-icons">schedule</span></button>
+                    <button class="tab-btn" data-tab="ai-provider" data-i18n-title="tab_ai_provider" title="AI Provider"><span class="material-icons">psychology</span></button>
+                    <button class="tab-btn" data-tab="assets" data-i18n-title="tab_assets" title="固定资产"><span class="material-icons">inventory_2</span></button>
+                    <div class="tab-divider-h"></div>
+                    <button class="tab-btn settings-btn" data-tab="settings" title="设置"><span class="material-icons">settings</span></button>
+                </div>
+            </div>
+            <!-- 右侧内容区域 -->
+            <div class="tab-content-wrapper">
+
+            <!-- 视图 A：待办 -->
+            <div id="view-todo" class="tab-content hidden">
+                <div class="task-stats">
+                    <span class="stat-badge all active" data-filter="all"><span data-i18n="all">全部</span> <span id="stat-all" class="badge-count">0</span></span>
+                    <span class="stat-badge todo" data-filter="todo"><span data-i18n="unfinished">未完成</span> <span id="stat-todo" class="badge-count">0</span></span>
+                    <span class="stat-badge done" data-filter="done"><span data-i18n="finished">已完成</span> <span id="stat-done" class="badge-count">0</span></span>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="new-task-input" placeholder="...">
+                    <button id="add-task-btn" class="material-icons">add</button>
+                </div>
+                <ul id="todo-list" class="quick-list"></ul>
+                <div id="empty-state-todo" class="empty-state hidden" data-i18n="todo_empty">无安排，享受生活！</div>
+            </div>
+
+            <!-- 视图 B：记账 -->
+            <div id="view-finance" class="tab-content hidden">
+                <div class="fin-summary">
+                    <div class="fin-card income">
+                        <span class="label" data-i18n="income">收入</span>
+                        <span class="amount" id="summary-income">+0.00</span>
+                    </div>
+                    <div class="fin-card expense">
+                        <span class="label" data-i18n="expense">支出</span>
+                        <span class="amount" id="summary-expense">-0.00</span>
+                    </div>
+                </div>
+                <div class="fin-input-container">
+                    <div class="fin-row-top">
+                        <select id="fin-type" class="fin-select">
+                            <option value="expense" data-i18n="expense">支出</option>
+                            <option value="income" data-i18n="income">收入</option>
+                        </select>
+                        <input type="number" id="fin-amount" class="fin-input-amount" placeholder="金额">
+                    </div>
+                    <div class="fin-row-bottom">
+                        <div class="fin-note-wrapper">
+                            <input type="text" id="fin-note" class="fin-input-note" placeholder="备注" autocomplete="off">
+                            <div id="fin-note-dropdown" class="fin-note-dropdown hidden"></div>
+                        </div>
+                        <button id="cancel-fin-btn" class="material-icons hidden" style="background:#9ca3af; margin-right:4px;">close</button>
+                        <button id="add-fin-btn" class="fin-add-btn material-icons">check</button>
+                    </div>
+                </div>
+                <ul id="fin-list" class="quick-list"></ul>
+                <div id="empty-state-fin" class="empty-state hidden" data-i18n="finance_empty">暂无收支记录</div>
+            </div>
+
+            <!-- 视图：预支出 -->
+            <div id="view-pre-expenses" class="tab-content hidden">
+                <!-- 子标签页导航 -->
+                <div class="pe-subtab-bar">
+                    <button class="pe-subtab active" data-pertab="list"><span class="material-icons pe-subtab-icon">list_alt</span> 项目列表</button>
+                    <button class="pe-subtab" data-pertab="add"><span class="material-icons pe-subtab-icon">add_circle</span> 添加/编辑</button>
+                </div>
+                <!-- 项目列表面板 -->
+                <div class="pe-subtab-panel active" data-pertab="list">
+                    <div class="pe-stats-container">
+                        <div class="pe-stat-item total"><span class="pe-stat-label" data-i18n="pre_total">总预算</span><span class="pe-stat-val" id="pe-total">0</span></div>
+                        <div class="pe-stat-item necessary"><span class="pe-stat-label" data-i18n="pre_necessary">必要支出</span><span class="pe-stat-val" id="pe-necessary">0</span></div>
+                        <div class="pe-stat-item unnecessary"><span class="pe-stat-label" data-i18n="pre_unnecessary">非必要支出</span><span class="pe-stat-val" id="pe-unnecessary">0</span></div>
+                        <div class="pe-stat-item income"><span class="pe-stat-label" data-i18n="pre_income">计划收入</span><span class="pe-stat-val" id="pe-income">0</span></div>
+                    </div>
+                    <div class="task-stats">
+                        <span class="stat-badge all active" data-filter="all"><span data-i18n="all">全部</span> <span id="pe-stat-all" class="badge-count">0</span></span>
+                        <span class="stat-badge ongoing" data-filter="ongoing">进行中 <span id="pe-stat-ongoing" class="badge-count">0</span></span>
+                        <span class="stat-badge completed" data-filter="completed">已完结 <span id="pe-stat-completed" class="badge-count">0</span></span>
+                        <span class="stat-badge recurring" data-filter="recurring">重复任务 <span id="pe-stat-recurring" class="badge-count">0</span></span>
+                    </div>
+                    <ul id="pe-list" class="quick-list"></ul>
+                    <div id="empty-state-pe" class="empty-state hidden" data-i18n="pre_empty">暂无预支出计划</div>
+                </div>
+                <!-- 添加/编辑面板 -->
+                <div class="pe-subtab-panel" data-pertab="add">
+                    <div class="pe-input-container">
+                        <div class="pe-recur-row">
+                            <label class="pe-recur-toggle">
+                                <input type="checkbox" id="pe-back-toggle">
+                                <span class="pe-toggle-track">
+                                    <span class="pe-toggle-thumb"></span>
+                                </span>
+                                <span class="pe-back-label">添加后返回</span>
+                            </label>
+                            <label class="pe-recur-toggle">
+                                <input type="checkbox" id="pe-recur-toggle">
+                                <span class="pe-toggle-track">
+                                    <span class="pe-toggle-thumb"></span>
+                                </span>
+                                <span class="pe-recur-label" data-i18n="pre_recur_label">每月重复</span>
+                            </label>
+                            <div class="pe-recur-day-group hidden" id="pe-recur-day-group">
+                                <span>每月</span>
+                                <select id="pe-recur-day"></select>
+                                <span>号</span>
+                            </div>
+                        </div>
+                        <div class="pe-row-top">
+                            <select id="pe-type" class="pe-select">
+                                <option value="necessary" data-i18n="pre_type_nec">🔴 必要支出</option>
+                                <option value="unnecessary" data-i18n="pre_type_unnec">🟢 非必要支出</option>
+                                <option value="income" data-i18n="pre_type_income">💰 计划收入</option>
+                            </select>
+                            <input type="number" id="pe-amount" class="pe-input-amount" placeholder="¥ 0.00">
+                        </div>
+                        <div class="pe-row-bottom">
+                            <input type="text" id="pe-name" class="pe-input-name" placeholder="...">
+                            <button id="add-pe-btn" class="pe-add-btn"><span class="material-icons">add</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 视图 C：备注 -->
+            <div id="view-notes" class="tab-content hidden">
+                <div class="notes-header">
+                    <span class="notes-count" id="notes-total-label">共 0 条备注</span>
+                </div>
+                <ul id="notes-list" class="quick-list"></ul>
+                <div id="empty-state-notes" class="empty-state hidden" data-i18n="notes_empty">暂无网页备注</div>
+            </div>
+
+            <!-- 视图 H：倒数日 -->
+            <div id="view-countdowns" class="tab-content hidden">
+                <div class="task-stats">
+                    <span class="stat-badge all active" data-filter="all"><span data-i18n="all">全部</span> <span id="cd-stat-all" class="badge-count">0</span></span>
+                    <span class="stat-badge upcoming" data-filter="upcoming"><span data-i18n="cd_tab_upcoming">未到期</span> <span id="cd-stat-upcoming" class="badge-count">0</span></span>
+                    <span class="stat-badge expired" data-filter="expired"><span data-i18n="cd_tab_expired">已到期</span> <span id="cd-stat-expired" class="badge-count">0</span></span>
+                </div>
+                <div class="cd-input-container">
+                    <div class="cd-input-row-top">
+                        <input type="date" id="cd-date-input" class="cd-date-input" placeholder="年/月/日">
+                    </div>
+                    <div class="cd-input-row-bottom">
+                        <input type="text" id="cd-title-input" class="cd-title-input" placeholder="...">
+                        <button id="cancel-cd-btn" class="material-icons hidden" style="background:#9ca3af; margin-right:4px;">close</button>
+                        <button id="add-cd-btn" class="material-icons cd-add-btn">add</button>
+                    </div>
+                </div>
+                <ul id="cd-list" class="quick-list"></ul>
+                <div id="empty-state-cd" class="empty-state hidden" data-i18n="cd_empty">暂无倒数日</div>
+            </div>
+
+            <!-- 视图 E：习惯 -->
+            <div id="view-habits" class="tab-content hidden">
+                <div class="input-group" style="flex-direction:column;">
+                    <div id="habit-time-row" style="display:flex;align-items:center;gap:8px;width:100%;">
+                        <label class="batch-switch" style="margin:0;flex-shrink:0;" title="启用时间">
+                            <input type="checkbox" id="habit-time-toggle">
+                            <span class="slider"></span>
+                        </label>
+                        <div id="habit-time-inputs" style="display:none;gap:4px;align-items:center;">
+                            <select id="habit-hour-input" style="width: 55px;">
+                                <option value="">时</option>
+                                <option value="00">00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option>
+                                <option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option>
+                                <option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option>
+                                <option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option>
+                                <option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option>
+                                <option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option>
+                            </select>
+                            <select id="habit-minute-input" style="width: 55px;">
+                                <option value="">分</option>
+                                <option value="00">00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option>
+                                <option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option>
+                                <option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option>
+                                <option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option>
+                                <option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option>
+                                <option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option>
+                                <option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option>
+                                <option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option>
+                                <option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option>
+                                <option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option>
+                                <option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option>
+                                <option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;width:100%;margin-top:6px;">
+                        <input type="text" id="new-habit-input" placeholder="..." style="flex:1;">
+                        <button id="add-habit-btn" class="material-icons">add</button>
+                    </div>
+                </div>
+                <div id="habits-list" class="quick-list"></div>
+                <div id="empty-state-habits" class="empty-state hidden" data-i18n="habit_empty">暂无习惯</div>
+            </div>
+
+            <!-- 视图 F：闹钟 -->
+            <div id="view-alarms" class="tab-content hidden">
+                <div class="alarm-input-container">
+                    <div class="alarm-input-row-top">
+                        <label class="alarm-periodic-label" title="关闭后为每日提醒">
+                            <span class="alarm-periodic-text">周期</span>
+                            <label class="batch-switch" style="margin:0;">
+                                <input type="checkbox" id="alarm-periodic-toggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </label>
+                        <div id="alarm-interval-group" style="display:flex;align-items:center;gap:4px;">
+                            <span style="font-size:12px;color:#9ca3af;">每</span>
+                            <input type="number" id="alarm-interval-input" value="1" min="1" style="width:50px;text-align:center;">
+                            <span style="font-size:12px;color:#9ca3af;">天</span>
+                        </div>
+                        <input type="time" id="alarm-time-input" style="flex:0 0 110px;margin-left:4px;">
+                    </div>
+                    <div class="alarm-input-row-bottom">
+                        <input type="text" id="alarm-label-input" placeholder="闹钟标签..." style="flex:1;">
+                        <button id="cancel-alarm-btn" class="material-icons hidden" style="background:#9ca3af;width:38px;height:38px;border:none;border-radius:8px;color:#fff;cursor:pointer;display:none;align-items:center;justify-content:center;flex-shrink:0;">close</button>
+                        <button id="add-alarm-btn" class="material-icons alarm-add-btn">add_alarm</button>
+                    </div>
+                </div>
+                <div id="alarm-ringing-bar" class="hidden" style="display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;">
+                    <span class="material-icons" style="font-size:18px;color:#ef4444;animation:alarm-pulse 1s infinite;">alarm_on</span>
+                    <span style="flex:1;font-size:13px;color:#991b1b;font-weight:500;">闹钟响铃中</span>
+                    <button id="stop-alarm-btn" style="padding:4px 12px;border:none;background:#ef4444;color:#fff;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;">停止响铃</button>
+                </div>
+                <ul id="alarms-list" class="quick-list"></ul>
+                <div id="empty-state-alarms" class="empty-state hidden" data-i18n="alarm_empty">暂无闹钟</div>
+            </div>
+
+            <!-- 视图 G：暂存板 -->
+            <div id="view-scratchpad" class="tab-content hidden" style="height: 100%; display: flex; flex-direction: column;">
+                <div style="flex: 1; position: relative; margin-bottom: 10px;">
+                    <textarea id="scratchpad-area" placeholder="..." style="width: 100%; height: 100%; border: 1px solid #e5e7eb; border-radius: 12px; padding: 15px; font-size: 14px; line-height: 1.6; resize: none; outline: none; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); font-family: 'Roboto', sans-serif; color: #374151; background: #fff;"></textarea>
+                </div>
+                <div class="sp-tools">
+                    <button class="sp-tool-btn" id="sp-btn-title">Aa</button>
+                    <button class="sp-tool-btn" id="sp-btn-lower">aa</button>
+                    <button class="sp-tool-btn" id="sp-btn-upper">AA</button>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+                    <span id="scratchpad-status" style="margin-right: auto; font-size: 12px; color: #9ca3af; align-self: center;"></span>
+                    <button id="sp-copy-btn" class="primary-btn" style="padding: 6px 12px; font-size: 12px;"><span class="material-icons" style="font-size: 14px;">content_copy</span> <span data-i18n="sp_copy">复制全部</span></button>
+                    <button id="sp-clear-btn" class="danger-btn" style="padding: 6px 12px; font-size: 12px;"><span class="material-icons" style="font-size: 14px;">delete_sweep</span> <span data-i18n="sp_clear">清空</span></button>
+                </div>
+            </div>
+
+            <!-- 视图 H：戒烟规划 -->
+            <div id="view-smoking" class="tab-content hidden">
+                <div class="smoking-panel">
+                    <!-- 今日目标设置 -->
+                    <div class="smoking-header">
+                        <div class="smoking-settings-row">
+                            <div class="smoking-goal-section">
+                                <span class="smoking-goal-label" data-i18n="smoking_daily_goal">今日目标</span>
+                                <div class="smoking-goal-control">
+                                    <button id="smoking-goal-minus" class="smoking-goal-btn"><span class="material-icons">remove</span></button>
+                                    <span id="smoking-goal-value" class="smoking-goal-value">5</span>
+                                    <button id="smoking-goal-plus" class="smoking-goal-btn"><span class="material-icons">add</span></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="smoking-settings-row">
+                            <div class="smoking-sleep-section">
+                                <span class="smoking-goal-label" data-i18n="smoking_sleep_hours">睡眠时长</span>
+                                <div class="smoking-sleep-control">
+                                    <select id="smoking-sleep-select" class="smoking-sleep-select">
+                                        <option value="">--</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                        <option value="6">6</option>
+                                        <option value="7">7</option>
+                                        <option value="8">8</option>
+                                        <option value="9">9</option>
+                                        <option value="10">10</option>
+                                        <option value="11">11</option>
+                                        <option value="12">12</option>
+                                    </select>
+                                    <span class="smoking-sleep-unit" data-i18n="smoking_hours_unit">小时</span>
+                                    <span id="smoking-awake-time" class="smoking-awake-time hidden"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="smoking-progress-section">
+                            <label class="deep-breath-label" title="添加记录时进行深呼吸">
+                                <input type="checkbox" id="deep-breath-check">
+                                <span class="deep-breath-toggle"></span>
+                                <span class="deep-breath-text">深呼吸</span>
+                            </label>
+                            <div class="smoking-progress-bar">
+                                <div class="smoking-progress-fill" id="smoking-progress-fill"></div>
+                                <div class="smoking-progress-info">
+                                    <span data-i18n="smoking_smoked">已抽</span>: <span id="smoking-count" class="smoking-count">0</span> / <span id="smoking-goal-display">5</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 记录按钮 -->
+                    <div class="smoking-record-section">
+                        <div class="smoking-time-picker">
+                            <input type="time" id="smoking-time-input" class="smoking-time-input" step="60" required>
+                            <button id="smoking-record-custom-btn" class="smoking-record-custom-btn" title="按选择的时间记录">
+                                <span class="material-icons">add</span>
+                            </button>
+                        </div>
+                        <button id="smoking-record-btn" class="smoking-record-btn">
+                            <span class="material-icons">smoking_rooms</span>
+                            <span data-i18n="smoking_record">记录当前时间</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Tab Navigation -->
+                    <div class="smoking-subtabs">
+                        <button class="smoking-subtab-btn active" data-target="smoking-view-records" data-i18n="smoking_records">今日记录</button>
+                        <button class="smoking-subtab-btn" data-target="smoking-view-diary" data-i18n="smoking_diary">戒烟日志</button>
+                    </div>
+
+                    <!-- 今日记录列表 -->
+                    <div id="smoking-view-records" class="smoking-subtab-content active">
+                        <div class="smoking-list-section">
+                            <div class="smoking-list-header">
+                                <div style="display: flex; align-items: center;">
+                                    <span id="smoking-date-label">今日记录</span>
+                                    <button id="smoking-copy-records-btn" class="smoking-clear-btn" title="复制今日记录" style="margin-left: 5px;">
+                                        <span class="material-icons">content_copy</span>
+                                    </button>
+                                    <button id="btn-open-daily-smoking-chart" class="smoking-clear-btn" title="今日抽烟报表" style="margin-left: 5px;">
+                                        <span class="material-icons">insert_chart_outlined</span>
+                                    </button>
+                                </div>
+                                <button id="smoking-clear-btn" class="smoking-clear-btn" title="清空今日记录">
+                                    <span class="material-icons">delete_sweep</span>
+                                </button>
+                            </div>
+                            <ul id="smoking-list" class="smoking-list"></ul>
+                            <div id="empty-state-smoking" class="empty-state" data-i18n="smoking_empty">今日暂无记录，继续保持！</div>
+                        </div>
+                    </div>
+
+                    <!-- 戒烟日志 -->
+                    <div id="smoking-view-diary" class="smoking-subtab-content hidden">
+                        <div class="smoking-diary-container">
+                            <textarea id="smoking-diary-input" class="smoking-diary-input" placeholder="记录此刻的心情、感受或戒烟心得..." spellcheck="false"></textarea>
+                            <div class="smoking-diary-status">
+                                <span id="smoking-diary-save-status"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 智能提示消息区域 -->
+                    <div class="smoking-tip-section" id="smoking-tip-section">
+                        <div class="smoking-tip-icon">
+                            <span class="material-icons">tips_and_updates</span>
+                        </div>
+                        <div class="smoking-tip-content" id="smoking-tip-content">
+                            <!-- 动态内容由 JS 填充 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 视图：实时汇率 -->
+            <div id="view-exchange" class="tab-content hidden">
+                <div class="popup-exchange-panel">
+                    <div class="popup-exchange-title">
+                        <span class="material-icons" style="font-size: 18px; color: #0891b2;">currency_exchange</span>
+                        <span data-i18n="exchange_panel_title">实时汇率换算</span>
+                        <span class="material-icons" id="popup-exchange-refresh" data-i18n-title="exchange_refresh" title="刷新汇率" style="font-size: 16px; cursor: pointer; color: #0891b2; transition: all 0.3s; margin-left: auto;">refresh</span>
+                    </div>
+                    <div class="popup-exchange-input-row">
+                        <input type="number" id="popup-exchange-amount" class="popup-exchange-input" value="1" min="0" placeholder="金额" data-i18n-ph="exchange_ph_amount">
+                        <select id="popup-exchange-from" class="popup-exchange-select">
+                            <option value="USD" selected data-i18n="cur_usd">🇺🇸 美元</option>
+                            <option value="CNY" data-i18n="cur_cny">🇨🇳 人民币</option>
+                            <option value="EUR" data-i18n="cur_eur">🇪🇺 欧元</option>
+                            <option value="GBP" data-i18n="cur_gbp">🇬🇧 英镑</option>
+                            <option value="RUB" data-i18n="cur_rub">🇷🇺 卢布</option>
+                            <option value="TWD" data-i18n="cur_twd">🇨🇳 新台币</option>
+                            <option value="AUD" data-i18n="cur_aud">🇦🇺 澳元</option>
+                            <option value="NZD" data-i18n="cur_nzd">🇳🇿 新西兰元</option>
+                            <option value="CAD" data-i18n="cur_cad">🇨🇦 加币</option>
+                            <option value="JPY" data-i18n="cur_jpy">🇯🇵 日元</option>
+                            <option value="TRY" data-i18n="cur_try">🇹🇷 土耳其里拉</option>
+                        </select>
+                    </div>
+                    <div class="popup-exchange-swap-row">
+                        <span class="material-icons popup-exchange-swap-btn" id="popup-exchange-swap" data-i18n-title="exchange_swap" title="交换货币">swap_vert</span>
+                    </div>
+                    <div class="popup-exchange-input-row">
+                        <input type="text" id="popup-exchange-result" class="popup-exchange-input popup-exchange-result-display" readonly placeholder="换算结果" data-i18n-ph="exchange_ph_result">
+                        <select id="popup-exchange-to" class="popup-exchange-select">
+                            <option value="CNY" selected data-i18n="cur_cny">🇨🇳 人民币</option>
+                            <option value="USD" data-i18n="cur_usd">🇺🇸 美元</option>
+                            <option value="EUR" data-i18n="cur_eur">🇪🇺 欧元</option>
+                            <option value="GBP" data-i18n="cur_gbp">🇬🇧 英镑</option>
+                            <option value="RUB" data-i18n="cur_rub">🇷🇺 卢布</option>
+                            <option value="TWD" data-i18n="cur_twd">🇨🇳 新台币</option>
+                            <option value="AUD" data-i18n="cur_aud">🇦🇺 澳元</option>
+                            <option value="NZD" data-i18n="cur_nzd">🇳🇿 新西兰元</option>
+                            <option value="CAD" data-i18n="cur_cad">🇨🇦 加币</option>
+                            <option value="JPY" data-i18n="cur_jpy">🇯🇵 日元</option>
+                            <option value="TRY" data-i18n="cur_try">🇹🇷 土耳其里拉</option>
+                        </select>
+                    </div>
+                    <div id="popup-exchange-rate-info" class="popup-exchange-rate-info hidden">
+                        <span id="popup-exchange-rate-text">--</span>
+                        <span style="color: #d1d5db; margin: 0 4px;">|</span>
+                        <span id="popup-exchange-updated-time">--</span>
+                    </div>
+                    <div id="popup-exchange-grid" class="popup-exchange-grid hidden"></div>
+                </div>
+            </div>
+
+            <!-- 视图：2FA验证 -->
+            <div id="view-2fa" class="tab-content hidden">
+                <div class="popup-exchange-panel">
+                    <div class="popup-exchange-title">
+                        <span class="material-icons" style="font-size: 18px; color: #16a34a;">vpn_key</span>
+                        <span data-i18n="tool_2fa_title">2FA 验证码</span>
+                        <div class="title-actions">
+                            <span class="ctrl-btn-icon" id="fa-export-btn" title="导出备份密钥">
+                                <span class="material-icons" style="font-size:16px">file_upload</span>
+                            </span>
+                            <span class="ctrl-btn-icon" id="fa-import-btn" title="导入备份密钥">
+                                <span class="material-icons" style="font-size:16px">file_download</span>
+                            </span>
+                            <span class="material-icons" id="fa-add-btn" data-i18n-title="2fa_btn_add_key" title="添加密钥" style="font-size: 18px; cursor: pointer; color: #16a34a;">add</span>
+                        </div>
+                    </div>
+                    <div id="fa-list" class="q-list"></div>
+                    <div id="fa-empty" class="empty-state">
+                        <span class="material-icons">vpn_key_off</span>
+                        <p data-i18n="2fa_empty">暂无2FA账号<br>点击上方 + 添加</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 视图：AI Provider -->
+            <div id="view-ai-provider" class="tab-content hidden">
+                <div class="ai-provider-panel">
+                    <div class="popup-exchange-title">
+                        <span class="material-icons" style="font-size: 18px; color: #8b5cf6;">psychology</span>
+                        <span data-i18n="ai_title">AI Provider</span>
+                        <div class="title-actions">
+                            <span class="ctrl-btn-icon" id="ai-export-btn" title="导出备份">
+                                <span class="material-icons" style="font-size:16px">file_upload</span>
+                            </span>
+                            <span class="ctrl-btn-icon" id="ai-import-btn" title="导入备份">
+                                <span class="material-icons" style="font-size:16px">file_download</span>
+                            </span>
+                            <span class="material-icons" id="ai-add-btn" data-i18n-title="ai_btn_add" title="添加 Provider" style="font-size: 18px; cursor: pointer; color: #8b5cf6;">add</span>
+                        </div>
+                    </div>
+                    <div class="ai-filter-row">
+                        <span class="material-icons">search</span>
+                        <input type="text" id="ai-filter-input" class="ai-filter-input" placeholder="搜索标题或 Model...">
+                        <span class="material-icons ai-filter-clear" id="ai-filter-clear" style="display:none">close</span>
+                    </div>
+                    <div id="ai-list" class="q-list"></div>
+                    <div id="ai-empty" class="empty-state">
+                        <span class="material-icons">psychology</span>
+                        <p data-i18n="ai_empty">暂无 AI Provider<br>点击上方 + 添加</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 视图：批量定时 -->
+            <div id="view-batch-timer" class="tab-content hidden">
+                <div class="ai-provider-panel">
+                    <div class="popup-exchange-title">
+                        <span class="material-icons" style="font-size: 18px; color: #f59e0b;">schedule</span>
+                        <span style="font-size: 14px; font-weight: 600;">批量定时</span>
+                        <div class="title-actions">
+                            <span class="material-icons" id="batch-add-btn" title="添加批量定时任务" style="font-size: 18px; cursor: pointer; color: #f59e0b;">add</span>
+                        </div>
+                    </div>
+                    <div id="batch-timer-list" class="q-list"></div>
+                    <div id="batch-empty" class="empty-state">
+                        <span class="material-icons" style="font-size: 28px;">schedule</span>
+                        <p style="font-size: 12px; color: #9ca3af;">暂无定时任务<br>点击 + 添加</p>
+                    </div>
+                    <div class="batch-log-section">
+                        <div class="batch-log-header">
+                            <span class="batch-log-title">
+                                <span class="material-icons" style="font-size: 14px; color: #6b7280;">history</span>
+                                运行日志
+                            </span>
+                            <span class="material-icons batch-log-clear-btn" id="batch-log-clear-btn" title="清空全部日志" style="font-size: 16px; cursor: pointer; color: #9ca3af; display: none;">delete_sweep</span>
+                        </div>
+                        <div id="batch-log-list" class="q-list"></div>
+                        <div id="batch-log-empty" class="empty-state" style="padding: 8px 0;">
+                            <span style="font-size: 11px; color: #9ca3af;">暂无运行日志</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 视图：固定资产 -->
+            <div id="view-assets" class="tab-content hidden">
+                <div class="assets-panel">
+                    <div class="popup-exchange-title">
+                        <span class="material-icons" style="font-size: 18px; color: #0ea5e9;">inventory_2</span>
+                        <span data-i18n="assets_title">固定资产</span>
+                        <div class="title-actions">
+                            <span class="material-icons" id="assets-add-btn" data-i18n-title="assets_btn_add" title="添加资产" style="font-size: 18px; cursor: pointer; color: #0ea5e9;">add</span>
+                        </div>
+                    </div>
+                    <!-- AI 分析开关 -->
+                    <div class="assets-ai-toggle-row">
+                        <label class="assets-ai-toggle">
+                            <span class="material-icons" style="font-size:16px;color:#8b5cf6;">auto_awesome</span>
+                            <span class="assets-ai-toggle-label" data-i18n="assets_ai_toggle">AI 分析纳入固定资产</span>
+                            <input type="checkbox" id="assets-ai-toggle-input">
+                            <span class="assets-ai-toggle-track">
+                                <span class="assets-ai-toggle-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+                    <!-- 统计摘要 -->
+                    <div class="assets-summary" id="assets-summary"></div>
+                    <!-- 资产列表 -->
+                    <ul id="assets-list" class="quick-list"></ul>
+                    <div id="assets-empty" class="empty-state">
+                        <span class="material-icons" style="font-size: 28px;">inventory_2</span>
+                        <p data-i18n="assets_empty">暂无固定资产<br>点击上方 + 添加</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 固定资产编辑弹窗 -->
+            <div id="assets-modal" class="modal hidden">
+                <div class="modal-content" style="width: 90%; max-width: 360px;">
+                    <div class="modal-header">
+                        <h3 id="assets-modal-title" data-i18n="assets_btn_add">添加资产</h3>
+                        <span class="material-icons close-modal" id="close-assets-modal">close</span>
+                    </div>
+                    <div style="padding: 0 0 10px;">
+                        <div class="ai-modal-grid">
+                            <div class="ai-modal-col">
+                                <label class="sub-label" data-i18n="assets_name">名称</label>
+                                <input type="text" id="assets-name-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="如：市中心公寓">
+                            </div>
+                            <div class="ai-modal-col">
+                                <label class="sub-label" data-i18n="assets_type">类型</label>
+                                <select id="assets-type-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;">
+                                    <option value="property" data-i18n="assets_type_property">房产</option>
+                                    <option value="shop" data-i18n="assets_type_shop">门店</option>
+                                    <option value="vehicle" data-i18n="assets_type_vehicle">车辆</option>
+                                    <option value="other" data-i18n="assets_type_other">其他</option>
+                                </select>
+                            </div>
+                            <div class="ai-modal-col">
+                                <label class="sub-label" data-i18n="assets_quantity">数量</label>
+                                <input type="number" id="assets-quantity-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="1" min="1" step="1">
+                            </div>
+                            <div class="ai-modal-col">
+                                <label class="sub-label" data-i18n="assets_payment">付款方式</label>
+                                <select id="assets-payment-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;">
+                                    <option value="full" data-i18n="assets_payment_full">全款</option>
+                                    <option value="installment" data-i18n="assets_payment_installment">分期</option>
+                                </select>
+                            </div>
+                            <div class="ai-modal-col">
+                                <label class="sub-label" data-i18n="assets_usage">使用状态</label>
+                                <select id="assets-usage-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;">
+                                    <option value="self-use" data-i18n="assets_usage_self">自用</option>
+                                    <option value="rental" data-i18n="assets_usage_rental">出租</option>
+                                </select>
+                            </div>
+                            <div class="ai-modal-col hidden" id="assets-rent-col">
+                                <label class="sub-label" data-i18n="assets_rent">月租金</label>
+                                <input type="number" id="assets-rent-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="¥ 0.00" step="0.01">
+                            </div>
+                            <div class="ai-modal-col ai-modal-full">
+                                <label class="sub-label" data-i18n="assets_note">备注</label>
+                                <input type="text" id="assets-note-input" class="converter-input full-border" style="width: 100%; margin-bottom: 0;" placeholder="可选备注">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px;">
+                        <button id="assets-delete-btn" class="cancel-btn hidden" style="color:#ef4444;" data-i18n="assets_btn_delete">删除</button>
+                        <button id="assets-save-btn" class="add-btn" data-i18n="assets_btn_save">保存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2FA 编辑弹窗 -->
+            <div id="fa-modal" class="modal hidden">
+                <div class="modal-content" style="width: 90%;">
+                    <div class="modal-header">
+                        <h3 id="fa-modal-title" data-i18n="2fa_btn_add_key">添加密钥</h3>
+                        <span class="material-icons close-modal" id="close-fa-modal">close</span>
+                    </div>
+                    <div style="padding: 0 0 10px;">
+                        <label class="sub-label" data-i18n="2fa_ph_name">账号名称</label>
+                        <input type="text" id="fa-name-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="例如：Google">
+                        <label class="sub-label" data-i18n="2fa_ph_key">Secret Key</label>
+                        <input type="text" id="fa-key-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px; font-family: monospace;" placeholder="JBSWY3DPEHPK3PXP">
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px;">
+                        <button id="fa-delete-btn" class="cancel-btn hidden" style="color:#ef4444;" data-i18n="2fa_btn_delete">删除</button>
+                        <button id="fa-save-btn" class="add-btn" data-i18n="2fa_btn_save">保存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Provider 编辑弹窗 -->
+            <div id="ai-modal" class="modal hidden">
+                <div class="modal-content" style="width: 90%;">
+                    <div class="modal-header">
+                        <h3 id="ai-modal-title" data-i18n="ai_btn_add">添加 Provider</h3>
+                        <span class="material-icons close-modal" id="close-ai-modal">close</span>
+                    </div>
+                    <div style="padding: 0 0 10px;">
+                        <div class="ai-modal-grid">
+                            <div class="ai-modal-col">
+                                <label class="sub-label" data-i18n="ai_ph_title">标题</label>
+                                <input type="text" id="ai-title-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="OpenAI">
+                            </div>
+                            <div class="ai-modal-col">
+                                <label class="sub-label" data-i18n="ai_ph_type">接口格式</label>
+                                <select id="ai-type-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;">
+                                    <option value="openai">OpenAI</option>
+                                    <option value="anthropic">Anthropic</option>
+                                </select>
+                            </div>
+                            <div class="ai-modal-col ai-modal-full">
+                                <label class="sub-label" data-i18n="ai_ph_url">Base URL（一行一个）</label>
+                                <textarea id="ai-url-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px; min-height: 50px; resize: vertical; font-family: monospace;" placeholder="https://api.openai.com"></textarea>
+                            </div>
+                            <div class="ai-modal-col">
+                                <label class="sub-label" data-i18n="ai_ph_official">官网链接</label>
+                                <input type="text" id="ai-official-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="https://openai.com">
+                            </div>
+                            <div class="ai-modal-col">
+                                <label class="sub-label" data-i18n="ai_ph_key">API Key</label>
+                                <input type="text" id="ai-key-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px; font-family: monospace;" placeholder="sk-...">
+                            </div>
+                            <div class="ai-modal-col ai-modal-full">
+                                <label class="sub-label" data-i18n="ai_ph_model">Model（一行一个）</label>
+                                <textarea id="ai-model-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px; min-height: 50px; resize: vertical; font-family: monospace;" placeholder="gpt-4o"></textarea>
+                            </div>
+                            <div class="ai-modal-col ai-modal-full">
+                                <label class="sub-label" data-i18n="ai_ph_note">备注</label>
+                                <textarea id="ai-note-input" class="converter-input full-border" style="width: 100%; margin-bottom: 0; min-height: 40px; resize: vertical; font-family: monospace; font-size: 12px;" placeholder="可选备注信息"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px;">
+                        <button id="ai-delete-btn" class="cancel-btn hidden" style="color:#ef4444;" data-i18n="ai_btn_delete">删除</button>
+                        <button id="ai-save-btn" class="add-btn" data-i18n="ai_btn_save">保存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Provider 备注查看弹窗 -->
+            <div id="ai-note-viewer" class="modal hidden">
+                <div class="modal-content" style="width: 85%; max-width: 360px;">
+                    <div class="modal-header">
+                        <h3>备注</h3>
+                        <span class="material-icons close-modal" id="close-ai-note-viewer">close</span>
+                    </div>
+                    <div style="padding: 0 0 10px;">
+                        <div id="ai-note-viewer-content" style="font-size: 13px; line-height: 1.6; color: #374151; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI 配置提示对话框 -->
+            <div id="ai-config-prompt-modal" class="modal hidden">
+                <div class="modal-content" style="width: 85%; max-width: 340px; text-align: center;">
+                    <div style="padding: 24px 16px 16px;">
+                        <span class="material-icons" style="font-size: 48px; color: #8b5cf6; margin-bottom: 12px;">psychology</span>
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1e293b; margin: 0 0 8px 0;">AI 分析暂不可用</h3>
+                        <p style="font-size: 13px; color: #64748b; line-height: 1.6; margin: 0 0 4px 0;">请先配置 AI 接口信息</p>
+                        <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 0 0 20px 0;">前往 <strong>设置 → AI Setting</strong><br>配置 Base URL、Model ID 和 API Key</p>
+                        <div style="display: flex; gap: 8px; justify-content: center;">
+                            <button id="ai-config-close-btn" class="cancel-btn" style="padding: 8px 20px;">稍后再说</button>
+                            <button id="ai-config-go-provider-btn" class="add-btn" style="padding: 8px 20px;">去配置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ai-setting-select-modal" class="modal hidden">
+                <div class="modal-content" style="width: 85%; max-width: 360px;">
+                    <div class="modal-header">
+                        <h3 id="ai-setting-select-title">选择</h3>
+                        <span class="material-icons close-modal" id="close-ai-setting-select-modal">close</span>
+                    </div>
+                    <div style="padding: 0 0 10px;">
+                        <div id="ai-setting-select-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 批量定时编辑弹窗 -->
+            <div id="batch-modal" class="modal hidden">
+                <div class="modal-content" style="width: 90%;">
+                    <div class="modal-header">
+                        <h3 id="batch-modal-title">批量定时任务</h3>
+                        <span class="material-icons close-modal" id="close-batch-modal">close</span>
+                    </div>
+                    <div style="padding: 0 0 10px;">
+                        <label class="sub-label">任务名称</label>
+                        <input type="text" id="batch-name-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="例如：每日新闻">
+                        <label class="sub-label">执行日期 <span style="color:#9ca3af; font-size:11px; font-weight:400;">(留空则为每日重复)</span></label>
+                        <input type="date" id="batch-date-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;">
+                        <label class="sub-label">执行时间</label>
+                        <input type="time" id="batch-time-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;">
+                        <label class="sub-label">要打开的网址（每行一个）</label>
+                        <textarea id="batch-urls-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px; min-height: 100px; resize: vertical; font-family: monospace;" placeholder="https://example.com"></textarea>
+                        <div style="display: flex; gap: 24px; align-items: center; margin-bottom: 10px;">
+                            <label class="sub-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <span>自动关闭</span>
+                                <label class="batch-switch" style="display: inline-block; margin: 0;">
+                                    <input type="checkbox" id="batch-autoclose-input" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </label>
+                            <label class="sub-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <span>启用</span>
+                                <label class="batch-switch" style="display: inline-block; margin: 0;">
+                                    <input type="checkbox" id="batch-enabled-input" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px;">
+                        <button id="batch-delete-btn" class="cancel-btn hidden" style="color:#ef4444;">删除</button>
+                        <button id="batch-save-btn" class="add-btn">保存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 视图：天气预报 -->
+            <div id="view-weather" class="tab-content">
+                <div class="weather-panel">
+                    <!-- 城市选择 -->
+                    <div class="weather-city-section">
+                        <div class="weather-city-input-group">
+                            <span class="material-icons">location_on</span>
+                            <input type="text" id="weather-city-input" placeholder="输入城市名称" value="韶关">
+                            <button id="weather-city-search" class="weather-city-btn" title="查询">
+                                <span class="material-icons">search</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- 天气子标签 -->
+                    <div class="weather-subtabs">
+                        <button class="weather-subtab active" data-subtab="realtime">实时天气</button>
+                        <button class="weather-subtab" data-subtab="forecast">未来6天</button>
+                    </div>
+
+                    <!-- 视图1：实时天气 -->
+                    <div id="weather-view-realtime">
+                        <!-- 当前天气大卡片 -->
+                        <div class="weather-current-card" id="weather-current-card">
+                            <div class="weather-loading" id="weather-loading">
+                                <span class="material-icons spin">autorenew</span>
+                                <span>加载中...</span>
+                            </div>
+                            <div class="weather-current-content hidden" id="weather-content">
+                                <div class="weather-current-top">
+                                    <div class="weather-current-left">
+                                        <span class="weather-current-icon" id="weather-icon">☀️</span>
+                                        <div class="weather-current-temp-wrap">
+                                            <span class="weather-current-temp" id="weather-temp">--</span>
+                                            <span class="weather-current-unit">°C</span>
+                                        </div>
+                                    </div>
+                                    <div class="weather-current-right">
+                                        <div class="weather-current-desc" id="weather-desc">--</div>
+                                        <div class="weather-current-location" id="weather-location">--</div>
+                                    </div>
+                                </div>
+                                <button class="weather-panel-refresh" id="weather-refresh" title="刷新天气">
+                                    <span class="material-icons">refresh</span>
+                                </button>
+                            </div>
+                            <div class="weather-error hidden" id="weather-error">
+                                <span class="material-icons">cloud_off</span>
+                                <span>天气加载失败</span>
+                                <button class="weather-retry" id="weather-retry">重试</button>
+                            </div>
+                        </div>
+                        <!-- 生活指数 -->
+                        <div class="weather-forecast-section">
+                            <div class="weather-section-title">生活指数</div>
+                            <div class="weather-forecast-list" id="weather-life-list">
+                                <!-- 由 JS 动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 视图2：未来6天预报（今天+往后5天） -->
+                    <div id="weather-view-forecast" class="hidden">
+                        <div class="weather-forecast-section">
+                            <div class="weather-forecast-list" id="weather-future-list">
+                                <div class="weather-loading-local" style="text-align:center; padding:20px; color:#6b7280;">
+                                    <span class="material-icons spin" style="font-size:20px; vertical-align:middle;">autorenew</span> 加载中...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 视图 D：设置 -->
+            <div id="view-settings" class="tab-content hidden">
+                 <!-- 语言设置 -->
+                 <div class="settings-section collapsed">
+                     <div class="settings-section-header">
+                         <h3 data-i18n="settings_language">语言设置 / Language</h3>
+                         <span class="material-icons settings-arrow">expand_more</span>
+                     </div>
+                     <div class="settings-section-body">
+                         <div class="settings-control">
+                             <select id="language-select" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                                 <option value="zh-CN">简体中文</option>
+                                 <option value="zh-TW">繁體中文</option>
+                                 <option value="en">English</option>
+                             </select>
+                         </div>
+                     </div>
+                 </div>
+
+                 <div class="settings-section collapsed" style="margin-top: 15px;">
+                     <div class="settings-section-header">
+                         <h3 data-i18n="settings_backup">数据备份与恢复</h3>
+                         <span class="material-icons settings-arrow">expand_more</span>
+                     </div>
+                     <div class="settings-section-body">
+                     <p class="settings-desc" data-i18n="settings_backup_desc">导出或恢复数据。</p>
+                     <div class="settings-control" style="justify-content: space-between;">
+                         <button id="backup-btn" class="primary-btn" style="flex: 1; margin-right: 10px;">
+                             <span class="material-icons" style="font-size:16px; vertical-align:middle; margin-right:4px;">download</span> <span data-i18n="btn_export">导出备份</span>
+                         </button>
+                         <label for="restore-file-input" class="primary-btn" style="flex: 1; cursor: pointer; background-color: #10b981; display:flex; align-items:center; justify-content:center;">
+                             <span class="material-icons" style="font-size:16px; vertical-align:middle; margin-right:4px;">upload</span> <span data-i18n="btn_restore">恢复备份</span>
+                         </label>
+                         <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+                     </div>
+                     <div id="backup-status" class="status-msg"></div>
+
+                     <!-- WebDAV Backup Section -->
+                     <div class="settings-sub-section" style="margin-top: 15px; border-top: 1px dashed #e5e7eb; padding-top: 10px;">
+                         <div class="webdav-accordion-header" id="webdav-accordion-header">
+                             <h4 style="font-size: 0.9rem; color: #4b5563; margin: 0;" data-i18n="settings_webdav">WebDAV ☁️</h4>
+                             <span class="material-icons webdav-arrow">expand_more</span>
+                         </div>
+                         <div class="webdav-accordion-content hidden" id="webdav-accordion-content">
+                             <div class="settings-control-column" style="gap: 8px; margin-top: 10px;">
+                                 <div class="input-with-copy">
+                                     <input type="text" id="webdav-url" placeholder="WebDAV URL">
+                                     <button class="copy-btn" data-target="webdav-url" title="复制"><span class="material-icons">content_copy</span></button>
+                                 </div>
+                                 <div class="input-with-copy">
+                                     <input type="text" id="webdav-user" placeholder="Username">
+                                     <button class="copy-btn" data-target="webdav-user" title="复制"><span class="material-icons">content_copy</span></button>
+                                 </div>
+                                 <div class="input-with-copy">
+                                     <input type="text" id="webdav-pass" placeholder="Password">
+                                     <button class="copy-btn" data-target="webdav-pass" title="复制"><span class="material-icons">content_copy</span></button>
+                                 </div>
+                                 
+                                 <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+                                     <span style="font-size: 13px; color: #4b5563;" data-i18n="webdav_auto_backup">Auto Backup:</span>
+                                     <select id="webdav-auto-backup" style="flex: 1; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 13px;">
+                                         <option value="off" data-i18n="backup_off">Off</option>
+                                         <option value="6h" data-i18n="backup_6h">Every 6 Hours</option>
+                                         <option value="daily" data-i18n="backup_daily">Every Day</option>
+                                         <option value="weekly" data-i18n="backup_weekly">Every Week</option>
+                                     </select>
+                                 </div>
+
+                                 <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                     <button id="webdav-save-btn" class="primary-btn" style="flex: 1; background-color: #6366f1; font-size: 12px;">
+                                         <span class="material-icons" style="font-size:14px; vertical-align:middle; margin-right:2px;">save</span> <span data-i18n="webdav_save">保存配置</span>
+                                     </button>
+                                 </div>
+                                 <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                     <button id="webdav-backup-btn" class="primary-btn" style="flex: 1; background-color: #8b5cf6; font-size: 12px;">
+                                         <span class="material-icons" style="font-size:14px; vertical-align:middle; margin-right:2px;">cloud_upload</span> <span data-i18n="webdav_btn_backup">云备份</span>
+                                     </button>
+                                     <button id="webdav-restore-btn" class="primary-btn" style="flex: 1; background-color: #ec4899; font-size: 12px;">
+                                         <span class="material-icons" style="font-size:14px; vertical-align:middle; margin-right:2px;">cloud_download</span> <span data-i18n="webdav_btn_restore">云恢复</span>
+                                     </button>
+                                 </div>
+                                 <div id="webdav-status" class="status-msg" style="font-size: 12px; height: 16px;"></div>
+                             </div>
+                         </div>
+                     </div>
+                     </div> <!-- settings-section-body -->
+                 </div>
+
+                 <div class="settings-section collapsed" style="margin-top: 15px;">
+                     <div class="settings-section-header">
+                         <h3 data-i18n="settings_finance_export">财务导出</h3>
+                         <span class="material-icons settings-arrow">expand_more</span>
+                     </div>
+                     <div class="settings-section-body">
+                         <p class="settings-desc" data-i18n="settings_finance_desc">导出 CSV。</p>
+                         <div class="settings-control">
+                             <select id="export-range">
+                                 <option value="current_month" data-i18n="range_current_month">本月</option>
+                                 <option value="last_month" data-i18n="range_last_month">上月</option>
+                                 <option value="last_3_months" data-i18n="range_last_3_months">最近 3 个月</option>
+                             </select>
+                             <button id="export-btn" class="primary-btn" data-i18n="btn_export_csv">导出 CSV</button>
+                         </div>
+                     </div>
+                 </div>
+
+                 <div class="settings-section collapsed" style="margin-top: 15px;">
+                     <div class="settings-section-header">
+                         <h3 data-i18n="settings_cleanup">数据清理</h3>
+                         <span class="material-icons settings-arrow">expand_more</span>
+                     </div>
+                     <div class="settings-section-body">
+                         <p class="settings-desc" data-i18n="settings_cleanup_desc">不可恢复。</p>
+                         <div class="settings-control">
+                             <select id="cleanup-range">
+                                 <option value="7" data-i18n="cleanup_7_days">7 天前</option>
+                                 <option value="30" selected data-i18n="cleanup_30_days">30 天前</option>
+                                 <option value="90" data-i18n="cleanup_90_days">90 天前</option>
+                                 <option value="all" data-i18n="cleanup_all">所有数据</option>
+                             </select>
+                             <button id="cleanup-btn" class="danger-btn" data-i18n="btn_cleanup">立即清理</button>
+                         </div>
+                         <div id="cleanup-status" class="status-msg"></div>
+                     </div>
+                 </div>
+
+                  <div class="settings-section collapsed" style="margin-top: 15px;">
+                     <div class="settings-section-header">
+                         <h3 data-i18n="settings_2fa_options">2FA 验证设置</h3>
+                         <span class="material-icons settings-arrow">expand_more</span>
+                     </div>
+                     <div class="settings-section-body">
+                         <div class="settings-control" style="justify-content: space-between; margin-top: 8px;">
+                             <span style="font-size: 0.85rem; color: #4b5563; display: flex; align-items: center; gap: 6px;">
+                                 <span class="material-icons" style="font-size: 16px; color: #16a34a;">vpn_key</span>
+                                 <span data-i18n="settings_2fa_auto_fetch">自动获取验证码</span>
+                             </span>
+                             <label class="batch-switch">
+                                 <input type="checkbox" id="settings-2fa-auto-fetch">
+                                 <span class="slider"></span>
+                             </label>
+                         </div>
+                     </div>
+                  </div>
+
+                  <div class="settings-section collapsed" style="margin-top: 15px;">
+                     <div class="settings-section-header">
+                         <h3 data-i18n="settings_realtime_exchange">实时汇率设置</h3>
+                         <span class="material-icons settings-arrow">expand_more</span>
+                     </div>
+                     <div class="settings-section-body">
+                         <div class="settings-control" style="justify-content: space-between; margin-top: 8px;">
+                             <span style="font-size: 0.85rem; color: #4b5563; display: flex; align-items: center; gap: 6px;">
+                                 <span class="material-icons" style="font-size: 16px; color: #0891b2;">currency_exchange</span>
+                                 <span data-i18n="settings_exchange_auto_refresh">打开时自动刷新汇率</span>
+                             </span>
+                             <label class="batch-switch">
+                                 <input type="checkbox" id="settings-exchange-auto-refresh">
+                                 <span class="slider"></span>
+                             </label>
+                         </div>
+                     </div>
+                  </div>
+
+                 <!-- AI Setting -->
+                 <div class="settings-section collapsed" style="margin-top: 15px;">
+                    <div class="settings-section-header">
+                        <h3>AI Setting</h3>
+                        <span class="material-icons settings-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-section-body">
+                        <div class="settings-control-column" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+                        <div class="ai-setting-row">
+                            <label class="sub-label">Base URL</label>
+                            <input type="text" id="ai-setting-base-url" class="converter-input full-border" style="width:100%;" placeholder="https://api.openai.com">
+                        </div>
+                        <div class="ai-setting-row">
+                            <label class="sub-label">Model ID</label>
+                            <input type="text" id="ai-setting-model-id" class="converter-input full-border" style="width:100%;" placeholder="gpt-4o">
+                        </div>
+                        <div class="ai-setting-row">
+                            <label class="sub-label">API Key</label>
+                            <input type="text" id="ai-setting-api-key" class="converter-input full-border" style="width:100%;font-family:monospace;" placeholder="sk-...">
+                        </div>
+                        <div class="settings-control" style="justify-content: space-between; margin-top: 4px;">
+                            <span style="font-size: 0.85rem; color: #4b5563; display: flex; align-items: center; gap: 6px;">
+                                <span class="material-icons" style="font-size: 16px; color: #8b5cf6;">token</span>
+                                <span>自动补充协议地址</span>
+                            </span>
+                            <label class="batch-switch">
+                                <input type="checkbox" id="ai-setting-auto-protocol" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <button id="ai-setting-save-btn" class="primary-btn" style="align-self:flex-end;">保存</button>
+                    </div>
+                    <div id="ai-setting-status" class="status-msg"></div>
+                    </div> <!-- settings-section-body -->
+                 </div>
+
+                 <div class="settings-section collapsed" style="margin-top: 15px;">
+                    <div class="settings-section-header">
+                        <h3 data-i18n="settings_shortcuts">快捷键大全</h3>
+                        <span class="material-icons settings-arrow">expand_more</span>
+                    </div>
+                    <div class="settings-section-body">
+                        <div class="shortcuts-group">
+                            <h4 data-i18n="sc_cat_global">全局</h4>
+                            <div class="shortcut-item"><span data-i18n="sc_g_open">呼出主面板</span> <kbd>Alt + Q</kbd></div>
+                            <div class="shortcut-item"><span data-i18n="sc_g_anno">进入网页备注</span> <kbd>Alt + W</kbd></div>
+                            <div class="shortcut-item"><span data-i18n="sc_g_clip">打开暂存板</span> <kbd>Alt + Z</kbd></div>
+                            <div class="shortcut-item"><span data-i18n="sc_g_side">侧边工具箱</span> <kbd>Alt + C</kbd></div>
+                        </div>
+
+                        <div class="shortcuts-group">
+                            <h4 data-i18n="sc_cat_panel">主面板</h4>
+                            <div class="shortcut-item"><span data-i18n="sc_p_toggle">折叠/展开侧栏</span> <kbd>Shift + ←</kbd></div>
+                            <div class="shortcut-item"><span data-i18n="sc_p_toggle_right">收起/展开功能区</span> <kbd>Shift + →</kbd></div>
+                            <div class="shortcut-item"><span data-i18n="sc_p_switch">切换功能标签</span> <kbd>Alt + F1</kbd></div>
+                            <div class="shortcut-item"><span data-i18n="sc_p_close">关闭面板</span> <kbd>Esc</kbd></div>
+                        </div>
+
+                        <div class="shortcuts-group">
+                            <h4 data-i18n="sc_cat_web">网页 / 标注</h4>
+                            <div class="shortcut-item"><span data-i18n="sc_w_read">稍后阅读</span> <kbd>Alt + S</kbd></div>
+                            <div class="shortcut-item"><span data-i18n="sc_a_save">保存备注 / 截图</span> <kbd>Alt + S</kbd></div>
+                            <div class="shortcut-item"><span data-i18n="sc_a_capture">网页长截图</span> <kbd>Alt + A</kbd></div>
+                            <div class="shortcut-item"><span data-i18n="sc_a_sticky">添加便签</span> <kbd>Alt + F2</kbd></div>
+                            <div class="shortcut-item"><span data-i18n="sc_a_tools">切换工具</span> <kbd>Alt + F1</kbd></div>
+                        </div>
+                    </div>
+                 </div>
+            </div>
+            </div> <!-- 关闭 tab-content-wrapper -->
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+    
+    <!-- 深呼吸 Modal -->
+    <div id="deep-breath-modal" class="modal hidden">
+        <div class="breath-modal-content">
+            <div class="breath-modal-header">
+                <span class="breath-modal-title">深呼吸</span>
+                <span class="breath-elapsed" id="breath-elapsed">00:00</span>
+                <span class="breath-close-x" id="breath-close-x">&times;</span>
+            </div>
+            <div class="breath-modal-body">
+                <!-- 左侧排行榜 -->
+                <div class="breath-leaderboard">
+                    <div class="leaderboard-title">🏆 深呼吸时长排行 TOP 10</div>
+                    <ul class="leaderboard-list" id="breath-leaderboard-list">
+                        <!-- 动态生成列表项 -->
+                    </ul>
+                </div>
+                
+                <!-- 右侧呼吸动画 -->
+                <div class="breathing-ring-outer">
+                    <div class="breathing-circle">
+                        <div class="circle-text" id="breath-text">吸气</div>
+                        <div class="circle-countdown" id="breath-countdown">4</div>
+                    </div>
+                </div>
+            </div>
+            <div class="breath-modal-footer">
+                <div class="breath-tips">💧 深呼吸结束后，记得喝杯水补充水分哦~</div>
+                <button class="breath-cancel-btn" id="breath-cancel-btn">不点</button>
+                <button class="breath-done-btn" id="breath-close-btn">点上</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 本月收支折线图 Modal -->
+    <div id="finance-chart-modal" class="modal hidden">
+        <div class="chart-modal-content">
+            <div class="chart-modal-header">
+                <span class="chart-modal-title">
+                    <span class="material-icons" style="font-size:18px; vertical-align:middle; margin-right:6px;">insights</span>
+                    <span id="chart-modal-title-text">本月每日收支报表</span>
+                </span>
+                <span class="chart-close-x" id="chart-close-x">&times;</span>
+            </div>
+            <div class="chart-modal-body">
+                <!-- 侧边详情栏 (默认隐藏) -->
+                <div id="chart-detail-panel" class="chart-detail-panel hidden">
+                    <div class="detail-header">
+                        <span class="detail-date" id="detail-panel-date">2月14日</span>
+                        <span class="material-icons detail-close-btn" id="detail-panel-close">close</span>
+                    </div>
+                    <div class="detail-list-container" id="detail-list-container">
+                        <!-- 动态生成列表 -->
+                    </div>
+                </div>
+
+                <!-- AI 总结左栏 -->
+                <div id="finance-chart-left-panel" class="finance-chart-left-panel">
+                    <div class="finance-chart-left-header">
+                        <span class="finance-chart-left-title">AI 分析</span>
+                    </div>
+                    <button id="finance-ai-summary-btn" class="finance-ai-summary-btn">
+                        <span class="material-icons" style="font-size:16px;">psychology</span>
+                        <span>总结</span>
+                    </button>
+                    <div id="finance-ai-summary-content" class="finance-ai-summary-content">
+                        <div class="finance-ai-summary-placeholder">点击「总结」按钮，由 AI 分析本月财务状况</div>
+                    </div>
+                </div>
+                <span class="material-icons finance-chart-left-toggle" id="finance-chart-left-toggle">chevron_left</span>
+
+                <!-- 主图表区域 -->
+                <div id="chart-main-content" style="flex:1;padding:0;">
+                    <div style="padding: 20px 24px 18px;">
+                    <div class="chart-legend">
+                        <span class="legend-item"><span class="legend-dot income"></span>收入</span>
+                        <span class="legend-item"><span class="legend-dot expense"></span>支出</span>
+                    </div>
+                    <canvas id="finance-chart-canvas" width="420" height="240"></canvas>
+                    <div class="chart-summary-bar" id="chart-summary-bar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 账本关联 Modal -->
+    <div id="fin-link-modal" class="modal hidden">
+        <div class="fin-link-modal-content">
+            <div class="fin-link-header">
+                <span class="fin-link-title">
+                    <span class="material-icons" style="font-size:18px;vertical-align:middle;margin-right:6px;">hub</span>
+                    <span id="fin-link-title-text">账本关联</span>
+                </span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button id="fin-link-graph-toggle" class="fin-link-graph-toggle-btn">
+                        <span class="material-icons" style="font-size:15px;">account_tree</span>
+                        <span>关联图谱</span>
+                    </button>
+                    <span class="material-icons fin-link-close" id="fin-link-close">close</span>
+                </div>
+            </div>
+            <div class="fin-link-body" id="fin-link-body">
+                <!-- 左侧：当前账本节点 + 已关联列表 -->
+                <div class="fin-link-left" id="fin-link-left">
+                    <div class="fin-link-section-title">当前账本</div>
+                    <div id="fin-link-current-node" class="fin-link-node current"></div>
+                    <div class="fin-link-section-title" style="margin-top:14px;">已关联账本</div>
+                    <div id="fin-link-linked-list" class="fin-link-linked-list"></div>
+                </div>
+                <!-- 右侧：选择日期 + 账本列表 -->
+                <div class="fin-link-right" id="fin-link-right">
+                    <div class="fin-link-date-row">
+                        <span class="material-icons" style="font-size:18px;color:#6366f1;">calendar_today</span>
+                        <input type="text" id="fin-link-date-input" placeholder="选择日期" readonly>
+                    </div>
+                    <div class="fin-link-section-title">该日账本（拖拽到左侧建立关联）</div>
+                    <div id="fin-link-list" class="fin-link-list"></div>
+                </div>
+                <!-- 画布覆盖层，用于绘制连线（普通视图） -->
+                <canvas id="fin-link-canvas"></canvas>
+                <!-- 关联图谱视图 -->
+                <div class="fin-link-graph-view hidden" id="fin-link-graph-view">
+                    <canvas id="fin-link-graph-canvas"></canvas>
+                    <div id="fin-link-graph-nodes" class="fin-link-graph-nodes"></div>
+                    <div class="fin-link-graph-tip">拖拽节点调整位置 · 点击加号选择关联 · 拖加号建立关联 · 点击连线可删除 · 滚轮缩放</div>
+                    <!-- 加号点击 → 右侧滑动选择面板 -->
+                    <div class="fin-link-graph-panel" id="fin-link-graph-panel">
+                        <div class="fin-link-graph-panel-header">
+                            <span class="fin-link-graph-panel-title">选择关联账本</span>
+                            <span class="material-icons fin-link-graph-panel-close" id="fin-link-graph-panel-close">close</span>
+                        </div>
+                        <div class="fin-link-graph-panel-source" id="fin-link-graph-panel-source"></div>
+                        <div class="fin-link-graph-panel-date-row">
+                            <span class="material-icons" style="font-size:18px;color:#6366f1;">calendar_today</span>
+                            <input type="text" id="fin-link-graph-panel-date-input" placeholder="选择日期" readonly>
+                        </div>
+                        <div class="fin-link-graph-panel-list-title">该日账本（点击建立关联）</div>
+                        <div id="fin-link-graph-panel-list" class="fin-link-graph-panel-list-body"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 本月戒烟折线图 Modal -->
+    <div id="smoking-chart-modal" class="modal hidden">
+        <div class="chart-modal-content">
+            <div class="chart-modal-header">
+                <span class="chart-modal-title">
+                    <span class="material-icons" style="font-size:18px; vertical-align:middle; margin-right:6px;">assessment</span>
+                    <span id="smoking-chart-title-text">本月抽烟记录</span>
+                </span>
+                <span class="chart-close-x" id="smoking-chart-close-x">&times;</span>
+            </div>
+            <div class="chart-modal-body">
+                <!-- 侧边详情栏 (默认隐藏) -->
+                <div id="smoking-detail-panel" class="chart-detail-panel hidden">
+                    <div class="detail-header">
+                        <span class="detail-date" id="smoking-detail-date">2月14日</span>
+                        <span class="material-icons detail-close-btn" id="smoking-detail-close">close</span>
+                    </div>
+                    <div class="detail-list-container" id="smoking-detail-list">
+                        <!-- 动态生成列表 -->
+                    </div>
+                </div>
+
+                <!-- 主图表区域 -->
+                <div id="smoking-chart-content" style="flex:1; padding: 20px 24px 18px; transition: opacity 0.3s;">
+                    <div class="chart-legend">
+                        <span class="legend-item"><span class="legend-dot" style="background:#f97316;"></span>抽烟数量</span>
+                    </div>
+                    <canvas id="smoking-chart-canvas" width="560" height="280"></canvas>
+                    <div class="chart-summary-bar" id="smoking-chart-summary"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 今日抽烟趋势 Modal -->
+    <div id="daily-smoking-chart-modal" class="modal hidden">
+        <div class="chart-modal-content">
+            <div class="chart-modal-header">
+                <span class="chart-modal-title">
+                    <span class="material-icons" style="font-size:18px; vertical-align:middle; margin-right:6px;">show_chart</span>
+                    <span id="daily-smoking-chart-title-text">今日抽烟趋势 (间隔)</span>
+                </span>
+                <span class="chart-close-x" id="daily-smoking-chart-close-x">&times;</span>
+            </div>
+            <div class="chart-modal-body">
+                <!-- 主图表区域 -->
+                <div id="daily-smoking-chart-content" style="flex:1; padding: 20px 24px 18px; transition: opacity 0.3s;">
+                    <div class="chart-legend">
+                        <span class="legend-item"><span class="legend-dot" style="background:#8b5cf6;"></span>间隔分钟数</span>
+                    </div>
+                    <canvas id="daily-smoking-chart-canvas" width="560" height="280"></canvas>
+                    <div class="chart-summary-bar" id="daily-smoking-chart-summary"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日期详情弹窗 -->
+    <div id="date-detail-modal" class="modal hidden">
+        <div class="date-detail-content">
+            <div class="date-detail-header">
+                <span class="date-detail-title">
+                    <span class="material-icons" style="font-size:18px; vertical-align:middle; margin-right:6px;">calendar_month</span>
+                    <span id="date-detail-title-text">日期详情</span>
+                </span>
+                <span class="material-icons date-detail-close" id="date-detail-close">close</span>
+            </div>
+            <div class="date-detail-body">
+                <!-- 左侧区域（可展开收起） -->
+                <div class="date-detail-left" id="date-detail-left">
+                    <div class="date-detail-left-inner">
+                        <div class="date-detail-left-header">
+                            <span class="material-icons" style="font-size:16px;">psychology</span>
+                            <span>总结</span>
+                            <button class="date-detail-ai-btn" id="date-detail-ai-btn">
+                                <span class="material-icons" style="font-size:14px;">auto_awesome</span>
+                            </button>
+                        </div>
+                        <div class="date-detail-ai-content" id="date-detail-ai-content">
+                            <div class="date-detail-ai-placeholder">点击✨按钮，由 AI 分析当日概况</div>
+                        </div>
+                    </div>
+                </div>
+                <span class="material-icons date-detail-left-toggle" id="date-detail-left-toggle">chevron_right</span>
+                <!-- 右侧区域：待办事项 + 财务账本 -->
+                <div class="date-detail-right">
+                    <div class="date-detail-section">
+                        <div class="date-detail-section-header">
+                            <span class="material-icons" style="font-size:16px;">check_circle</span>
+                            <span data-i18n="tab_todo">待办事项</span>
+                            <span class="material-icons section-toggle-icon">expand_more</span>
+                        </div>
+                        <div class="date-detail-list" id="date-detail-todo-list"></div>
+                    </div>
+                    <div class="date-detail-section">
+                        <div class="date-detail-section-header">
+                            <span class="material-icons" style="font-size:16px;">account_balance_wallet</span>
+                            <span data-i18n="tab_finance">财务账本</span>
+                            <span class="material-icons section-toggle-icon">expand_more</span>
+                        </div>
+                        <div class="date-detail-list" id="date-detail-finance-list"></div>
+                    </div>
+                    <div class="date-detail-section">
+                        <div class="date-detail-section-header">
+                            <span class="material-icons" style="font-size:16px;">repeat</span>
+                            <span data-i18n="tab_pre_expenses">财务规划</span>
+                            <span class="material-icons section-toggle-icon">expand_more</span>
+                        </div>
+                        <div class="date-detail-list" id="date-detail-pre-expense-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/flatpickr.min.js"></script>
+    <script src="js/flatpickr-zh.js"></script>
+    <script src="js/flatpickr-zh-tw.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/meow-confirm.js"></script>
+    <script src="js/ai-prompts.js"></script>
+    <!-- popup.js 已按功能拆分为以下模块，按顺序加载（全局作用域共享） -->
+    <script src="js/modules/popup-core.js"></script>
+    <script src="js/modules/popup-weather.js"></script>
+    <script src="js/modules/popup-calendar.js"></script>
+    <script src="js/modules/popup-habits.js"></script>
+    <script src="js/modules/popup-alarms.js"></script>
+    <script src="js/modules/popup-finance.js"></script>
+    <script src="js/modules/popup-smoking.js"></script>
+    <script src="js/modules/popup-events.js"></script>
+    <script src="js/modules/popup-webdav.js"></script>
+    <script src="js/modules/popup-charts.js"></script>
+    <script src="js/modules/popup-exchange.js"></script>
+    <script src="js/modules/popup-2fa.js"></script>
+    <script src="js/modules/popup-ai.js"></script>
+    <script src="js/modules/popup-batch.js"></script>
+    <script src="js/modules/popup-assets.js"></script>
+    <script src="js/modules/popup-titlebar.js"></script>
+    <script src="js/init_flatpickr.js"></script>
+    <style>
+        .big-calendar-btn {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #e0e7ff;
+            background: #fff;
+            border-radius: 12px;
+            color: #4f46e5;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .big-calendar-btn:hover {
+            background-color: #f5f3ff;
+            border-color: #818cf8;
+        }
+        
+        /* 大日历小按钮（header中） */
+        .big-calendar-mini-btn {
+            border: none;
+            background: #f3f4f6;
+            color: #4f46e5;
+            padding: 0;
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .big-calendar-mini-btn .material-icons {
+            font-size: 16px;
+        }
+        .big-calendar-mini-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        /* 左侧预支出摘要区域 */
+        .pre-expense-summary-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 8px 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin: 5px 0;
+            border: 1px solid #f3f4f6;
+            flex-shrink: 0;
+        }
+        .pe-summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pe-summary-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6b7280;
+        }
+        .pe-summary-label-small {
+            font-size: 0.7rem;
+            color: #9ca3af;
+        }
+        .pe-summary-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .pe-summary-item.necessary .pe-summary-val {
+            color: #dc2626;
+        }
+        .pe-summary-item.unnecessary .pe-summary-val {
+            color: #16a34a;
+        }
+        .pe-summary-item.total .pe-summary-val {
+            color: #4f46e5;
+            font-weight: 700;
+        }
+        .pe-summary-val {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        /* === 戒烟规划样式 === */
+        .smoking-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 15px;
+        }
+        .smoking-header {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid #fcd34d;
+        }
+        .smoking-goal-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .smoking-goal-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #92400e;
+        }
+        .smoking-goal-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .smoking-goal-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 6px;
+            background: #fff;
+            color: #92400e;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .smoking-goal-btn:hover {
+            background: #fef3c7;
+        }
+        .smoking-goal-btn .material-icons {
+            font-size: 18px;
+        }
+        .smoking-goal-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #92400e;
+            min-width: 30px;
+            text-align: center;
+        }
+        .smoking-goal-unit {
+            font-size: 0.85rem;
+            color: #a16207;
+        }
+        .smoking-sleep-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .smoking-sleep-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .smoking-sleep-select {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            background: #fff;
+            color: #92400e;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            outline: none;
+            min-width: 50px;
+            text-align: center;
+        }
+        .smoking-sleep-select:focus {
+            box-shadow: 0 0 0 2px #fcd34d;
+        }
+        .smoking-sleep-unit {
+            font-size: 0.85rem;
+            color: #a16207;
+        }
+        .smoking-awake-time {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            margin-left: 8px;
+        }
+
+        .smoking-record-section {
+            display: inline-flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-self: center;
+        }
+        .smoking-time-picker {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .smoking-select {
+            padding: 8px 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #374151;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fff;
+            cursor: pointer;
+            min-width: 55px;
+        }
+        .smoking-select:focus {
+            border-color: #6366f1;
+        }
+        .smoking-record-custom-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+        }
+        .smoking-record-custom-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+        }
+        .smoking-record-custom-btn .material-icons {
+            font-size: 20px;
+        }
+        .smoking-record-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+            white-space: nowrap;
+        }
+        .smoking-record-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        .smoking-record-btn:active {
+            transform: translateY(0);
+        }
+        .smoking-record-btn .material-icons {
+            font-size: 16px;
+        }
+        .smoking-list-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .smoking-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        .smoking-clear-btn {
+            border: none;
+            background: transparent;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        .smoking-clear-btn:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .smoking-clear-btn .material-icons {
+            font-size: 18px;
+        }
+        .smoking-list {
+            flex: 1;
+            overflow-y: auto;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .smoking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            border: 1px solid #f3f4f6;
+        }
+        .smoking-item-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .smoking-item-number {
+            width: 24px;
+            height: 24px;
+            background: #e0e7ff;
+            color: #4f46e5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .smoking-item-time {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        .smoking-item-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .smoking-item-interval {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            background: #f3f4f6;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .smoking-item-delete {
+            border: none;
+            background: transparent;
+            color: #d1d5db;
+            cursor: pointer;
+            padding: 2px;
+            display: flex;
+            transition: color 0.2s;
+        }
+        .smoking-item-delete:hover {
+            color: #ef4444;
+        }
+        .smoking-item-delete .material-icons {
+            font-size: 16px;
+        }
+        .smoking-tip-section {
+            display: inline-flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+            border-radius: 10px;
+            border: 1px solid #7dd3fc;
+            margin-top: auto;
+            flex-shrink: 0;
+            align-self: center;
+            max-height: 42px;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .smoking-tip-section:hover {
+            max-height: 300px;
+        }
+        .smoking-tip-icon {
+            color: #0284c7;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .smoking-tip-icon .material-icons {
+            font-size: 20px;
+        }
+        .smoking-tip-content {
+            font-size: 0.85rem;
+            color: #0369a1;
+            line-height: 1.5;
+            flex: 1;
+            min-width: 0;
+        }
+        .smoking-tip-section:not(:hover) .smoking-tip-content {
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .smoking-tip-highlight {
+            font-weight: 700;
+            color: #0c4a6e;
+        }
+        .smoking-tip-section.warning {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-color: #fcd34d;
+        }
+        .smoking-tip-section.warning .smoking-tip-icon {
+            color: #d97706;
+        }
+        .smoking-tip-section.warning .smoking-tip-content {
+            color: #92400e;
+        }
+        .smoking-tip-section.warning .smoking-tip-highlight {
+            color: #78350f;
+        }
+        .smoking-tip-section.success {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border-color: #86efac;
+        }
+        .smoking-tip-section.success .smoking-tip-icon {
+            color: #16a34a;
+        }
+        .smoking-tip-section.success .smoking-tip-content {
+            color: #166534;
+        }
+        .smoking-tip-section.success .smoking-tip-highlight {
+            color: #14532d;
+        }
+
+        /* === 报表图标按钮 === */
+        .chart-report-btn {
+            font-size: 16px !important;
+            color: #9ca3af;
+            cursor: pointer;
+            margin-left: 4px;
+            transition: all 0.25s ease;
+            border-radius: 4px;
+            padding: 1px;
+            vertical-align: middle;
+        }
+        .chart-report-btn:hover {
+            color: #4f46e5;
+            background: #e0e7ff;
+            transform: scale(1.15);
+        }
+
+        /* === 图表 Modal === */
+        .chart-modal-content {
+            background: linear-gradient(160deg, #ffffff 0%, #f8faff 100%);
+            border-radius: 18px;
+            width: 760px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2), 0 0 0 1px rgba(99, 102, 241, 0.08);
+            animation: modal-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+        }
+        .chart-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+        }
+        .chart-modal-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+        }
+        .chart-close-x {
+            font-size: 22px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+            opacity: 0.7;
+        }
+        .chart-close-x:hover {
+            opacity: 1;
+            background: rgba(255,255,255,0.2);
+        }
+        .chart-modal-body {
+            flex: 1;
+            min-height: 0;
+            padding: 0;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+        }
+        .chart-legend {
+            display: flex;
+            gap: 18px;
+            margin-bottom: 12px;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .legend-dot.income {
+            background: linear-gradient(135deg, #34d399, #10b981);
+        }
+        .legend-dot.expense {
+            background: linear-gradient(135deg, #f87171, #ef4444);
+        }
+        #finance-chart-canvas {
+            width: 100%;
+            border-radius: 10px;
+            background: #f9fafb;
+            border: 1px solid #f0f0f0;
+        }
+        .chart-summary-bar {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 14px;
+            padding: 10px 16px;
+            background: #f9fafb;
+            border-radius: 10px;
+            border: 1px solid #f0f0f0;
+        }
+        .chart-summary-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .chart-summary-item .label {
+            font-size: 0.7rem;
+            color: #9ca3af;
+            font-weight: 500;
+        }
+        .chart-summary-item .value {
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+        .chart-summary-item .value.inc { color: #10b981; }
+        .chart-summary-item .value.exp { color: #ef4444; }
+        .chart-summary-item .value.bal { color: #6366f1; }
+
+        /* === AI 总结左栏 === */
+        .finance-chart-left-panel {
+            width: 220px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e5e7eb;
+            background: #fafbff;
+            min-height: 0;
+            overflow: hidden;
+            transition: width 0.3s ease;
+        }
+        .finance-chart-left-panel.collapsed {
+            width: 0;
+            border-right: none;
+        }
+        .finance-chart-left-panel.collapsed .finance-ai-summary-btn,
+        .finance-chart-left-panel.collapsed .finance-ai-summary-content {
+            display: none;
+        }
+        .finance-chart-left-header {
+            display: flex;
+            align-items: center;
+            padding: 10px 8px 4px 12px;
+            flex-shrink: 0;
+        }
+        .finance-chart-left-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8b5cf6;
+        }
+        .finance-chart-left-toggle {
+            position: absolute;
+            left: 208px;
+            top: 10px;
+            z-index: 5;
+            font-size: 18px;
+            color: #8b5cf6;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .finance-chart-left-toggle:hover {
+            background: #ede9fe;
+            border-color: #8b5cf6;
+        }
+        .finance-chart-left-panel.collapsed + .finance-chart-left-toggle {
+            left: -2px;
+        }
+        .finance-ai-summary-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin: 12px 12px 8px;
+            padding: 8px 12px;
+            border: none;
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: #fff;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(99,102,241,0.25);
+        }
+        .finance-ai-summary-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+        }
+        .finance-ai-summary-btn:active {
+            transform: translateY(0);
+        }
+        .finance-ai-summary-btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .finance-ai-summary-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 12px 12px;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #374151;
+        }
+        .finance-ai-summary-content::-webkit-scrollbar {
+            width: 3px;
+        }
+        .finance-ai-summary-content::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 2px;
+        }
+        .finance-ai-summary-content {
+            user-select: text;
+        }
+        .finance-ai-summary-placeholder {
+            color: #9ca3af;
+            font-size: 11px;
+            text-align: center;
+            padding: 20px 0;
+        }
+        .finance-ai-summary-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #8b5cf6;
+            font-size: 12px;
+            padding: 20px 0;
+        }
+        .finance-ai-summary-loading .material-icons {
+            animation: finance-ai-spin 1s linear infinite;
+            font-size: 18px;
+        }
+        @keyframes finance-ai-spin {
+            100% { transform: rotate(360deg); }
+        }
+        .finance-ai-summary-error {
+            color: #ef4444;
+            font-size: 11px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        /* === 详情侧边栏样式 === */
+        .chart-detail-panel {
+            width: 200px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 10;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+        }
+        .chart-detail-panel.visible {
+            transform: translateX(0);
+        }
+        .chart-detail-panel.hidden {
+            transform: translateX(-100%);
+        }
+        
+        .detail-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9fafb;
+        }
+        .detail-date {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #374151;
+        }
+        .detail-close-btn {
+            font-size: 18px;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 4px;
+        }
+        .detail-close-btn:hover {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+        .detail-list-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        .empty-detail-tip {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+            padding: 20px;
+        }
+        
+        /* 侧边栏列表项 */
+        .detail-item {
+            padding: 10px 16px;
+            border-bottom: 1px dashed #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .detail-item:last-child { border-bottom: none; }
+        .detail-row-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        .detail-note {
+            color: #374151;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100px;
+        }
+        .detail-amount {
+            font-weight: 700;
+        }
+        .detail-amount.inc { color: #10b981; }
+        .detail-amount.exp { color: #ef4444; }
+        .detail-row-bottom {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+    </style>
+</body>
+</html>

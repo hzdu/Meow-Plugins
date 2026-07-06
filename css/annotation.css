@@ -1,0 +1,406 @@
+/* annotation.css - 网页备注模式样式 */
+
+/* 备注模式下的网页边框 */
+/* 备注模式下的边框覆盖层 */
+.meow-border-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border: 4px solid #fbbf24 !important;
+    box-sizing: border-box !important;
+    z-index: 2147483646 !important;
+    /* Just below toast (MAX-1), above canvas */
+    pointer-events: none !important;
+    display: block;
+}
+
+/* Canvas 覆盖层 */
+#meow-annotation-canvas {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 2147483600 !important;
+    /* Safe value < MAX_INT */
+    cursor: crosshair !important;
+    pointer-events: auto !important;
+}
+
+/* 工具栏容器 */
+#meow-annotation-toolbar {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    z-index: 2147483601 !important;
+    /* Above canvas */
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    background: rgba(30, 30, 30, 0.95) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    animation: meow-toolbar-slide-in 0.3s ease-out !important;
+}
+
+@keyframes meow-toolbar-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 工具栏标题 */
+#meow-annotation-toolbar .meow-toolbar-title {
+    color: #fbbf24 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    margin-bottom: 4px !important;
+}
+
+/* 工具栏分组 */
+#meow-annotation-toolbar .meow-toolbar-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+}
+
+#meow-annotation-toolbar .meow-toolbar-group-label {
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-size: 10px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* 颜色选择器 */
+#meow-annotation-toolbar .meow-color-picker {
+    display: flex !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+    max-width: 120px !important;
+}
+
+#meow-annotation-toolbar .meow-color-btn {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    border: 2px solid transparent !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+}
+
+#meow-annotation-toolbar .meow-color-btn:hover {
+    transform: scale(1.15) !important;
+}
+
+#meow-annotation-toolbar .meow-color-btn.active {
+    border-color: #fff !important;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 笔触大小滑块 */
+#meow-annotation-toolbar .meow-brush-size {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+#meow-annotation-toolbar .meow-brush-size input[type="range"] {
+    width: 80px !important;
+    height: 4px !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 2px !important;
+    outline: none !important;
+}
+
+#meow-annotation-toolbar .meow-brush-size input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 16px !important;
+    height: 16px !important;
+    background: #fbbf24 !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    transition: transform 0.2s ease !important;
+}
+
+#meow-annotation-toolbar .meow-brush-size input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2) !important;
+}
+
+#meow-annotation-toolbar .meow-brush-size-value {
+    color: #fff !important;
+    font-size: 12px !important;
+    min-width: 24px !important;
+    text-align: center !important;
+}
+
+/* 操作按钮 */
+#meow-annotation-toolbar .meow-action-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 8px 12px !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#meow-annotation-toolbar .meow-action-btn.meow-clear-btn {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+}
+
+#meow-annotation-toolbar .meow-action-btn.meow-clear-btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+#meow-annotation-toolbar .meow-action-btn.meow-close-btn {
+    background: #fbbf24 !important;
+    color: #1e1e1e !important;
+}
+
+#meow-annotation-toolbar .meow-action-btn.meow-close-btn:hover {
+    background: #f59e0b !important;
+    transform: translateY(-1px) !important;
+}
+
+/* 提示文字 */
+#meow-annotation-toolbar .meow-toolbar-hint {
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-size: 10px !important;
+    text-align: center !important;
+    margin-top: 4px !important;
+}
+
+/* 模式切换按钮 */
+#meow-annotation-toolbar .meow-mode-btns {
+    display: flex !important;
+    gap: 4px !important;
+}
+
+#meow-annotation-toolbar .meow-mode-btn {
+    flex: 1 !important;
+    padding: 6px 8px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 11px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#meow-annotation-toolbar .meow-mode-btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+#meow-annotation-toolbar .meow-mode-btn.active {
+    background: #fbbf24 !important;
+    color: #1e1e1e !important;
+}
+
+/* 文字输入区域 */
+#meow-annotation-toolbar .meow-text-input-group {
+    display: flex !important;
+    gap: 4px !important;
+}
+
+#meow-annotation-toolbar #meow-text-input {
+    flex: 1 !important;
+    padding: 6px 8px !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    outline: none !important;
+    transition: border-color 0.2s ease !important;
+}
+
+#meow-annotation-toolbar #meow-text-input:focus {
+    border-color: #fbbf24 !important;
+}
+
+#meow-annotation-toolbar #meow-text-input::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+#meow-annotation-toolbar .meow-text-add-btn {
+    padding: 6px 10px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    background: #34c759 !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+#meow-annotation-toolbar .meow-text-add-btn:hover {
+    background: #2da44e !important;
+    transform: translateY(-1px) !important;
+}
+
+#meow-annotation-toolbar .meow-text-hint {
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-size: 10px !important;
+    margin-top: 4px !important;
+}
+
+/* 保存按钮样式 */
+#meow-annotation-toolbar .meow-action-btn.meow-save-btn {
+    background: #007aff !important;
+    color: #fff !important;
+}
+
+#meow-annotation-toolbar .meow-action-btn.meow-save-btn:hover {
+    background: #005ecb !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Toast 提示消息 */
+.meow-toast {
+    position: fixed !important;
+    top: 80px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    padding: 12px 24px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    z-index: 2147483647 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    animation: meow-toast-slide-in 0.3s ease-out !important;
+    transition: opacity 0.3s ease !important;
+}
+
+.meow-toast-success {
+    background: #34c759 !important;
+    color: #fff !important;
+}
+
+.meow-toast-warning {
+    background: #ff9500 !important;
+    color: #fff !important;
+}
+
+.meow-toast-error {
+    background: #ff3b30 !important;
+    color: #fff !important;
+}
+
+.meow-toast-info {
+    background: #007aff !important;
+    color: #fff !important;
+}
+
+@keyframes meow-toast-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Sticky Note Styles */
+.meow-sticky-note {
+    position: fixed !important;
+    width: 200px !important;
+    min-height: 150px !important;
+    padding: 30px 15px 15px 15px !important;
+    /* Top padding for drag header */
+    box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.2) !important;
+    border-radius: 2px !important;
+    font-family: 'Comic Sans MS', 'Mukta Mahee', sans-serif !important;
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+    z-index: 2147483645 !important;
+    /* Below overlay? No, should be interactive. Overlay is pointer-events:none. */
+    cursor: default !important;
+    overflow: hidden !important;
+    transition: transform 0.1s ease !important;
+    box-sizing: border-box !important;
+}
+
+.meow-sticky-note:hover {
+    transform: scale(1.02) !important;
+    z-index: 2147483648 !important;
+    /* Bring to front on hover */
+}
+
+/* Header for dragging/closing */
+.meow-sticky-note-header {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 30px !important;
+    cursor: move !important;
+    /* background: rgba(0,0,0,0.05); */
+}
+
+.meow-sticky-note-close {
+    position: absolute !important;
+    top: 4px !important;
+    right: 4px !important;
+    width: 20px !important;
+    height: 20px !important;
+    line-height: 20px !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    color: rgba(0, 0, 0, 0.4) !important;
+    font-weight: bold !important;
+    font-size: 16px !important;
+    border-radius: 50% !important;
+}
+
+.meow-sticky-note-close:hover {
+    background: rgba(0, 0, 0, 0.1) !important;
+    color: #000 !important;
+}
+
+.meow-sticky-note-content {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100px !important;
+    border: none !important;
+    background: transparent !important;
+    outline: none !important;
+    resize: none !important;
+    color: #333 !important;
+}
+
+/* Printing/Saving Mode */
+.meow-printing .meow-sticky-note {
+    box-shadow: none !important;
+    /* Optional: remove shadow for flat look, or keep it */
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+.meow-printing .meow-sticky-note-close {
+    display: none !important;
+}

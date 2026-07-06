@@ -1,0 +1,665 @@
+<!-- sidepanel.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Meow Sidepanel</title>
+    <link rel="stylesheet" href="css/sidepanel.css">
+    <link rel="stylesheet" href="css/meow-confirm.css">
+    <link href="https://fonts.loli.net/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body tabindex="-1">
+    <div class="container">
+        <!-- === 顶部区域：Tab 导航 === -->
+        <div class="top-section">
+            <div class="tab-group">
+                <button class="tab-btn" data-target="hot" data-i18n-title="sp_tab_hot" title="热门榜单">
+                    <span class="material-icons">local_fire_department</span>
+                </button>
+                <button class="tab-btn" data-target="prompts" data-i18n-title="sp_tab_prompts" title="AI提示词">
+                    <span class="material-icons">lightbulb</span>
+                </button>
+                <button class="tab-btn" data-target="aicollection" title="AI合集">
+                    <span class="material-icons">smart_toy</span>
+                </button>
+                <button class="tab-btn" data-target="scratchpad" data-i18n-title="sp_tab_scratch" title="暂存板">
+                    <span class="material-icons">layers</span>
+                </button>
+                <button class="tab-btn" data-target="readlater" data-i18n-title="sp_tab_readlater" title="稍后阅读">
+                    <span class="material-icons">bookmark_border</span>
+                </button>
+                <button class="tab-btn" data-target="gallery" data-i18n-title="sp_tab_gallery" title="图集">
+                    <span class="material-icons">collections</span>
+                </button>
+                <button class="tab-btn" data-target="clock" data-i18n-title="sp_tab_clock" title="国际时钟">
+                    <span class="material-icons">schedule</span>
+                </button>
+                <button class="tab-btn" data-target="2fa" data-i18n-title="sp_tab_2fa" title="2FA验证">
+                    <span class="material-icons">vpn_key</span>
+                </button>
+                <button class="tab-btn" data-target="ai-provider" title="AI Provider">
+                    <span class="material-icons">psychology</span>
+                </button>
+                <button class="tab-btn active" data-target="tools" data-i18n-title="sp_tab_tools" title="工具箱">
+                    <span class="material-icons">straighten</span>
+                </button>
+            </div>
+
+            <!-- === 搜索区域 === -->
+            <div id="search-group-prompts" class="search-wrapper hidden">
+                <span class="material-icons search-icon-overlay">search</span>
+                <input type="text" id="search-prompts-input" class="search-input" data-i18n-ph="sp_search_p_placeholder" placeholder="搜索提示词...">
+            </div>
+            
+            <div id="search-group-scratch" class="search-wrapper hidden">
+                <span class="material-icons search-icon-overlay">search</span>
+                <input type="text" id="search-scratch-input" class="search-input" data-i18n-ph="sp_search_s_placeholder" placeholder="搜索暂存内容...">
+            </div>
+
+            <div id="search-group-readlater" class="search-wrapper hidden">
+                <span class="material-icons search-icon-overlay">search</span>
+                <input type="text" id="search-readlater-input" class="search-input" data-i18n-ph="sp_search_r_placeholder" placeholder="搜索标题或链接...">
+            </div>
+
+            <div class="filter-wrapper hidden" style="display: flex; align-items: center; gap: 4px; overflow: hidden;">
+                <div class="filter-section" id="sp-filters" style="flex: 1;"></div>
+                <button id="open-full-cat-btn" class="icon-btn" style="border:none; background:transparent; flex-shrink:0; cursor:pointer;" title="所有分类">
+                    <span class="material-icons">more_vert</span>
+                </button>
+            </div>
+            
+            <div class="scratchpad-tools hidden" id="sp-tools">
+                <span class="tool-info" data-i18n="sp_tool_hint_scratch">临时剪贴历史 (支持图文)</span>
+                <button id="sp-clear-all" class="text-btn" data-i18n="btn_clear_all">清空全部</button>
+            </div>
+
+            <div class="scratchpad-tools hidden" id="rl-tools">
+                <span class="tool-info" data-i18n="sp_tool_hint_rl">Alt+S 快速添加</span>
+                <button id="rl-clear-all" class="text-btn" data-i18n="btn_clear_all">清空全部</button>
+            </div>
+        </div>
+
+        <div class="list-section">
+            <div id="view-aicollection" class="view-content hidden">
+                <div class="ai-tags-bar">
+                    <div id="ai-tags-container" class="ai-tags-container"></div>
+                    <button id="ai-tag-all-btn" class="ai-tag-add-btn" title="全部AI服务" style="display:none;">
+                        <span class="material-icons">apps</span>
+                    </button>
+                    <button id="ai-tag-add-btn" class="ai-tag-add-btn" title="添加AI服务">
+                        <span class="material-icons">add</span>
+                    </button>
+                </div>
+                <div id="ai-iframe-wrapper" class="ai-iframe-wrapper hidden">
+                    <iframe id="ai-iframe" class="ai-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" allowfullscreen></iframe>
+                </div>
+                <div id="ai-empty" class="empty-state">
+                    <span class="material-icons">smart_toy</span>
+                    <p>还没有AI服务<br>点击右上角 + 添加你常用的AI</p>
+                </div>
+            </div>
+
+            <div id="view-prompts" class="view-content hidden">
+                <ul id="sp-list" class="prompt-list"></ul>
+                <div id="sp-empty" class="empty-state hidden">
+                    <span class="material-icons">inbox</span>
+                    <p data-i18n="sp_empty_prompts">这里空空如也<br>快去添加你的第一个 AI 咒语吧</p>
+                </div>
+            </div>
+
+            <div id="view-scratchpad" class="view-content hidden">
+                <ul id="scratch-list" class="scratch-list"></ul>
+                <div id="scratch-empty" class="empty-state hidden">
+                    <span class="material-icons">content_paste_off</span>
+                    <p data-i18n="sp_empty_scratch">暂存板为空<br>在下方粘贴文本或图片</p>
+                </div>
+            </div>
+
+            <div id="view-readlater" class="view-content hidden">
+                <ul id="readlater-list" class="scratch-list"></ul>
+                <div id="readlater-empty" class="empty-state hidden">
+                    <span class="material-icons">bookmark_remove</span>
+                    <p data-i18n="sp_empty_rl">没有稍后阅读<br>按 Alt+S 將目前網頁加入列表</p>
+                </div>
+            </div>
+
+            <!-- 图集视图：新增批量操作条 -->
+            <div id="view-gallery" class="view-content hidden">
+                <div class="gallery-controls" id="gallery-controls">
+                    <div class="ctrl-btn" id="gallery-select-all">
+                        <span class="material-icons" style="font-size:14px">done_all</span> 全选
+                    </div>
+                    <div class="ctrl-btn delete-btn" id="gallery-bulk-delete">
+                        <span class="material-icons" style="font-size:14px">delete_forever</span> 删除选中 (<span id="gallery-select-count">0</span>)
+                    </div>
+                </div>
+                <div id="gallery-grid" class="gallery-grid"></div>
+                <div id="gallery-empty" class="empty-state hidden">
+                    <span class="material-icons">add_photo_alternate</span>
+                    <p data-i18n="sp_empty_gallery">暂无图片<br>Ctrl+V 粘贴或拖拽图片至下方</p>
+                </div>
+            </div>
+
+            <div id="view-hot" class="view-content view-hot-flex hidden">
+                <div class="hot-sidebar">
+                    <div class="hot-tab active" data-source="toutiao" data-i18n-title="hot_toutiao" title="头条"><img src="https://www.toutiao.com/favicon.ico" alt="头条"></div>
+                    <div class="hot-tab" data-source="douyin" data-i18n-title="hot_douyin" title="抖音"><img src="https://www.douyin.com/favicon.ico" alt="抖音"></div>
+                    <div class="hot-tab" data-source="zhihu" data-i18n-title="hot_zhihu" title="知乎"><img src="https://static.zhihu.com/heifetz/favicon.ico" alt="知乎"></div>
+                    <div class="hot-tab" data-source="xhs" data-i18n-title="hot_xhs" title="小红书"><img src="https://www.xiaohongshu.com/favicon.ico" alt="小红书"></div>
+                    <div class="hot-tab" data-source="baidu" data-i18n-title="hot_baidu" title="百度"><img src="https://www.baidu.com/favicon.ico" alt="百度"></div>
+                </div>
+                <div class="hot-content">
+                    <div id="hot-list" class="hot-list"></div>
+                    <div id="hot-loading" class="hot-loading hidden">
+                        <div class="spinner"></div>
+                    </div>
+                    <div id="hot-empty" class="empty-state hidden" style="margin-top: 50px;">
+                        <span class="material-icons">search_off</span>
+                        <p data-i18n="hot_empty">暂无数据</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-clock" class="view-content hidden">
+                <div class="clock-container">
+                    <div class="main-clock-card">
+                        <div class="main-time" id="clock-beijing-time">--:--:--</div>
+                        <div class="main-clock-sub">
+                            <span class="city-name" data-i18n="clock_beijing">北京 Beijing</span>
+                            <span class="date-info" id="clock-beijing-date">--月--日 星期-</span>
+                        </div>
+                    </div>
+                    <div class="world-clock-list" id="world-clock-list">
+                        <!-- JS 动态生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-tools" class="view-content">
+                <div class="tool-card" data-tool-id="tool-ip">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #4f46e5;">public</span> <span data-i18n="tool_ip_title">IP 地址信息</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <button id="btn-ip-query" class="filter-btn" style="width: 100%; background: #e0e7ff; color: #4f46e5; border-color: #c7d2fe; margin-bottom: 8px; font-weight: 500;"><span class="material-icons" style="font-size: 14px; vertical-align: middle;">search</span> <span data-i18n="action_query">查询网络信息</span></button>
+                        <div id="ip-result-area" class="ip-result-box hidden">
+                            <div class="ip-group">
+                                <div class="ip-group-title"><span class="material-icons" style="font-size: 12px; color: #ef4444;">flag</span> <span data-i18n="ip_cn_title">国内 (CN)</span></div>
+                                <div class="ip-addr-wrapper"><div class="ip-addr" id="ip-cn-addr">--</div><span class="material-icons ip-copy-btn" id="btn-copy-cn-ip">content_copy</span></div>
+                                <div class="ip-row"><span class="ip-label" data-i18n="ip_province">省份</span><span class="ip-val" id="ip-cn-pro">--</span></div>
+                                <div class="ip-row"><span class="ip-label" data-i18n="ip_city">城市</span><span class="ip-val" id="ip-cn-city">--</span></div>
+                                <div class="ip-row" style="display:none;"><span class="ip-label">代码</span><span class="ip-val" id="ip-cn-code">--</span></div>
+                                <div class="ip-row"><span class="ip-label" data-i18n="ip_isp">运营商</span><span class="ip-val" id="ip-cn-isp">--</span></div>
+                            </div>
+                            <div class="ip-group">
+                                <div class="ip-group-title"><span class="material-icons" style="font-size: 12px; color: #3b82f6;">language</span> <span data-i18n="ip_intl_title">海外 (Global)</span></div>
+                                <div class="ip-addr-wrapper"><div class="ip-addr" id="ip-intl-addr">--</div><span class="material-icons ip-copy-btn" id="btn-copy-intl-ip">content_copy</span></div>
+                                <div class="ip-row"><span class="ip-label" data-i18n="ip_country">国家</span><span class="ip-val" id="ip-intl-country">--</span></div>
+                                <div class="ip-row"><span class="ip-label" data-i18n="ip_city">城市</span><span class="ip-val" id="ip-intl-city">--</span></div>
+                                <div class="ip-row"><span class="ip-label" data-i18n="ip_isp">运营商</span><span class="ip-val" id="ip-intl-isp">--</span></div>
+                                <div class="ip-row"><span class="ip-label" data-i18n="ip_risk_score">风险值</span><span class="ip-val" id="ip-risk-val">--</span> <a href="#" id="link-scamalytics" target="_blank" style="display:none;font-size:12px;margin-left:4px;color:#3b82f6;text-decoration:none;">View</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-card collapsed" data-tool-id="tool-fuel">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #f59e0b;">local_gas_station</span> <span data-i18n="tool_fuel_title">实时油价</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                            <span class="material-icons" style="font-size: 18px; color: #f59e0b; flex-shrink: 0;">location_on</span>
+                            <input type="text" id="fuel-region-input" class="converter-input full-border" style="flex: 1;" placeholder="输入地区，如：韶关曲江" value="韶关曲江" data-i18n-ph="fuel_ph_region">
+                            <button id="btn-fuel-query" class="filter-btn" style="flex-shrink: 0; background: #fef3c7; color: #b45309; border-color: #fcd34d; font-weight: 500;"><span class="material-icons" style="font-size: 14px; vertical-align: middle;">search</span> <span data-i18n="fuel_action_query">查询</span></button>
+                        </div>
+                        <div id="fuel-result-area" class="fuel-result-box hidden">
+                            <div class="fuel-region-title"><span class="material-icons" style="font-size: 14px; color: #f59e0b;">location_on</span> <span id="fuel-region-name">--</span></div>
+                            <div id="fuel-price-list" class="fuel-price-list"></div>
+                            <div class="fuel-updated"><span class="material-icons" style="font-size: 12px;">update</span> <span id="fuel-updated-time">--</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-card collapsed" data-tool-id="tool-exchange">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #0891b2;">currency_exchange</span> <span data-i18n="tool_exchange_title">实时汇率</span> <span class="material-icons" id="exchange-refresh-btn" data-i18n-title="exchange_refresh" title="刷新汇率" style="font-size: 15px; cursor: pointer; color: #0891b2; transition: all 0.3s;">refresh</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <div class="exchange-input-row">
+                            <input type="number" id="exchange-amount" class="converter-input full-border" style="flex: 1;" value="1" min="0" placeholder="金额" data-i18n-ph="exchange_ph_amount">
+                            <select id="exchange-from-select" class="converter-select" style="flex: 1;">
+                                <option value="USD" selected data-i18n="cur_usd">🇺🇸 美元</option>
+                                <option value="CNY" data-i18n="cur_cny">🇨🇳 人民币</option>
+                                <option value="EUR" data-i18n="cur_eur">🇪🇺 欧元</option>
+                                <option value="GBP" data-i18n="cur_gbp">🇬🇧 英镑</option>
+                                <option value="RUB" data-i18n="cur_rub">🇷🇺 卢布</option>
+                                <option value="TWD" data-i18n="cur_twd">🇨🇳 新台币</option>
+                                <option value="AUD" data-i18n="cur_aud">🇦🇺 澳元</option>
+                                <option value="NZD" data-i18n="cur_nzd">🇳🇿 新西兰元</option>
+                                <option value="CAD" data-i18n="cur_cad">🇨🇦 加币</option>
+                                <option value="JPY" data-i18n="cur_jpy">🇯🇵 日元</option>
+                                <option value="TRY" data-i18n="cur_try">🇹🇷 土耳其里拉</option>
+                            </select>
+                        </div>
+                        <div class="exchange-swap-row">
+                            <span class="material-icons exchange-swap-btn" id="exchange-swap-btn" data-i18n-title="exchange_swap" title="交换货币">swap_vert</span>
+                        </div>
+                        <div class="exchange-input-row" style="margin-bottom: 8px;">
+                            <input type="text" id="exchange-result-val" class="converter-input full-border exchange-result-display" style="flex: 1;" readonly placeholder="换算结果" data-i18n-ph="exchange_ph_result">
+                            <select id="exchange-to-select" class="converter-select" style="flex: 1;">
+                                <option value="CNY" selected data-i18n="cur_cny">🇨🇳 人民币</option>
+                                <option value="USD" data-i18n="cur_usd">🇺🇸 美元</option>
+                                <option value="EUR" data-i18n="cur_eur">🇪🇺 欧元</option>
+                                <option value="GBP" data-i18n="cur_gbp">🇬🇧 英镑</option>
+                                <option value="RUB" data-i18n="cur_rub">🇷🇺 卢布</option>
+                                <option value="TWD" data-i18n="cur_twd">🇨🇳 新台币</option>
+                                <option value="AUD" data-i18n="cur_aud">🇦🇺 澳元</option>
+                                <option value="NZD" data-i18n="cur_nzd">🇳🇿 新西兰元</option>
+                                <option value="CAD" data-i18n="cur_cad">🇨🇦 加币</option>
+                                <option value="JPY" data-i18n="cur_jpy">🇯🇵 日元</option>
+                                <option value="TRY" data-i18n="cur_try">🇹🇷 土耳其里拉</option>
+                            </select>
+                        </div>
+                        <div id="exchange-rate-info" class="exchange-rate-info hidden">
+                            <span class="material-icons" style="font-size: 12px;">info_outline</span>
+                            <span id="exchange-rate-text">--</span>
+                            <span class="exchange-divider">|</span>
+                            <span class="material-icons" style="font-size: 12px;">update</span>
+                            <span id="exchange-updated-time">--</span>
+                        </div>
+                        <div id="exchange-grid" class="exchange-grid hidden"></div>
+                    </div>
+                </div>
+
+                <div class="tool-card collapsed" data-tool-id="tool-b64-text">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #64748b;">text_fields</span> <span data-i18n="tool_txt_title">Base64 文本</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <textarea id="b64-text-input" class="converter-input full-border" style="width:100%;height:250px;margin-bottom:8px;"></textarea><div style="display:flex;gap:8px;margin-bottom:8px;"><button id="btn-text-b64-encode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_encode">编码</button><button id="btn-text-b64-decode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_decode">解码</button><button id="btn-text-b64-clear" class="filter-btn" style="flex:0 0 60px;background:#f1f5f9;" data-i18n="action_clear">清空</button></div><textarea id="b64-text-output" class="converter-input full-border" style="width:100%;height:250px;background:#f8fafc;" readonly></textarea><button id="btn-text-b64-copy" class="filter-btn" style="width:100%;background:#f1f5f9;margin-top:4px;" data-i18n="msg_copied">复制结果</button>
+                    </div>
+                </div>
+                <div class="tool-card collapsed" data-tool-id="tool-img">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #0ea5e9;">image</span> <span data-i18n="tool_img_title">图片 / Base64</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <div style="margin-bottom:15px;border-bottom:1px dashed #e2e8f0;padding-bottom:15px;"><label class="sub-label" data-i18n="tool_img_to_b64">图片转 Base64</label><div id="img-b64-drop-zone" class="tool-drop-zone"><span class="material-icons">add_photo_alternate</span> 点击/拖拽图片<input type="file" id="img-file-input" style="display:none;" accept="image/*"></div><textarea id="img-base64-output" class="converter-input full-border" style="width:100%;height:100px;margin-bottom:8px;" readonly></textarea><div style="display:flex;gap:8px;"><button id="btn-img-copy" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_copy">复制</button><button id="btn-img-clear" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_clear">清空</button></div></div>
+                        <div><label class="sub-label" data-i18n="tool_b64_to_img">Base64 转图片</label><textarea id="base64-img-input" class="converter-input full-border" style="width:100%;height:100px;margin-bottom:8px;"></textarea><div style="display:flex;gap:8px;margin-bottom:8px;"><button id="btn-base64-preview" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_preview">预览</button><button id="btn-base64-download" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_download">下载</button><button id="btn-base64-clear" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_clear">清空</button></div><div id="base64-preview-area" style="text-align:center;"><img id="base64-preview-img" style="max-width:100%;max-height:200px;display:none;border:1px solid #e2e8f0;"></div></div>
+                    </div>
+                </div>
+                <div class="tool-card collapsed" data-tool-id="tool-length">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #6366f1;">straighten</span> <span data-i18n="tool_len_title">长度换算</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <div class="converter-row">
+                            <div class="converter-group">
+                                <input type="number" id="len-input-1" class="converter-input">
+                                <select id="len-select-1" class="converter-select">
+                                    <option value="mm">毫米 (mm)</option>
+                                    <option value="cm">厘米 (cm)</option>
+                                    <option value="m" selected>米 (m)</option>
+                                    <option value="km">千米 (km)</option>
+                                    <option value="in">英寸 (in)</option>
+                                    <option value="ft">英尺 (ft)</option>
+                                    <option value="yd">码 (yd)</option>
+                                    <option value="mi">英里 (mi)</option>
+                                </select>
+                            </div>
+                            <div class="swap-group">
+                                <span class="material-icons swap-btn swap-values" title="交换数值">swap_vert</span>
+                                <span class="material-icons swap-btn swap-units" title="交换单位">compare_arrows</span>
+                                <span class="material-icons swap-btn swap-both" title="同时交换">sync_alt</span>
+                            </div>
+                            <div class="converter-group">
+                                <input type="number" id="len-input-2" class="converter-input">
+                                <select id="len-select-2" class="converter-select">
+                                    <option value="mm">毫米 (mm)</option>
+                                    <option value="cm" selected>厘米 (cm)</option>
+                                    <option value="m">米 (m)</option>
+                                    <option value="km">千米 (km)</option>
+                                    <option value="in">英寸 (in)</option>
+                                    <option value="ft">英尺 (ft)</option>
+                                    <option value="yd">码 (yd)</option>
+                                    <option value="mi">英里 (mi)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-card collapsed" data-tool-id="tool-weight">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #10b981;">scale</span> <span data-i18n="tool_wt_title">重量换算</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <div class="converter-row">
+                            <div class="converter-group">
+                                <input type="number" id="wt-input-1" class="converter-input">
+                                <select id="wt-select-1" class="converter-select">
+                                    <option value="mg">毫克 (mg)</option>
+                                    <option value="g">克 (g)</option>
+                                    <option value="kg" selected>千克 (kg)</option>
+                                    <option value="t">吨 (t)</option>
+                                    <option value="oz">盎司 (oz)</option>
+                                    <option value="lb">磅 (lb)</option>
+                                    <option value="jin">市斤 (jin)</option>
+                                </select>
+                            </div>
+                            <div class="swap-group">
+                                <span class="material-icons swap-btn swap-values" title="交换数值">swap_vert</span>
+                                <span class="material-icons swap-btn swap-units" title="交换单位">compare_arrows</span>
+                                <span class="material-icons swap-btn swap-both" title="同时交换">sync_alt</span>
+                            </div>
+                            <div class="converter-group">
+                                <input type="number" id="wt-input-2" class="converter-input">
+                                <select id="wt-select-2" class="converter-select">
+                                    <option value="mg">毫克 (mg)</option>
+                                    <option value="g" selected>克 (g)</option>
+                                    <option value="kg">千克 (kg)</option>
+                                    <option value="t">吨 (t)</option>
+                                    <option value="oz">盎司 (oz)</option>
+                                    <option value="lb">磅 (lb)</option>
+                                    <option value="jin">市斤 (jin)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-card collapsed" data-tool-id="tool-byte">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #3b82f6;">memory</span> <span data-i18n="tool_byte_title">字节转换</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <div class="converter-row">
+                            <div class="converter-group">
+                                <input type="number" id="byte-input-1" class="converter-input">
+                                <select id="byte-select-1" class="converter-select">
+                                    <option value="b">b (bit)</option>
+                                    <option value="Kb" selected>Kb (Kilobit)</option>
+                                    <option value="Mb">Mb (Megabit)</option>
+                                    <option value="Gb">Gb (Gigabit)</option>
+                                    <option value="Tb">Tb (Terabit)</option>
+                                </select>
+                            </div>
+                            <div class="swap-group">
+                                <span class="material-icons swap-btn swap-values" title="交换数值">swap_vert</span>
+                                <span class="material-icons swap-btn swap-units" title="交换单位">compare_arrows</span>
+                                <span class="material-icons swap-btn swap-both" title="同时交换">sync_alt</span>
+                            </div>
+                            <div class="converter-group">
+                                <input type="number" id="byte-input-2" class="converter-input">
+                                <select id="byte-select-2" class="converter-select">
+                                    <option value="b">b (bit)</option>
+                                    <option value="Kb">Kb (Kilobit)</option>
+                                    <option value="Mb" selected>Mb (Megabit)</option>
+                                    <option value="Gb">Gb (Gigabit)</option>
+                                    <option value="Tb">Tb (Terabit)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-card collapsed" data-tool-id="tool-num">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #f59e0b;">calculate</span> <span data-i18n="tool_num_title">数字工具</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_shorthand">缩写还原 (k,w,m)</label><div class="converter-row compact"><input type="text" id="num-shorthand-input" class="converter-input full-border" style="flex:1;"><span class="material-icons swap-icon">arrow_right_alt</span><input type="text" id="num-shorthand-output" class="converter-input full-border" style="flex:1;background:#fff" readonly></div></div>
+                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_format">千分位格式化</label><div class="converter-row compact"><input type="text" id="num-format-input" class="converter-input full-border" style="flex:1;"><span class="material-icons swap-icon">arrow_right_alt</span><input type="text" id="num-format-output" class="converter-input full-border" style="flex:1;background:#fff" readonly></div></div>
+                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_capital">金额大写</label><input type="number" id="num-capital-input" class="converter-input full-border" style="width:100%;"><div id="num-capital-output" class="result-box"><span style="color:#cbd5e1;" data-i18n="tool_num_result_hint">结果显示于此</span></div></div>
+                        <div id="num-shorthand-spoken" class="result-box" style="font-size:13px;min-height:32px;"><span style="color:#cbd5e1;">口语金额</span></div>
+                    </div>
+                </div>
+                <div class="tool-card collapsed" data-tool-id="tool-enc">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #8b5cf6;">code</span> <span data-i18n="tool_enc_title">编码转换</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <div style="margin-bottom:15px;"><label class="sub-label" data-i18n="tool_enc_url">URL 编解码</label><textarea id="url-input" class="converter-input full-border" style="width:100%;height:60px;margin-bottom:6px;"></textarea><div style="display:flex;gap:8px;"><button id="btn-url-encode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_encode">编码</button><button id="btn-url-decode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_decode">解码</button></div></div>
+                        <div><label class="sub-label" data-i18n="tool_enc_uni">Unicode (\u)</label><textarea id="uni-input" class="converter-input full-border" style="width:100%;height:60px;margin-bottom:6px;"></textarea><div style="display:flex;gap:8px;"><button id="btn-uni-encode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_encode">编码</button><button id="btn-uni-decode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_decode">解码</button></div></div>
+                    </div>
+                </div>
+                <div class="tool-card collapsed" data-tool-id="tool-header">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #ec4899;">data_object</span> <span data-i18n="tool_head_title">Header 格式化</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <textarea id="header-input" class="converter-input full-border" style="width:100%;height:100px;margin-bottom:6px;font-family:monospace;font-size:12px;" placeholder="User-Agent: ..."></textarea>
+                        <button id="btn-header-fmt" class="filter-btn" style="width:100%;background:#f1f5f9;margin-bottom:6px;" data-i18n="action_to_json">转 JSON</button>
+                        <textarea id="header-output" class="converter-input full-border" style="width:100%;height:100px;background:#f8fafc;" readonly></textarea>
+                    </div>
+                </div>
+                <div class="tool-card collapsed" data-tool-id="tool-pip">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #10b981;">list_alt</span> <span data-i18n="tool_pip_title">Pip 转 Reqs</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                         <div style="margin-bottom:8px;"><label class="sub-label" data-i18n="tool_pip_desc">输入 (pip install ... 或 包名列表)</label><textarea id="pip-input" class="converter-input full-border" style="width:100%;height:80px;margin-bottom:6px;font-family:monospace;font-size:12px;"></textarea></div>
+                         <button id="btn-pip-convert" class="filter-btn" style="width:100%;background:#f1f5f9;margin-bottom:8px;" data-i18n="action_convert">转换</button>
+                         <div><label class="sub-label" data-i18n="tool_pip_result">结果 (requirements.txt)</label><textarea id="pip-output" class="converter-input full-border" style="width:100%;height:100px;background:#f8fafc;font-family:monospace;font-size:12px;" readonly></textarea></div>
+                         <div style="margin-top:8px;display:flex;align-items:center;gap:12px;">
+                            <label style="font-size:12px;color:#475569;display:flex;align-items:center;cursor:pointer;"><input type="checkbox" id="chk-pyinstaller" style="margin-right:4px;"> pyinstaller</label>
+                            <label style="font-size:12px;color:#475569;display:flex;align-items:center;cursor:pointer;"><input type="checkbox" id="chk-auto-py" style="margin-right:4px;"> auto-py-to-exe</label>
+                         </div>
+                         <div style="display:flex;gap:8px;margin-top:6px;"><button id="btn-pip-copy" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_copy">复制结果</button><button id="btn-pip-clear" class="filter-btn" style="flex:0 0 60px;background:#f1f5f9;" data-i18n="action_clear">清空</button></div>
+                    </div>
+                </div>
+                <div class="tool-card collapsed" data-tool-id="tool-uuid">
+                    <h3><span class="material-icons" style="font-size: 16px; color: #f43f5e;">vpn_key</span> <span data-i18n="tool_uuid_title">UUID 生成</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <div class="tool-body">
+                        <input type="text" id="uuid-output" class="converter-input full-border" style="width:100%;margin-bottom:8px;font-family:monospace;font-size:13px;text-align:center;background:#f8fafc;" readonly>
+                        <div style="display:flex;gap:8px;">
+                            <button id="btn-uuid-generate" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_generate">生成</button>
+                            <button id="btn-uuid-copy" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_copy">复制</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2FA 视图 -->
+            <div id="view-2fa" class="view-content hidden">
+                <div class="gallery-controls" id="fa-controls">
+                    <div class="ctrl-btn" id="fa-add-btn">
+                        <span class="material-icons" style="font-size:16px">add</span> <span data-i18n="2fa_btn_add_key">添加密钥</span>
+                    </div>
+                    <div style="display:flex;gap:4px">
+                        <div class="ctrl-btn" id="fa-export-btn" title="导出备份密钥">
+                            <span class="material-icons" style="font-size:16px">file_download</span> <span>导出备份</span>
+                        </div>
+                        <div class="ctrl-btn" id="fa-import-btn" title="导入备份密钥">
+                            <span class="material-icons" style="font-size:16px">file_upload</span> <span>导入备份</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="fa-list" class="fa-list"></div>
+                <div id="fa-empty" class="empty-state">
+                    <span class="material-icons">vpn_key_off</span>
+                    <p data-i18n="2fa_empty">暂无2FA账号<br>点击上方 + 添加</p>
+                </div>
+            </div>
+
+            <!-- AI Provider 视图 -->
+            <div id="view-ai-provider" class="view-content hidden">
+                <div class="gallery-controls" id="ai-provider-controls">
+                    <div class="ctrl-btn" id="ai-provider-add-btn">
+                        <span class="material-icons" style="font-size:16px">add</span> <span>添加</span>
+                    </div>
+                    <div style="display:flex;gap:4px">
+                        <div class="ctrl-btn" id="ai-provider-export-btn" title="导出备份">
+                            <span class="material-icons" style="font-size:16px">file_download</span> <span>导出备份</span>
+                        </div>
+                        <div class="ctrl-btn" id="ai-provider-import-btn" title="导入备份">
+                            <span class="material-icons" style="font-size:16px">file_upload</span> <span>导入备份</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ai-filter-row" style="position:relative;margin:8px 0;">
+                    <span class="material-icons" style="font-size:16px;color:#9ca3af;position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;">search</span>
+                    <input type="text" id="ai-provider-filter-input" class="ai-filter-input" placeholder="搜索标题或 Model..." style="width:100%;padding:6px 10px 6px 32px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">
+                    <span class="material-icons ai-filter-clear" id="ai-provider-filter-clear" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:#9ca3af;">close</span>
+                </div>
+                <div id="ai-provider-list" class="fa-list"></div>
+                <div id="ai-provider-empty" class="empty-state">
+                    <span class="material-icons">psychology</span>
+                    <p>暂无 AI Provider<br>点击上方 + 添加</p>
+                </div>
+            </div>
+
+            <!-- AI Provider 编辑弹窗 -->
+            <div id="ai-provider-modal" class="modal hidden">
+                <div class="modal-content" style="width: 90%; max-height: 90vh;">
+                    <div class="modal-header">
+                        <h3 id="ai-provider-modal-title">添加 AI Provider</h3>
+                        <span class="material-icons close-modal" id="close-ai-provider-modal">close</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>标题</label>
+                            <input type="text" id="ai-provider-title-input" class="converter-input full-border" placeholder="例如：我的 OpenAI">
+                        </div>
+                        <div class="form-group">
+                            <label>接口格式</label>
+                            <select id="ai-provider-type-input" class="converter-input full-border">
+                                <option value="openai">OpenAI</option>
+                                <option value="anthropic">Anthropic</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>官网链接</label>
+                            <input type="text" id="ai-provider-official-input" class="converter-input full-border" placeholder="https://platform.openai.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Base URL（一行一个）</label>
+                            <textarea id="ai-provider-url-input" class="converter-input full-border" rows="2" placeholder="https://api.openai.com/v1"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>API Key</label>
+                            <input type="text" id="ai-provider-key-input" class="converter-input full-border" placeholder="sk-..." style="font-family:monospace">
+                        </div>
+                        <div class="form-group">
+                            <label>Model（一行一个）</label>
+                            <textarea id="ai-provider-model-input" class="converter-input full-border" rows="2" placeholder="gpt-4o"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>备注</label>
+                            <textarea id="ai-provider-note-input" class="converter-input full-border" rows="2" placeholder="可选备注"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px;">
+                        <button id="ai-provider-delete-btn" class="cancel-btn hidden" style="color:#ef4444;">删除</button>
+                        <button id="ai-provider-save-btn" class="add-btn">保存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Provider 备注查看 -->
+            <div id="ai-provider-note-viewer" class="modal hidden">
+                <div class="modal-content" style="width: 80%;">
+                    <div class="modal-header">
+                        <h3>备注</h3>
+                        <span class="material-icons close-modal" id="close-ai-provider-note-viewer">close</span>
+                    </div>
+                    <div id="ai-provider-note-viewer-content" style="padding:10px;font-size:13px;color:#374151;white-space:pre-wrap;word-break:break-word;"></div>
+                </div>
+            </div>
+
+            <!-- 2FA 编辑弹窗 -->
+            <div id="fa-modal" class="modal hidden">
+                <div class="modal-content" style="width: 90%;">
+                    <div class="modal-header">
+                        <h3 id="fa-modal-title" data-i18n="2fa_btn_add_key">添加密钥</h3>
+                        <span class="material-icons close-modal" id="close-fa-modal">close</span>
+                    </div>
+                    <div style="padding: 0 0 10px;">
+                        <label class="sub-label" data-i18n="2fa_ph_name">账号名称</label>
+                        <input type="text" id="fa-name-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="例如：Google">
+                        <label class="sub-label" data-i18n="2fa_ph_key">Secret Key</label>
+                        <input type="text" id="fa-key-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px; font-family: monospace;" placeholder="JBSWY3DPEHPK3PXP">
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px;">
+                        <button id="fa-delete-btn" class="cancel-btn hidden" style="color:#ef4444;" data-i18n="2fa_btn_delete">删除</button>
+                        <button id="fa-save-btn" class="add-btn" data-i18n="2fa_btn_save">保存</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="bottom-section">
+            <div id="input-group-prompts" class="input-area hidden">
+                <div class="prompt-collapse-header" id="prompt-collapse-header"><span class="header-label" data-i18n="lbl_add_new_prompt">添加新提示词</span><span class="material-icons toggle-icon">expand_more</span></div>
+                <div class="prompt-collapse-body" id="prompt-collapse-body">
+                    <div class="row"><div class="select-wrapper"><select id="sp-category" class="category-select"></select></div><button id="manage-cat-btn" class="icon-btn" data-i18n-title="lbl_category_manage" title="管理分类"><span class="material-icons">settings</span></button><input type="text" id="sp-title" class="title-input" data-i18n-ph="ph_title" placeholder="标题"></div>
+                    <textarea id="sp-content" class="content-input" data-i18n-ph="ph_prompt_content" placeholder="输入提示词..."></textarea>
+                    <div class="btn-row"><button id="sp-cancel-btn" class="cancel-btn hidden" data-i18n="action_cancel">取消</button><button id="sp-add-btn" class="add-btn" data-i18n="action_add_prompt">保存提示词</button></div>
+                </div>
+            </div>
+            
+            <div id="input-group-scratchpad" class="input-area hidden">
+                <div class="scratch-collapse-header" id="scratch-collapse-header"><span class="header-label" data-i18n="lbl_add_new_scratch">添加新内容 (支持图片)</span><span class="material-icons toggle-icon">expand_more</span></div>
+                <div class="scratch-collapse-body" id="scratch-collapse-body">
+                    <div id="scratch-input" class="content-input short rich-input" contenteditable="true" data-i18n-ph="ph_scratch_content" placeholder="在此粘贴文本或截图 (Ctrl+V)..."></div>
+                    <button id="scratch-add-btn" class="add-btn secondary"><span class="material-icons" style="font-size:16px; margin-right:4px;">add</span> <span data-i18n="action_add_scratch">添加到暂存板</span></button>
+                </div>
+            </div>
+            
+            <div id="input-group-gallery" class="input-area hidden">
+                <div id="gallery-drop-zone" class="drop-zone"><span class="material-icons">cloud_upload</span><span data-i18n="sp_empty_gallery">粘贴 (Ctrl+V) 或拖入图片</span></div>
+            </div>
+             <div id="input-group-tools" class="input-area"></div>
+
+        </div>
+    </div>
+
+    <div id="full-cat-modal" class="modal hidden">
+        <div class="modal-content" style="max-height: 600px; width: 90%;">
+            <div class="modal-header">
+                <h3 data-i18n="lbl_category_select">选择分类</h3>
+                <span class="material-icons close-modal" id="close-full-cat-modal">close</span>
+            </div>
+            <div class="full-cat-grid" id="full-cat-grid" style="overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <div id="cat-modal" class="modal hidden"><div class="modal-content"><div class="modal-header"><h3 data-i18n="lbl_category_manage">分类管理</h3><span class="material-icons close-modal" id="close-cat-modal">close</span></div><div class="cat-list-container" id="cat-manage-list"></div><div class="modal-footer"><input type="text" id="new-cat-name" data-i18n-ph="ph_new_cat" placeholder="新分类名称..."><button id="add-new-cat-btn" data-i18n="action_add">添加</button></div></div></div>
+    
+    <div id="text-view-modal" class="modal hidden"><div class="modal-content"><div class="modal-header"><h3 data-i18n="lbl_full_content">完整内容</h3><span class="material-icons close-modal" id="close-text-modal">close</span></div><div id="text-modal-content" class="text-modal-body"></div></div></div>
+    
+    <div id="ai-all-modal" class="modal hidden">
+        <div class="modal-content" style="max-height: 600px; width: 90%;">
+            <div class="modal-header">
+                <h3>全部AI服务</h3>
+                <span class="material-icons close-modal" id="close-ai-all-modal">close</span>
+            </div>
+            <div class="full-cat-grid" id="ai-all-grid" style="overflow-y: auto; grid-template-columns: repeat(3, 1fr);"></div>
+        </div>
+    </div>
+
+    <div id="ai-tag-modal" class="modal hidden">
+        <div class="modal-content" style="width: 90%;">
+            <div class="modal-header">
+                <h3 id="ai-modal-title">添加AI服务</h3>
+                <span class="material-icons close-modal" id="close-ai-modal">close</span>
+            </div>
+            <div style="padding: 0 0 10px;">
+                <label class="sub-label">名称</label>
+                <input type="text" id="ai-tag-name" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="例如：QWEN">
+                <label class="sub-label">URL</label>
+                <input type="text" id="ai-tag-url" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="例如：https://chat.qwen.ai/">
+                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#475569; cursor:pointer; user-select:none; padding: 2px 0;">
+                    <input type="checkbox" id="ai-tag-newtab" style="accent-color:#6366f1; cursor:pointer;">
+                    <span class="material-icons" style="font-size:14px; color:#94a3b8;">open_in_new</span>
+                    新标签页打开（不支持内嵌的网站勾选此项）
+                </label>
+                <label id="ai-tag-default-label" style="display:flex; align-items:center; gap:6px; font-size:12px; color:#475569; cursor:pointer; user-select:none; padding: 2px 0;">
+                    <input type="checkbox" id="ai-tag-default" style="accent-color:#6366f1; cursor:pointer;">
+                    <span class="material-icons" style="font-size:14px; color:#94a3b8;">star</span>
+                    设为默认（打开AI合集时自动加载）
+                </label>
+            </div>
+            <div class="modal-footer" style="display:flex; gap:8px;">
+                <button id="ai-tag-delete-btn" class="cancel-btn hidden" style="color:#ef4444;">删除</button>
+                <button id="ai-tag-save-btn" class="add-btn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gallery-lightbox" class="lightbox hidden"><div class="lightbox-content"><img id="lb-image" src="" alt="Full size"><div class="lb-actions"><button id="lb-copy-btn" class="lb-btn" data-i18n-title="action_copy" title="复制图片"><span class="material-icons">content_copy</span></button><button id="lb-base64-btn" class="lb-btn" title="复制 Base64"><span class="material-icons">data_object</span></button><button id="lb-open-btn" class="lb-btn" data-i18n-title="action_open" title="新标签页打开"><span class="material-icons">open_in_new</span></button><button id="lb-download-btn" class="lb-btn" data-i18n-title="action_download" title="下载原图"><span class="material-icons">download</span></button><button id="lb-delete-btn" class="lb-btn delete" data-i18n-title="action_delete" title="删除图片"><span class="material-icons">delete</span></button><button id="lb-close-btn" class="lb-btn" title="关闭"><span class="material-icons">close</span></button></div></div></div>
+    <div id="toast" class="toast hidden" data-i18n="msg_copied">已复制到剪贴板</div>
+    
+    <div id="scratch-edit-modal" class="modal hidden"><div class="modal-content" style="height: 800px; max-height: 95vh; display: flex; flex-direction: column;"><div class="modal-header"><h3 data-i18n="lbl_edit_content">编辑内容</h3><span class="material-icons close-modal" id="close-scratch-modal">close</span></div>
+    <div id="scratch-modal-input" class="rich-input" contenteditable="true" style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; overflow-y: auto; outline: none; font-family: inherit; font-size: 13px; line-height: 1.5; margin-bottom: 10px; background: #fff;"></div>
+    <div class="modal-footer"><button id="scratch-modal-cancel" class="cancel-btn" data-i18n="action_cancel">取消</button><button id="scratch-modal-save" class="add-btn" data-i18n="action_save">保存修改</button></div></div></div>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/meow-confirm.js"></script>
+    <!-- sidepanel 模块化拆分（原 js/sidepanel.js） -->
+    <script src="js/modules/sp-core.js"></script>
+    <script src="js/modules/sp-prompts.js"></script>
+    <script src="js/modules/sp-scratchpad.js"></script>
+    <script src="js/modules/sp-readlater.js"></script>
+    <script src="js/modules/sp-gallery.js"></script>
+    <script src="js/modules/sp-tools.js"></script>
+    <script src="js/modules/sp-2fa.js"></script>
+    <script src="js/modules/sp-ai-provider.js"></script>
+    <script src="js/modules/sp-ai-collection.js"></script>
+    <script src="js/modules/sp-hot.js"></script>
+    <script src="js/modules/sp-clock.js"></script>
+</body>
+</html>

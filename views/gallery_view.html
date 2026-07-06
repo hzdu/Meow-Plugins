@@ -1,0 +1,45 @@
+<!-- views/gallery_view.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>图片加载中...</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0f172a;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+        img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 4px;
+            display: none; /* 默认隐藏 */
+        }
+        .status-text {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .error {
+            color: #ef4444;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <img id="target-img" alt="预览图">
+    <div id="status" class="status-text">正在读取数据...</div>
+
+    <!-- 关键：必须通过 src 引用外部 JS 文件，路径对应 js/ 目录 -->
+    <script src="../js/gallery_view.js"></script>
+</body>
+</html>

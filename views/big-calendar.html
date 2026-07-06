@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Meow Calendar Diary</title>
+    <link rel="stylesheet" href="../css/big-calendar.css">
+    <link rel="stylesheet" href="../css/meow-confirm.css">
+    <link href="https://fonts.loli.net/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <img src="../images/icon.png" alt="Meow Calendar" class="app-icon">
+            </div>
+            
+            <div class="header-center">
+                <div class="date-controls">
+                    <button id="btn-prev-year" class="icon-btn" title="上一年"><span class="material-icons">keyboard_double_arrow_left</span></button>
+                    <button id="btn-prev-month" class="icon-btn" title="上一月"><span class="material-icons">chevron_left</span></button>
+                    
+                    <div class="current-date-display">
+                        <span id="display-year">2025</span>
+                        <span class="date-divider">/</span>
+                        <span id="display-month">12</span>
+                    </div>
+                    
+                    <button id="btn-next-month" class="icon-btn" title="下一月"><span class="material-icons">chevron_right</span></button>
+                    <button id="btn-next-year" class="icon-btn" title="下一年"><span class="material-icons">keyboard_double_arrow_right</span></button>
+                    
+                    <button id="btn-today" class="today-btn">回到今天</button>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <div class="month-plan">
+                    <span class="material-icons plan-icon">flag</span>
+                    <span id="month-plan-text" contenteditable="true" placeholder="在此写下本月目标..."></span>
+                </div>
+                <!-- <button class="icon-btn" id="btn-settings"><span class="material-icons">settings</span></button> -->
+                <a href="#" id="btn-close" class="icon-btn" title="关闭"><span class="material-icons">close</span></a>
+            </div>
+        </header>
+
+        <!-- Main Content - Three Column Layout -->
+        <div class="layout-container">
+            <!-- Left Icon Sidebar (Antigravity Style) -->
+            <div class="icon-sidebar" id="icon-sidebar">
+                <div class="sidebar-icon active" id="icon-todo" data-panel="todo" title="待办事项">
+                    <span class="material-icons">assignment</span>
+                </div>
+                <div class="sidebar-icon" id="icon-notes" data-panel="notes" title="笔记">
+                    <span class="material-icons">description</span>
+                </div>
+                <div class="sidebar-icon" id="icon-bookmark" data-panel="bookmark" title="收藏">
+                    <span class="material-icons">bookmark</span>
+                </div>
+                <div class="sidebar-icon" id="icon-settings" data-panel="settings" title="设置">
+                    <span class="material-icons">settings</span>
+                </div>
+            </div>
+
+            <!-- Left Panel (Expandable) -->
+            <div class="panel panel-left" id="panel-left">
+                <div class="panel-header">
+                    <div class="panel-header-left">
+                        <span class="material-icons" id="panel-left-icon">assignment</span>
+                        <span id="panel-left-title">待办事项</span>
+                    </div>
+                    <button class="icon-btn-small" id="btn-collapse-left" title="收起">
+                        <span class="material-icons">chevron_left</span>
+                    </button>
+                </div>
+                <div class="panel-content" id="panel-left-content">
+                    <!-- Todo Panel -->
+                    <div class="panel-section" id="section-todo">
+                        <p class="panel-placeholder">待办事项区域</p>
+                    </div>
+                    <!-- Notes Panel -->
+                    <div class="panel-section hidden" id="section-notes">
+                        <p class="panel-placeholder">笔记区域</p>
+                    </div>
+                    <!-- Bookmark Panel -->
+                    <div class="panel-section hidden" id="section-bookmark">
+                        <p class="panel-placeholder">收藏区域</p>
+                    </div>
+                    <!-- Settings Panel -->
+                    <div class="panel-section hidden" id="section-settings">
+                        <p class="panel-placeholder">设置区域</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Left Resizer -->
+            <div class="resizer resizer-left" id="resizer-left"></div>
+            
+            <!-- Center - Calendar -->
+            <div class="panel-center" id="panel-center">
+                <div class="calendar-wrapper">
+                    <!-- Week Header -->
+                    <div class="week-header">
+                        <div class="week-day weekend">周日</div>
+                        <div class="week-day">周一</div>
+                        <div class="week-day">周二</div>
+                        <div class="week-day">周三</div>
+                        <div class="week-day">周四</div>
+                        <div class="week-day">周五</div>
+                        <div class="week-day weekend">周六</div>
+                    </div>
+                    
+                    <!-- Calendar Grid -->
+                    <div class="calendar-grid" id="calendar-grid">
+                        <!-- Days will be injected here by JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Resizer -->
+            <div class="resizer resizer-right" id="resizer-right"></div>
+            
+            <!-- Right Panel (Expandable) -->
+            <div class="panel panel-right" id="panel-right">
+                <div class="panel-header">
+                    <div class="panel-header-left">
+                        <button class="icon-btn-small" id="btn-collapse-right" title="收起">
+                            <span class="material-icons">chevron_right</span>
+                        </button>
+                        <span class="material-icons" id="panel-right-icon">info</span>
+                        <span id="panel-right-title">详情</span>
+                    </div>
+                </div>
+                <div class="panel-content" id="panel-right-content">
+                    <!-- Details Panel -->
+                    <div class="panel-section" id="section-details">
+                        <p class="panel-placeholder">详情区域</p>
+                    </div>
+                    <!-- Finance Panel -->
+                    <div class="panel-section hidden" id="section-finance">
+                        <p class="panel-placeholder">财务区域</p>
+                    </div>
+                    <!-- Stats Panel -->
+                    <div class="panel-section hidden" id="section-stats">
+                        <p class="panel-placeholder">统计区域</p>
+                    </div>
+                    <!-- Help Panel -->
+                    <div class="panel-section hidden" id="section-help">
+                        <p class="panel-placeholder">帮助区域</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Icon Sidebar (Antigravity Style) -->
+            <div class="icon-sidebar icon-sidebar-right" id="icon-sidebar-right">
+                <div class="sidebar-icon active" id="icon-details" data-panel="details" title="详情">
+                    <span class="material-icons">info</span>
+                </div>
+                <div class="sidebar-icon" id="icon-finance" data-panel="finance" title="财务">
+                    <span class="material-icons">account_balance_wallet</span>
+                </div>
+                <div class="sidebar-icon" id="icon-stats" data-panel="stats" title="统计">
+                    <span class="material-icons">bar_chart</span>
+                </div>
+                <div class="sidebar-icon" id="icon-help" data-panel="help" title="帮助">
+                    <span class="material-icons">help_outline</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal for details (optional, if needed for adding events) -->
+    <!-- Modal for editing task -->
+    <div id="edit-task-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>编辑事项</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <textarea id="task-edit-input" placeholder="输入事项内容..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-cancel-edit" class="btn-cancel">取消</button>
+                <button id="btn-save-edit" class="btn-save">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Finance Edit Modal -->
+    <div id="edit-finance-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content" style="width: 400px;">
+            <div class="modal-header">
+                <h3>编辑财务记录</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">类型</label>
+                    <div style="display:flex; gap:20px;">
+                        <label style="color:var(--text-main); cursor:pointer; display:flex; align-items:center; gap:5px;">
+                            <input type="radio" name="fin-type" value="income"> <span style="color:var(--success-color)">收入</span>
+                        </label>
+                        <label style="color:var(--text-main); cursor:pointer; display:flex; align-items:center; gap:5px;">
+                            <input type="radio" name="fin-type" value="expense"> <span style="color:var(--danger-color)">支出</span>
+                        </label>
+                    </div>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">金额</label>
+                    <input type="number" id="fin-edit-amount" style="width:100%; padding:8px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main); border-radius:4px;" step="0.01">
+                </div>
+                <div style="margin-bottom: 0;">
+                    <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">备注</label>
+                    <input type="text" id="fin-edit-note" style="width:100%; padding:8px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main); border-radius:4px;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-cancel-fin-edit">取消</button>
+                <button class="btn-save" id="btn-save-fin-edit">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/lunar.min.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script src="../js/meow-confirm.js"></script>
+    <script src="../js/big-calendar.js"></script>
+</body>
+</html>

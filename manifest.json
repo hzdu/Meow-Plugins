@@ -1,0 +1,95 @@
+{
+  "manifest_version": 3,
+  "name": "Meow",
+  "version": "18.08.12",
+  "description": "这家伙不仅能摸鱼，现在还能帮你过日子。除了不掉毛，日历、记账、闹钟、网页涂鸦等样样精通，喵~🐱",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "unlimitedStorage",
+    "clipboardWrite",
+    "clipboardRead",
+    "alarms",
+    "notifications",
+    "offscreen",
+    "sidePanel",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Meow"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "icons": {
+    "16": "images/icon.png",
+    "48": "images/icon.png",
+    "128": "images/icon.png"
+  },
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["js/i18n.js", "js/panel.js", "js/annotation.js"],
+      "css": ["css/annotation.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Q",
+        "mac": "Alt+Q"
+      }
+    },
+    "toggle-annotation": {
+      "suggested_key": {
+        "default": "Alt+W",
+        "mac": "Alt+W"
+      },
+      "description": "切换网页备注模式"
+    },
+    "open-scratchpad": {
+      "description": "呼出/隐藏主面板"
+    },
+    "open-side-panel": {
+      "suggested_key": {
+        "default": "Alt+C",
+        "mac": "Alt+C"
+      },
+      "description": "Meow侧边栏工具集"
+    },
+    "open-ip-tools": {
+      "description": "打开IP地址信息工具"
+    },
+    "open-big-calendar": {
+      "suggested_key": {
+        "default": "Alt+R",
+        "mac": "Alt+R"
+      },
+      "description": "打开大日历"
+    },
+    "open-ai-collection": {
+      "description": "打开AI合集"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "popup.html",
+        "sidepanel.html",
+        "css/*.css",
+        "js/*.js",
+        "images/*.png"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

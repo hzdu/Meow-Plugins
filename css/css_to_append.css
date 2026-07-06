@@ -1,0 +1,142 @@
+/* === 戒烟规划样式 === */
+.smoking-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 5px;
+}
+
+/* 戒烟子标签页 */
+.smoking-subtabs {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 5px;
+    flex-shrink: 0;
+}
+
+.smoking-subtab-btn {
+    background: none;
+    border: none;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    color: #6b7280;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.smoking-subtab-btn:hover {
+    color: var(--primary-color);
+    background: #e0e7ff;
+}
+
+.smoking-subtab-btn.active {
+    color: #fff;
+    background: var(--primary-color);
+}
+
+.smoking-subtab-content {
+    display: none;
+    flex: 1;
+    overflow: hidden;
+    flex-direction: column;
+}
+
+.smoking-subtab-content.active {
+    display: flex;
+}
+
+/* 列表区域需适配剩余高度 */
+.smoking-list-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    margin-bottom: 8px;
+    /* 给下方tip留点间隔 */
+}
+
+/* 戒烟列表滚动 */
+.smoking-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+/* 戒烟日志 */
+.smoking-diary-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+    gap: 5px;
+    height: 100%;
+}
+
+.smoking-diary-input {
+    flex: 1;
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    resize: none;
+    background: #f9fafb;
+    outline: none;
+    transition: all 0.2s;
+    font-family: inherit;
+    color: #374151;
+    box-sizing: border-box;
+}
+
+.smoking-diary-input:focus {
+    border-color: var(--primary-color);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.smoking-diary-status {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    padding-right: 5px;
+}
+
+/* 智能提示消息区域 */
+.smoking-tip-section {
+    flex-shrink: 0;
+    background: #e0f2fe;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-top: auto;
+    border: 1px solid #bae6fd;
+    max-height: 42px;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.smoking-tip-section:hover {
+    max-height: 300px;
+}
+
+.smoking-tip-section:not(:hover) .smoking-tip-content {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
