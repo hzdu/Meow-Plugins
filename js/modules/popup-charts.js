@@ -194,61 +194,90 @@ if (dateDetailLeftToggle && dateDetailLeft) {
 // === 语音朗读（TTS）===
 const dateDetailTtsToggle = document.getElementById('date-detail-tts-toggle');
 const dateDetailTtsBar = document.getElementById('date-detail-tts-bar');
-let dateDetailTtsEnabled = true; // 默认开启
+let dateDetailTtsEnabled = false; // 默认关闭
 let dateDetailTtsVoices = [];
 let dateDetailTtsSelectedVoice = null;
 
-/** 加载并缓存可用的语音列表，优先选择台湾女声 */
+/**
+ * 加载并缓存可用的语音列表，优先选择可爱女声
+ * 优先级：台灣女聲 > 大陸可愛女聲 > 任意中文女聲 > 任意中文語音
+ */
 function loadDateDetailTtsVoices() {
     if (!('speechSynthesis' in window)) return;
     dateDetailTtsVoices = window.speechSynthesis.getVoices();
     if (dateDetailTtsVoices.length === 0) return;
 
-    // 优先选择台湾女声：lang=zh-TW 且名字含女性特征
-    const femaleNameHints = ['chen', 'hsiao', 'yaoyao', 'yating', 'female', 'wan', 'mei', 'ling', 'han', 'jia', 'su'];
-    const twFemale = dateDetailTtsVoices.find(v =>
-        /zh-TW/i.test(v.lang) &&
-        femaleNameHints.some(h => v.name.toLowerCase().includes(h))
+    // 已知聽起來年輕/可愛的女聲名字關鍵詞
+    const cuteNameHints = [
+        'yaoyao', 'xiaoyi', 'huihui', 'xiaoxiao', 'xiaohan',
+        'hsiao', 'yating', 'hanhan', 'mia', 'mei', 'ling',
+        'jia', 'su', 'wan', 'female', 'chen'
+    ];
+
+    // 第1優先：台灣女聲 + 可愛名字
+    const twCute = dateDetailTtsVoices.find(v =>
+        /zh[-_]TW/i.test(v.lang) &&
+        cuteNameHints.some(h => v.name.toLowerCase().includes(h))
     );
-    if (twFemale) {
-        dateDetailTtsSelectedVoice = twFemale;
-        return;
-    }
+    if (twCute) { dateDetailTtsSelectedVoice = twCute; return; }
 
-    // 其次：任意台湾中文女声
-    const twFemaleAny = dateDetailTtsVoices.find(v =>
-        /zh-TW/i.test(v.lang)
+    // 第2優先：任意台灣女聲
+    const twAny = dateDetailTtsVoices.find(v => /zh[-_]TW/i.test(v.lang));
+    if (twAny) { dateDetailTtsSelectedVoice = twAny; return; }
+
+    // 第3優先：大陸可愛女聲（Yaoyao、Xiaoyi、Huihui 等公認偏甜的聲音）
+    const sweetHints = ['yaoyao', 'xiaoyi', 'huihui', 'xiaoxiao', 'xiaohan'];
+    const zhCute = dateDetailTtsVoices.find(v =>
+        /^zh/i.test(v.lang) &&
+        sweetHints.some(h => v.name.toLowerCase().includes(h))
     );
-    if (twFemaleAny) {
-        dateDetailTtsSelectedVoice = twFemaleAny;
-        return;
-    }
+    if (zhCute) { dateDetailTtsSelectedVoice = zhCute; return; }
 
-    // 再次：台湾繁体女声（部分浏览器 lang 可能是 zh_TW）
-    const twAlt = dateDetailTtsVoices.find(v => /zh[-_]TW/i.test(v.lang));
-    if (twAlt) {
-        dateDetailTtsSelectedVoice = twAlt;
-        return;
-    }
-
-    // 最后兜底：任意中文女声
+    // 第4優先：任意中文女聲
     const anyZhFemale = dateDetailTtsVoices.find(v =>
         /^zh/i.test(v.lang) &&
-        femaleNameHints.some(h => v.name.toLowerCase().includes(h))
+        cuteNameHints.some(h => v.name.toLowerCase().includes(h))
     );
-    if (anyZhFemale) {
-        dateDetailTtsSelectedVoice = anyZhFemale;
-        return;
-    }
+    if (anyZhFemale) { dateDetailTtsSelectedVoice = anyZhFemale; return; }
 
-    // 最终兜底：任意中文语音
+    // 第5優先：Google 中文女聲
+    const googleZh = dateDetailTtsVoices.find(v =>
+        /^zh/i.test(v.lang) && /google/i.test(v.name)
+    );
+    if (googleZh) { dateDetailTtsSelectedVoice = googleZh; return; }
+
+    // 最終兜底：任意中文語音
     const anyZh = dateDetailTtsVoices.find(v => /^zh/i.test(v.lang));
-    if (anyZh) {
-        dateDetailTtsSelectedVoice = anyZh;
-    }
+    if (anyZh) { dateDetailTtsSelectedVoice = anyZh; }
 }
 
-/** 使用台湾女声朗读文本 */
+/**
+ * 清理文本中的 emoji 和特殊符号，使朗读更自然
+ */
+function cleanTextForTTS(text) {
+    if (!text) return '';
+    return text
+        // 移除 emoji（覆盖 Unicode emoji 各区段）
+        .replace(/[\u{1F000}-\u{1F9FF}\u{1FA00}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '')
+        // 移除常见装饰性符号
+        .replace(/[✨🎉🎊🎈🎁🌸🌟💫🔥💰📊📈📉✅❌⚡🌙☀️⛅🌧️❄️⭐]/g, '')
+        // 移除 markdown 格式符号
+        .replace(/[*_`#>|~]/g, '')
+        // 移除项目符号前缀（如 "•"、"1."、"-" 开头）
+        .replace(/^\s*[•·\-]\s*/gm, '')
+        // 移除数字编号前缀（如 "1." "2." "3、"）
+        .replace(/^\s*\d+[.、)）]\s*/gm, '')
+        // 将连续换行替换为句号（分段停顿）
+        .replace(/\n{2,}/g, '。')
+        // 单个换行替换为逗号
+        .replace(/\n/g, '，')
+        // 连续标点压缩
+        .replace(/[，,。\.!！？?；;]{2,}/g, m => m[0])
+        .replace(/[ \t]{2,}/g, ' ')
+        .trim();
+}
+
+/** 使用可愛女聲朗讀文本 */
 function speakDateDetailTTS(text) {
     if (!('speechSynthesis' in window)) return;
     // 先取消正在进行的朗读
@@ -256,21 +285,25 @@ function speakDateDetailTTS(text) {
 
     if (!dateDetailTtsEnabled || !text || !text.trim()) return;
 
+    // 清理 emoji 和特殊符号
+    const cleanText = cleanTextForTTS(text);
+    if (!cleanText) return;
+
     // 如果语音列表还未加载，尝试加载
     if (dateDetailTtsVoices.length === 0) {
         loadDateDetailTtsVoices();
     }
 
-    const utter = new SpeechSynthesisUtterance(text);
+    const utter = new SpeechSynthesisUtterance(cleanText);
     if (dateDetailTtsSelectedVoice) {
         utter.voice = dateDetailTtsSelectedVoice;
         utter.lang = dateDetailTtsSelectedVoice.lang;
     } else {
         utter.lang = 'zh-TW';
     }
-    // 温柔语调：稍慢语速、略高音调
-    utter.rate = 0.9;
-    utter.pitch = 1.15;
+    // 可愛女聲語調
+    utter.rate = 1.05;
+    utter.pitch = 1.8;
     utter.volume = 1;
 
     utter.onstart = () => {
