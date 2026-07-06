@@ -62,7 +62,10 @@ const dateDetailPreExpenseList = document.getElementById('date-detail-pre-expens
 const openDateDetail = async (dateKey) => {
     if (!dateDetailModal) return;
     dateDetailCurrentKey = dateKey;
-    
+
+    // 停止上一次的语音朗读
+    stopDateDetailTTS();
+
     // 清空 AI 总结内容
     const aiContent = document.getElementById('date-detail-ai-content');
     if (aiContent) {
@@ -156,6 +159,8 @@ const closeDateDetail = () => {
     if (!dateDetailModal) return;
     dateDetailModal.classList.remove('visible');
     dateDetailModal.classList.add('hidden');
+    // 关闭弹窗时停止语音朗读
+    stopDateDetailTTS();
 };
 
 // 日期详情右侧 section 折叠/展开
@@ -183,6 +188,124 @@ if (dateDetailLeftToggle && dateDetailLeft) {
     dateDetailLeftToggle.addEventListener('click', () => {
         const isCollapsed = dateDetailLeft.classList.toggle('collapsed');
         dateDetailLeftToggle.textContent = isCollapsed ? 'chevron_right' : 'chevron_left';
+    });
+}
+
+// === 语音朗读（TTS）===
+const dateDetailTtsToggle = document.getElementById('date-detail-tts-toggle');
+const dateDetailTtsBar = document.getElementById('date-detail-tts-bar');
+let dateDetailTtsEnabled = true; // 默认开启
+let dateDetailTtsVoices = [];
+let dateDetailTtsSelectedVoice = null;
+
+/** 加载并缓存可用的语音列表，优先选择台湾女声 */
+function loadDateDetailTtsVoices() {
+    if (!('speechSynthesis' in window)) return;
+    dateDetailTtsVoices = window.speechSynthesis.getVoices();
+    if (dateDetailTtsVoices.length === 0) return;
+
+    // 优先选择台湾女声：lang=zh-TW 且名字含女性特征
+    const femaleNameHints = ['chen', 'hsiao', 'yaoyao', 'yating', 'female', 'wan', 'mei', 'ling', 'han', 'jia', 'su'];
+    const twFemale = dateDetailTtsVoices.find(v =>
+        /zh-TW/i.test(v.lang) &&
+        femaleNameHints.some(h => v.name.toLowerCase().includes(h))
+    );
+    if (twFemale) {
+        dateDetailTtsSelectedVoice = twFemale;
+        return;
+    }
+
+    // 其次：任意台湾中文女声
+    const twFemaleAny = dateDetailTtsVoices.find(v =>
+        /zh-TW/i.test(v.lang)
+    );
+    if (twFemaleAny) {
+        dateDetailTtsSelectedVoice = twFemaleAny;
+        return;
+    }
+
+    // 再次：台湾繁体女声（部分浏览器 lang 可能是 zh_TW）
+    const twAlt = dateDetailTtsVoices.find(v => /zh[-_]TW/i.test(v.lang));
+    if (twAlt) {
+        dateDetailTtsSelectedVoice = twAlt;
+        return;
+    }
+
+    // 最后兜底：任意中文女声
+    const anyZhFemale = dateDetailTtsVoices.find(v =>
+        /^zh/i.test(v.lang) &&
+        femaleNameHints.some(h => v.name.toLowerCase().includes(h))
+    );
+    if (anyZhFemale) {
+        dateDetailTtsSelectedVoice = anyZhFemale;
+        return;
+    }
+
+    // 最终兜底：任意中文语音
+    const anyZh = dateDetailTtsVoices.find(v => /^zh/i.test(v.lang));
+    if (anyZh) {
+        dateDetailTtsSelectedVoice = anyZh;
+    }
+}
+
+/** 使用台湾女声朗读文本 */
+function speakDateDetailTTS(text) {
+    if (!('speechSynthesis' in window)) return;
+    // 先取消正在进行的朗读
+    window.speechSynthesis.cancel();
+
+    if (!dateDetailTtsEnabled || !text || !text.trim()) return;
+
+    // 如果语音列表还未加载，尝试加载
+    if (dateDetailTtsVoices.length === 0) {
+        loadDateDetailTtsVoices();
+    }
+
+    const utter = new SpeechSynthesisUtterance(text);
+    if (dateDetailTtsSelectedVoice) {
+        utter.voice = dateDetailTtsSelectedVoice;
+        utter.lang = dateDetailTtsSelectedVoice.lang;
+    } else {
+        utter.lang = 'zh-TW';
+    }
+    // 温柔语调：稍慢语速、略高音调
+    utter.rate = 0.9;
+    utter.pitch = 1.15;
+    utter.volume = 1;
+
+    utter.onstart = () => {
+        if (dateDetailTtsBar) dateDetailTtsBar.classList.add('speaking');
+    };
+    utter.onend = () => {
+        if (dateDetailTtsBar) dateDetailTtsBar.classList.remove('speaking');
+    };
+    utter.onerror = () => {
+        if (dateDetailTtsBar) dateDetailTtsBar.classList.remove('speaking');
+    };
+
+    window.speechSynthesis.speak(utter);
+}
+
+/** 停止语音朗读 */
+function stopDateDetailTTS() {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    if (dateDetailTtsBar) dateDetailTtsBar.classList.remove('speaking');
+}
+
+// 语音列表可能在页面加载后异步加载
+if ('speechSynthesis' in window) {
+    loadDateDetailTtsVoices();
+    window.speechSynthesis.onvoiceschanged = loadDateDetailTtsVoices;
+}
+
+// 开关事件
+if (dateDetailTtsToggle) {
+    dateDetailTtsToggle.addEventListener('change', () => {
+        dateDetailTtsEnabled = dateDetailTtsToggle.checked;
+        if (!dateDetailTtsEnabled) {
+            stopDateDetailTTS();
+        }
     });
 }
 
@@ -280,6 +403,8 @@ if (dateDetailAiBtn && dateDetailAiContent) {
     dateDetailAiBtn.addEventListener('click', async () => {
         if (!dateDetailCurrentKey) return;
         dateDetailAiBtn.classList.add('loading');
+        // 开始新的 AI 请求时停止正在进行的朗读
+        stopDateDetailTTS();
         dateDetailAiContent.innerHTML = '<div style="text-align:center;padding:20px 0;color:#94a3b8;">AI 分析中...</div>';
         try {
             const result = await fetchDateDetailAISummary();
@@ -288,6 +413,8 @@ if (dateDetailAiBtn && dateDetailAiContent) {
             textDiv.style.whiteSpace = 'pre-wrap';
             textDiv.textContent = result;
             dateDetailAiContent.appendChild(textDiv);
+            // AI 分析结果返回后，触发语音朗读
+            speakDateDetailTTS(result);
         } catch (e) {
             dateDetailAiContent.innerHTML = `<div style="color:#ef4444;padding:8px;">${escapeHtml(e.message || '请求失败')}</div>`;
             // AI 未配置时弹出漂亮的配置提示
