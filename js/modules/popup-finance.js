@@ -16,7 +16,9 @@ const renderFinanceView = () => {
         emptyStateFin.classList.add("hidden");
         currentFinList.forEach((item, index) => {
             const val = parseFloat(item.amount);
-            if (item.type === 'income') totalIncome += val; else totalExpense += val;
+            if (item.type === 'income') totalIncome += val;
+            else if (item.type === 'deposit') { /* 存款不计入支出 */ }
+            else totalExpense += val;
             const li = document.createElement("li"); li.className = "fin-item";
             li.draggable = true; // 允许拖拽
             if (index === editingFinIndex) li.style.backgroundColor = "#f0f9ff";
@@ -30,11 +32,13 @@ const renderFinanceView = () => {
                 li.style.opacity = "1";
             });
 
-            const typeLabel = item.type === 'income' ? meowI18n.t('income') : meowI18n.t('expense');
+            const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
+            const valClass = item.type === 'income' ? 'inc' : item.type === 'deposit' ? 'dep' : 'exp';
+            const valSign = item.type === 'income' ? '+' : '-';
             const tagsHtml = item.tags ? item.tags.map(t => `<span class="fin-item-tag" style="background-color:${t.color}">${t.text}</span>`).join('') : '';
             const tagsRow = tagsHtml ? `<div class="fin-tags-row">${tagsHtml}</div>` : '';
             const hasLinks = !!(item.id && finLinks.some(l => l.from.id === item.id || l.to.id === item.id));
-            li.innerHTML = `<div class="fin-info"><span class="fin-note">${escapeHtml(item.note || 'No note')}</span><span class="fin-meta">${typeLabel}</span>${tagsRow}</div><div style="display:flex;align-items:center;gap:5px;"><span class="fin-val ${item.type==='income'?'inc':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</span><span class="material-icons fin-link-btn ${hasLinks?'has-links':''}" title="账本关联">hub</span><span class="material-icons edit-btn">edit</span><span class="material-icons delete-btn">close</span></div>`;
+            li.innerHTML = `<div class="fin-info"><span class="fin-note">${escapeHtml(item.note || 'No note')}</span><span class="fin-meta">${typeLabel}</span>${tagsRow}</div><div style="display:flex;align-items:center;gap:5px;"><span class="fin-val ${valClass}">${valSign}${val.toFixed(2)}</span><span class="material-icons fin-link-btn ${hasLinks?'has-links':''}" title="账本关联">hub</span><span class="material-icons edit-btn">edit</span><span class="material-icons delete-btn">close</span></div>`;
             
             li.querySelector(".delete-btn").onclick = () => { if(editingFinIndex===index)exitFinEditMode(); const delId = item.id; currentFinList.splice(index,1); saveFinanceData(); if (delId) cleanupFinLinks(delId); };
             li.querySelector(".edit-btn").onclick = () => enterFinEditMode(index, item);
@@ -239,11 +243,11 @@ const renderFinLinkCurrent = async () => {
     if (!finLinkCurrentItem) return;
     const { item, dateKey } = finLinkCurrentItem;
     const val = parseFloat(item.amount);
-    const typeLabel = item.type === 'income' ? meowI18n.t('income') : meowI18n.t('expense');
+    const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
     finLinkCurrentNode.innerHTML = `
         <div class="fin-link-node-row">
             <span class="fin-link-node-note">${escapeHtml(item.note || 'No note')}</span>
-            <span class="fin-link-node-amount ${item.type==='income'?'inc':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</span>
+            <span class="fin-link-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</span>
         </div>
         <div class="fin-link-node-meta">${typeLabel} · ${dateKey}</div>
     `;
@@ -314,7 +318,7 @@ const renderFinLinkList = async () => {
     const currentId = finLinkCurrentItem ? finLinkCurrentItem.item.id : '';
     finLinkSourceList.forEach((item, index) => {
         const val = parseFloat(item.amount);
-        const typeLabel = item.type === 'income' ? meowI18n.t('income') : meowI18n.t('expense');
+        const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
         const linked = isLinked(currentId, item.id);
         const isSelf = finLinkCurrentItem && finLinkSourceDate === finLinkCurrentItem.dateKey && index === finLinkCurrentItem.index;
 
@@ -325,7 +329,7 @@ const renderFinLinkList = async () => {
         node.innerHTML = `
             <div class="fin-link-node-row">
                 <span class="fin-link-node-note">${escapeHtml(item.note || 'No note')}</span>
-                <span class="fin-link-node-amount ${item.type==='income'?'inc':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</span>
+                <span class="fin-link-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</span>
             </div>
             <div class="fin-link-node-meta">${typeLabel}${linked ? ' · 已关联' : ''}</div>
         `;
@@ -657,7 +661,7 @@ const renderFinLinkGraph = async () => {
         el.setAttribute('data-id', node.id);
         el.innerHTML = `
             <div class="fin-link-graph-node-note">${escapeHtml(item.note || 'No note')}</div>
-            <div class="fin-link-graph-node-amount ${item.type==='income'?'inc':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</div>
+            <div class="fin-link-graph-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</div>
             <div class="fin-link-graph-node-date">${dateKey}</div>
             ${depth > 0 ? `<div class="fin-link-graph-node-depth">${depth}</div>` : ''}
             <div class="fin-link-graph-anchor anchor-top" data-anchor="top">+</div>
@@ -1105,7 +1109,7 @@ const openGraphLinkPanel = async (fromId, fromDateKey, item) => {
 
     // 显示源节点信息
     const val = parseFloat(item.amount);
-    const typeLabel = item.type === 'income' ? meowI18n.t('income') : meowI18n.t('expense');
+    const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
     if (finLinkGraphPanelSource) {
         finLinkGraphPanelSource.innerHTML = `
             <div class="fin-link-graph-panel-source-note">${escapeHtml(item.note || 'No note')}</div>
@@ -1170,7 +1174,7 @@ const renderGraphPanelList = async () => {
 
     list.forEach((item) => {
         const val = parseFloat(item.amount);
-        const typeLabel = item.type === 'income' ? meowI18n.t('income') : meowI18n.t('expense');
+        const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
         const linked = isLinked(fromId, item.id);
         const isSelf = (item.id === fromId && finLinkGraphPanelDate === fromDateKey);
 
@@ -1179,7 +1183,7 @@ const renderGraphPanelList = async () => {
         el.innerHTML = `
             <div class="fin-link-graph-panel-item-row">
                 <span class="fin-link-graph-panel-item-note">${escapeHtml(item.note || 'No note')}</span>
-                <span class="fin-link-graph-panel-item-amount ${item.type==='income'?'inc':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</span>
+                <span class="fin-link-graph-panel-item-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</span>
             </div>
             <div class="fin-link-graph-panel-item-meta">${typeLabel}${linked ? ' · 已关联' : ''}${isSelf ? ' · 当前节点' : ''}</div>
         `;
@@ -1676,6 +1680,7 @@ const addPreExpense = () => {
         peRecurDayGroup.classList.add('hidden');
     }
     savePreExpenses();
+    updatePeNameHistory(name);
     // 添加后返回
     if (peBackToggle && peBackToggle.checked && editingPeIndex === -1) {
         switchPeSubtab('list');
@@ -1684,8 +1689,134 @@ const addPreExpense = () => {
 };
 
 addPeBtn.addEventListener("click", addPreExpense);
-peName.addEventListener("keypress", (e) => { if (e.key === "Enter") addPreExpense(); });
+peName.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        if (peNameEnterConsumed) { peNameEnterConsumed = false; return; }
+        addPreExpense();
+    }
+});
 peAmount.addEventListener("keypress", (e) => { if (e.key === "Enter") addPreExpense(); });
+
+// === 财务规划项目名称历史下拉框 ===
+const loadPeNameHistory = async () => {
+    const data = await getStorageData('meow_pe_name_history');
+    peNameHistory = Array.isArray(data) ? data : [];
+
+    // 如果历史为空，从现有财务规划项中预填充
+    if (peNameHistory.length === 0 && preExpensesList.length > 0) {
+        const names = new Set();
+        preExpensesList.forEach(item => {
+            if (item && item.name && item.name.trim()) {
+                names.add(item.name.trim());
+            }
+        });
+        if (names.size > 0) {
+            peNameHistory = Array.from(names).slice(0, 10);
+            chrome.storage.sync.set({ 'meow_pe_name_history': peNameHistory });
+        }
+    }
+};
+
+const getFilteredPeNames = () => {
+    const input = peName.value.trim().toLowerCase();
+    if (!input) return peNameHistory.slice();
+    return peNameHistory.filter(n => n.toLowerCase().includes(input));
+};
+
+const renderPeNameDropdown = (names) => {
+    if (!peNameDropdown) return;
+    peNameDropdown.innerHTML = '';
+    if (names.length === 0) {
+        hidePeNameDropdown();
+        return;
+    }
+    names.forEach((name, i) => {
+        const item = document.createElement('div');
+        item.className = 'pe-name-dropdown-item';
+        if (i === peNameActiveIndex) item.classList.add('active');
+        item.textContent = name;
+        item.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // 防止 input 失焦
+            peName.value = name;
+            hidePeNameDropdown();
+            peName.focus();
+        });
+        peNameDropdown.appendChild(item);
+    });
+    peNameDropdown.classList.remove('hidden');
+};
+
+const hidePeNameDropdown = () => {
+    if (peNameDropdown) peNameDropdown.classList.add('hidden');
+    peNameActiveIndex = -1;
+};
+
+const updatePeNameActiveItem = () => {
+    if (!peNameDropdown) return;
+    const items = peNameDropdown.querySelectorAll('.pe-name-dropdown-item');
+    items.forEach((item, i) => {
+        item.classList.toggle('active', i === peNameActiveIndex);
+    });
+    if (peNameActiveIndex >= 0 && items[peNameActiveIndex]) {
+        items[peNameActiveIndex].scrollIntoView({ block: 'nearest' });
+    }
+};
+
+const updatePeNameHistory = (name) => {
+    const trimmed = (name || '').trim();
+    if (!trimmed) return;
+    peNameHistory = peNameHistory.filter(n => n !== trimmed);
+    peNameHistory.unshift(trimmed);
+    if (peNameHistory.length > 10) peNameHistory = peNameHistory.slice(0, 10);
+    chrome.storage.sync.set({ 'meow_pe_name_history': peNameHistory });
+};
+
+// 项目名称历史下拉框事件
+let peNameEnterConsumed = false;
+
+peName.addEventListener('input', () => {
+    peNameActiveIndex = -1;
+    const names = getFilteredPeNames();
+    if (names.length > 0) renderPeNameDropdown(names);
+    else hidePeNameDropdown();
+});
+
+peName.addEventListener('focus', () => {
+    if (peNameHistory.length === 0) return;
+    peNameActiveIndex = -1;
+    const names = getFilteredPeNames();
+    if (names.length > 0) renderPeNameDropdown(names);
+});
+
+peName.addEventListener('blur', () => {
+    setTimeout(hidePeNameDropdown, 150);
+});
+
+peName.addEventListener('keydown', (e) => {
+    if (peNameDropdown && peNameDropdown.classList.contains('hidden')) return;
+    const items = peNameDropdown ? peNameDropdown.querySelectorAll('.pe-name-dropdown-item') : [];
+    if (items.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        peNameActiveIndex = (peNameActiveIndex + 1) % items.length;
+        updatePeNameActiveItem();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        peNameActiveIndex = (peNameActiveIndex - 1 + items.length) % items.length;
+        updatePeNameActiveItem();
+    } else if (e.key === 'Enter') {
+        if (peNameActiveIndex >= 0 && items[peNameActiveIndex]) {
+            e.preventDefault();
+            peName.value = items[peNameActiveIndex].textContent;
+            hidePeNameDropdown();
+            peNameEnterConsumed = true;
+        }
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hidePeNameDropdown();
+    }
+});
 
 // 预支出子标签页切换
 function switchPeSubtab(tab) {

@@ -203,6 +203,7 @@ function createDayCell(dayNum, isInactive, isToday = false) {
         fins.forEach(f => {
             const val = parseFloat(f.amount) || 0;
             if (f.type === 'income') dailyIncome += val;
+            else if (f.type === 'deposit') { /* 存款不计入支出 */ }
             else dailyExpense += val;
         });
         
@@ -835,14 +836,15 @@ function showFinanceDetails(dateKey) {
         html += `<div class="fin-empty-state">暂无收支记录</div>`;
     } else {
         fins.forEach((f, index) => {
-            const amountClass = f.type === 'income' ? 'income' : 'expense';
+            const amountClass = f.type === 'income' ? 'income' : f.type === 'deposit' ? 'deposit' : 'expense';
             const sign = f.type === 'income' ? '+' : '-';
+            const typeLabel = f.type === 'income' ? '收入' : f.type === 'deposit' ? '存款' : '支出';
             html += `
                 <div class="fin-detail-item">
                     <div class="fin-detail-left">
                         <span class="fin-detail-amount ${amountClass}">${sign}${parseFloat(f.amount).toFixed(2)}</span>
                         <span class="fin-detail-note">${f.note || '无备注'}</span>
-                        <span class="fin-detail-note" style="font-size:10px;opacity:0.7">类型: ${f.type === 'income' ? '收入' : '支出'}</span>
+                        <span class="fin-detail-note" style="font-size:10px;opacity:0.7">类型: ${typeLabel}</span>
                     </div>
                     <div class="fin-detail-actions">
                         <div class="btn-action edit material-icons" title="编辑" data-index="${index}">edit</div>

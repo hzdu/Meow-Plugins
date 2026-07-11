@@ -190,7 +190,10 @@
                     <span class="stat-badge done" data-filter="done"><span data-i18n="finished">已完成</span> <span id="stat-done" class="badge-count">0</span></span>
                 </div>
                 <div class="input-group">
-                    <input type="text" id="new-task-input" placeholder="...">
+                    <div class="todo-input-wrapper">
+                        <input type="text" id="new-task-input" placeholder="..." autocomplete="off">
+                        <div id="todo-dropdown" class="todo-dropdown hidden"></div>
+                    </div>
                     <button id="add-task-btn" class="material-icons">add</button>
                 </div>
                 <ul id="todo-list" class="quick-list"></ul>
@@ -214,6 +217,7 @@
                         <select id="fin-type" class="fin-select">
                             <option value="expense" data-i18n="expense">支出</option>
                             <option value="income" data-i18n="income">收入</option>
+                            <option value="deposit" data-i18n="deposit">存款</option>
                         </select>
                         <input type="number" id="fin-amount" class="fin-input-amount" placeholder="金额">
                     </div>
@@ -287,7 +291,10 @@
                             <input type="number" id="pe-amount" class="pe-input-amount" placeholder="¥ 0.00">
                         </div>
                         <div class="pe-row-bottom">
-                            <input type="text" id="pe-name" class="pe-input-name" placeholder="...">
+                            <div class="pe-name-wrapper">
+                                <input type="text" id="pe-name" class="pe-input-name" placeholder="..." autocomplete="off">
+                                <div id="pe-name-dropdown" class="pe-name-dropdown hidden"></div>
+                            </div>
                             <button id="add-pe-btn" class="pe-add-btn"><span class="material-icons">add</span></button>
                         </div>
                     </div>
@@ -315,7 +322,10 @@
                         <input type="date" id="cd-date-input" class="cd-date-input" placeholder="年/月/日">
                     </div>
                     <div class="cd-input-row-bottom">
-                        <input type="text" id="cd-title-input" class="cd-title-input" placeholder="...">
+                        <div class="cd-title-wrapper">
+                            <input type="text" id="cd-title-input" class="cd-title-input" placeholder="..." autocomplete="off">
+                            <div id="cd-title-dropdown" class="cd-title-dropdown hidden"></div>
+                        </div>
                         <button id="cancel-cd-btn" class="material-icons hidden" style="background:#9ca3af; margin-right:4px;">close</button>
                         <button id="add-cd-btn" class="material-icons cd-add-btn">add</button>
                     </div>
@@ -360,7 +370,10 @@
                         </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;width:100%;margin-top:6px;">
-                        <input type="text" id="new-habit-input" placeholder="..." style="flex:1;">
+                        <div class="habit-input-wrapper">
+                            <input type="text" id="new-habit-input" placeholder="..." style="flex:1;" autocomplete="off">
+                            <div id="habit-dropdown" class="habit-dropdown hidden"></div>
+                        </div>
                         <button id="add-habit-btn" class="material-icons">add</button>
                     </div>
                 </div>
@@ -387,7 +400,10 @@
                         <input type="time" id="alarm-time-input" style="flex:0 0 110px;margin-left:4px;">
                     </div>
                     <div class="alarm-input-row-bottom">
-                        <input type="text" id="alarm-label-input" placeholder="闹钟标签..." style="flex:1;">
+                        <div class="alarm-label-wrapper">
+                            <input type="text" id="alarm-label-input" placeholder="闹钟标签..." style="flex:1;" autocomplete="off">
+                            <div id="alarm-label-dropdown" class="alarm-label-dropdown hidden"></div>
+                        </div>
                         <button id="cancel-alarm-btn" class="material-icons hidden" style="background:#9ca3af;width:38px;height:38px;border:none;border-radius:8px;color:#fff;cursor:pointer;display:none;align-items:center;justify-content:center;flex-shrink:0;">close</button>
                         <button id="add-alarm-btn" class="material-icons alarm-add-btn">add_alarm</button>
                     </div>
@@ -2304,6 +2320,8 @@
         }
         .detail-amount.inc { color: #10b981; }
         .detail-amount.exp { color: #ef4444; }
+        .detail-amount.dep { color: #8b5cf6; }
+        .item-amount.deposit { color: #8b5cf6; }
         .detail-row-bottom {
             font-size: 11px;
             color: #9ca3af;

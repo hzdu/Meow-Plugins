@@ -103,6 +103,7 @@ const renderCalendar = async () => {
             finData.forEach(item => {
                 const val = parseFloat(item.amount) || 0;
                 if (item.type === 'income') { dayInc += val; monthTotalIncome += val; } 
+                else if (item.type === 'deposit') { /* 存款不计入支出 */ }
                 else { dayExp += val; monthTotalExpense += val; }
             });
             let finClass = "";
@@ -328,6 +329,7 @@ const buildTooltipContent = (tipType, dateKey) => {
         finList.forEach(item => {
             const val = parseFloat(item.amount) || 0;
             if (item.type === 'income') totalInc += val;
+            else if (item.type === 'deposit') { /* 存款不计入支出 */ }
             else totalExp += val;
         });
 
@@ -338,9 +340,11 @@ const buildTooltipContent = (tipType, dateKey) => {
             finList.forEach(item => {
                 const val = parseFloat(item.amount) || 0;
                 const isInc = item.type === 'income';
+                const isDep = item.type === 'deposit';
+                const valClass = isInc ? 'inc' : isDep ? 'dep' : 'exp';
                 html += `<div class="ct-item">`;
                 html += `<span class="ct-text">${escapeHtml(item.note || '无备注')}</span>`;
-                html += `<span class="ct-amount ${isInc ? 'inc' : 'exp'}">${isInc ? '+' : '-'}${val.toFixed(2)}</span>`;
+                html += `<span class="ct-amount ${valClass}">${isInc ? '+' : '-'}${val.toFixed(2)}</span>`;
                 html += '</div>';
             });
             html += '</div>';
@@ -525,5 +529,97 @@ const saveTaskData = () => {
     renderListView();
     if (currentTaskList.length > 0) { let data = {}; data[selectedDateKey] = currentTaskList; chrome.storage.sync.set(data, () => { renderCalendar(); checkAndHighlightTabs(selectedDateKey); }); }
     else chrome.storage.sync.remove(selectedDateKey, () => { renderCalendar(); checkAndHighlightTabs(selectedDateKey); });
+};
+
+// === 待办历史记录 ===
+const loadTodoHistory = async () => {
+    const data = await getStorageData('meow_todo_history');
+    todoHistory = Array.isArray(data) ? data : [];
+
+    // 如果历史为空，从现有待办事项中预填充
+    if (todoHistory.length === 0) {
+        try {
+            const allData = await new Promise(r => chrome.storage.sync.get(null, r));
+            const todoTexts = new Set();
+            Object.keys(allData).forEach(key => {
+                // 跳过非日期键（财务、配置等）
+                if (key.startsWith('fin_') || key.startsWith('meow_') || key.startsWith('fa_') || key.startsWith('batch_')) return;
+                const items = allData[key];
+                if (Array.isArray(items)) {
+                    items.forEach(item => {
+                        if (item && typeof item.text === 'string' && typeof item.done === 'boolean') {
+                            const trimmed = item.text.trim();
+                            if (trimmed) todoTexts.add(trimmed);
+                        }
+                    });
+                }
+            });
+            if (todoTexts.size > 0) {
+                todoHistory = Array.from(todoTexts).slice(0, 10);
+                chrome.storage.sync.set({ 'meow_todo_history': todoHistory });
+            }
+        } catch (e) {
+            // 预填充失败不影响正常使用
+        }
+    }
+};
+
+// 获取过滤后的候选项
+const getFilteredTodos = () => {
+    const input = newTaskInput.value.trim().toLowerCase();
+    if (!input) return todoHistory.slice();
+    return todoHistory.filter(n => n.toLowerCase().includes(input));
+};
+
+// 渲染下拉列表
+const renderTodoDropdown = (todos) => {
+    if (!todoDropdown) return;
+    todoDropdown.innerHTML = '';
+    if (todos.length === 0) {
+        hideTodoDropdown();
+        return;
+    }
+    todos.forEach((todo, i) => {
+        const item = document.createElement('div');
+        item.className = 'todo-dropdown-item';
+        if (i === todoActiveIndex) item.classList.add('active');
+        item.textContent = todo;
+        item.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // 防止 input 失焦
+            newTaskInput.value = todo;
+            hideTodoDropdown();
+            newTaskInput.focus();
+        });
+        todoDropdown.appendChild(item);
+    });
+    todoDropdown.classList.remove('hidden');
+};
+
+const hideTodoDropdown = () => {
+    if (todoDropdown) todoDropdown.classList.add('hidden');
+    todoActiveIndex = -1;
+};
+
+const updateTodoActiveItem = () => {
+    if (!todoDropdown) return;
+    const items = todoDropdown.querySelectorAll('.todo-dropdown-item');
+    items.forEach((item, i) => {
+        item.classList.toggle('active', i === todoActiveIndex);
+    });
+    // 滚动到可视区域
+    if (todoActiveIndex >= 0 && items[todoActiveIndex]) {
+        items[todoActiveIndex].scrollIntoView({ block: 'nearest' });
+    }
+};
+
+const updateTodoHistory = (text) => {
+    const trimmed = (text || '').trim();
+    if (!trimmed) return;
+    // 去重：先移除已有的相同项，再放到最前面
+    todoHistory = todoHistory.filter(n => n !== trimmed);
+    todoHistory.unshift(trimmed);
+    // 只保留最近 10 条
+    if (todoHistory.length > 10) todoHistory = todoHistory.slice(0, 10);
+    chrome.storage.sync.set({ 'meow_todo_history': todoHistory });
 };
 

@@ -59,7 +59,7 @@ const renderHabitsView = () => {
             titleText = meowI18n.t('habit_progress_date', { date: `${m}/${d}` });
         }
 
-        habitsList.innerHTML = `<div class="panel-progress-container"><div class="panel-progress-label"><span>${titleText}</span><span>${doneCount}/${totalCount}</span></div><div class="panel-progress-bar"><div class="panel-progress-fill" style="width: ${rate}%"></div></div></div>`;
+        habitsList.innerHTML = `<div class="panel-progress-bar"><div class="panel-progress-fill" style="width: ${rate}%"></div><span class="panel-progress-text">${titleText}　${doneCount}/${totalCount}　${rate}%</span></div>`;
         
         // 按目标时间排序
         const sortedHabits = [...habitsConfig].sort((a, b) => {
@@ -106,14 +106,14 @@ const renderHabitsView = () => {
                 checkTimeDisplay = `<span class="habit-check-time ${timeStatus}">${checkTime}</span>`;
             }
             
-            li.innerHTML = `<input type="checkbox" class="habit-checkbox" ${isDone?'checked':''}>
+            li.innerHTML = `<label class="habit-switch"><input type="checkbox" class="habit-checkbox" ${isDone?'checked':''}><span class="habit-slider"></span></label>
                 ${timeDisplay}
                 <span class="habit-text">${escapeHtml(habit.name)}</span>
                 ${checkTimeDisplay}
-                <div class="habit-actions"><span class="material-icons icon-btn edit">edit</span><span class="material-icons icon-btn delete">delete</span></div>`;
+                <div class="habit-actions"><span class="material-icons icon-btn edit">edit</span><span class="material-icons icon-btn delete">close</span></div>`;
             
             li.onclick = (e) => { 
-                if (!e.target.classList.contains('icon-btn') && e.target.tagName !== 'INPUT') { 
+                if (!e.target.classList.contains('icon-btn') && !e.target.closest('.habit-switch')) { 
                     const cb = li.querySelector('input'); 
                     cb.checked = !cb.checked; 
                     cb.dispatchEvent(new Event('change')); 
@@ -209,13 +209,138 @@ addHabitBtn.addEventListener("click", () => {
         targetTime: targetTime 
     }); 
     saveHabitsConfig(); 
+    updateHabitHistory(name);
     newHabitInput.value = ""; 
     if(habitHourInput) habitHourInput.value = "";
     if(habitMinuteInput) habitMinuteInput.value = "";
     renderHabitsView(); 
     renderApp(); 
 });
-newHabitInput.addEventListener("keypress", (e) => { if (e.key === "Enter") addHabitBtn.click(); });
+let habitEnterConsumed = false;
+newHabitInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        if (habitEnterConsumed) { habitEnterConsumed = false; return; }
+        addHabitBtn.click();
+    }
+});
+
+// === 每日打卡历史下拉框 ===
+const loadHabitHistory = async () => {
+    const data = await getStorageData('meow_habit_history');
+    habitHistory = Array.isArray(data) ? data : [];
+
+    // 如果历史为空，从现有习惯项中预填充
+    if (habitHistory.length === 0 && habitsConfig.length > 0) {
+        const names = new Set();
+        habitsConfig.forEach(item => {
+            if (item && item.name && item.name.trim()) {
+                names.add(item.name.trim());
+            }
+        });
+        if (names.size > 0) {
+            habitHistory = Array.from(names).slice(0, 10);
+            chrome.storage.sync.set({ 'meow_habit_history': habitHistory });
+        }
+    }
+};
+
+const getFilteredHabits = () => {
+    const input = newHabitInput.value.trim().toLowerCase();
+    if (!input) return habitHistory.slice();
+    return habitHistory.filter(n => n.toLowerCase().includes(input));
+};
+
+const renderHabitDropdown = (names) => {
+    if (!habitDropdown) return;
+    habitDropdown.innerHTML = '';
+    if (names.length === 0) {
+        hideHabitDropdown();
+        return;
+    }
+    names.forEach((name, i) => {
+        const item = document.createElement('div');
+        item.className = 'habit-dropdown-item';
+        if (i === habitActiveIndex) item.classList.add('active');
+        item.textContent = name;
+        item.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            newHabitInput.value = name;
+            hideHabitDropdown();
+            newHabitInput.focus();
+        });
+        habitDropdown.appendChild(item);
+    });
+    habitDropdown.classList.remove('hidden');
+};
+
+const hideHabitDropdown = () => {
+    if (habitDropdown) habitDropdown.classList.add('hidden');
+    habitActiveIndex = -1;
+};
+
+const updateHabitActiveItem = () => {
+    if (!habitDropdown) return;
+    const items = habitDropdown.querySelectorAll('.habit-dropdown-item');
+    items.forEach((item, i) => {
+        item.classList.toggle('active', i === habitActiveIndex);
+    });
+    if (habitActiveIndex >= 0 && items[habitActiveIndex]) {
+        items[habitActiveIndex].scrollIntoView({ block: 'nearest' });
+    }
+};
+
+const updateHabitHistory = (name) => {
+    const trimmed = (name || '').trim();
+    if (!trimmed) return;
+    habitHistory = habitHistory.filter(n => n !== trimmed);
+    habitHistory.unshift(trimmed);
+    if (habitHistory.length > 10) habitHistory = habitHistory.slice(0, 10);
+    chrome.storage.sync.set({ 'meow_habit_history': habitHistory });
+};
+
+newHabitInput.addEventListener('input', () => {
+    habitActiveIndex = -1;
+    const names = getFilteredHabits();
+    if (names.length > 0) renderHabitDropdown(names);
+    else hideHabitDropdown();
+});
+
+newHabitInput.addEventListener('focus', () => {
+    if (habitHistory.length === 0) return;
+    habitActiveIndex = -1;
+    const names = getFilteredHabits();
+    if (names.length > 0) renderHabitDropdown(names);
+});
+
+newHabitInput.addEventListener('blur', () => {
+    setTimeout(hideHabitDropdown, 150);
+});
+
+newHabitInput.addEventListener('keydown', (e) => {
+    if (habitDropdown && habitDropdown.classList.contains('hidden')) return;
+    const items = habitDropdown ? habitDropdown.querySelectorAll('.habit-dropdown-item') : [];
+    if (items.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        habitActiveIndex = (habitActiveIndex + 1) % items.length;
+        updateHabitActiveItem();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        habitActiveIndex = (habitActiveIndex - 1 + items.length) % items.length;
+        updateHabitActiveItem();
+    } else if (e.key === 'Enter') {
+        if (habitActiveIndex >= 0 && items[habitActiveIndex]) {
+            e.preventDefault();
+            newHabitInput.value = items[habitActiveIndex].textContent;
+            hideHabitDropdown();
+            habitEnterConsumed = true;
+        }
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hideHabitDropdown();
+    }
+});
 
 const setDefaultHabitTime = () => {
     const now = new Date();

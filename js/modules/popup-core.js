@@ -75,6 +75,31 @@ const finLinkGraphPanelList = document.getElementById('fin-link-graph-panel-list
 let finNoteHistory = [];
 let finNoteActiveIndex = -1;
 
+// 待办历史下拉框
+const todoDropdown = document.getElementById("todo-dropdown");
+let todoHistory = [];
+let todoActiveIndex = -1;
+
+// 财务规划项目名称历史下拉框
+const peNameDropdown = document.getElementById("pe-name-dropdown");
+let peNameHistory = [];
+let peNameActiveIndex = -1;
+
+// 倒数日标题历史下拉框
+const cdTitleDropdown = document.getElementById("cd-title-dropdown");
+let cdTitleHistory = [];
+let cdTitleActiveIndex = -1;
+
+// 每日打卡历史下拉框
+const habitDropdown = document.getElementById("habit-dropdown");
+let habitHistory = [];
+let habitActiveIndex = -1;
+
+// 闹钟备注历史下拉框
+const alarmLabelDropdown = document.getElementById("alarm-label-dropdown");
+let alarmLabelHistory = [];
+let alarmLabelActiveIndex = -1;
+
 // 预支出元素
 const peType = document.getElementById("pe-type");
 const peAmount = document.getElementById("pe-amount");
@@ -102,22 +127,12 @@ const peBackToggle = document.getElementById("pe-back-toggle");
     }
 })();
 
-// 周期开关控制天数选择器显示 & 收入选项
+// 周期开关控制天数选择器显示
 if (peRecurToggle && peRecurDayGroup) {
     peRecurToggle.addEventListener('change', () => {
         const isRecur = peRecurToggle.checked;
         peRecurDayGroup.classList.toggle('hidden', !isRecur);
-        
-        // 开启重复时显示收入选项，关闭时隐藏并切回支出
-        const incomeOpt = peType.querySelector('option[value="income"]');
-        if (incomeOpt) incomeOpt.style.display = isRecur ? '' : 'none';
-        if (!isRecur && peType.value === 'income') {
-            peType.value = 'necessary';
-        }
     });
-    // 初始化：确保页面加载时收入选项状态正确
-    const incomeOpt = peType.querySelector('option[value="income"]');
-    if (incomeOpt) incomeOpt.style.display = 'none';
 }
 
 // 月度汇总元素
@@ -540,6 +555,11 @@ const renderApp = async () => {
     renderSmokingView();
     renderAssetsView();
     await loadAndRenderTaskList(selectedDateKey);
+    await loadTodoHistory();
+    await loadPeNameHistory();
+    await loadCdTitleHistory();
+    await loadHabitHistory();
+    await loadAlarmLabelHistory();
     await loadAndRenderFinanceList(selectedDateKey);
     await loadFinNoteHistory();
     await loadFinLinks();

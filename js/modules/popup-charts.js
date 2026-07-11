@@ -104,12 +104,14 @@ const openDateDetail = async (dateKey) => {
         finItems.forEach(item => {
             const val = parseFloat(item.amount) || 0;
             const isInc = item.type === 'income';
+            const isDep = item.type === 'deposit';
+            const valClass = isInc ? 'income' : isDep ? 'deposit' : 'expense';
             const div = document.createElement('div');
             div.className = 'date-detail-item';
             const tagsHtml = item.tags ? item.tags.map(t => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t.color};margin-right:4px;"></span>`).join('') : '';
             div.innerHTML = `
                 <span class="item-name">${tagsHtml}${escapeHtml(item.note || '')}</span>
-                <span class="item-amount ${isInc ? 'income' : 'expense'}">${isInc ? '+' : '-'}${val.toFixed(2)}</span>
+                <span class="item-amount ${valClass}">${isInc ? '+' : '-'}${val.toFixed(2)}</span>
             `;
             dateDetailFinanceList.appendChild(div);
         });
@@ -507,6 +509,8 @@ const initChartData = async () => {
                 if (item.type === 'income') {
                     dailyIncome[i - 1] += val;
                     totalIncome += val;
+                } else if (item.type === 'deposit') {
+                    /* 存款不计入收支 */
                 } else {
                     dailyExpense[i - 1] += val;
                     totalExpense += val;
@@ -543,16 +547,19 @@ const showDetailPanel = async (dayIndex) => {
         finList.forEach(item => {
             const val = parseFloat(item.amount).toFixed(2);
             const isInc = item.type === 'income';
+            const isDep = item.type === 'deposit';
+            const valClass = isInc ? 'inc' : isDep ? 'dep' : 'exp';
+            const typeLabel = isInc ? '收入' : isDep ? '存款' : '支出';
             
             const div = document.createElement('div');
             div.className = 'detail-item';
             div.innerHTML = `
                 <div class="detail-row-top">
                     <span class="detail-note" title="${escapeHtml(item.note)}">${escapeHtml(item.note || '无备注')}</span>
-                    <span class="detail-amount ${isInc ? 'inc' : 'exp'}">${isInc ? '+' : '-'}${val}</span>
+                    <span class="detail-amount ${valClass}">${isInc ? '+' : '-'}${val}</span>
                 </div>
                 <div class="detail-row-bottom">
-                    ${isInc ? '收入' : '支出'}
+                    ${typeLabel}
                 </div>
             `;
             detailListContainer.appendChild(div);

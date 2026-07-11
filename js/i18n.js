@@ -81,6 +81,7 @@ const translations = {
 
         "income": "收入",
         "expense": "支出",
+        "deposit": "存款",
         "finance_placeholder_amount": "金额",
         "finance_placeholder_note": "备注",
         "finance_empty": "暂无收支记录",
@@ -550,6 +551,7 @@ const translations = {
 
         "income": "收入",
         "expense": "支出",
+        "deposit": "存款",
         "finance_placeholder_amount": "金額",
         "finance_placeholder_note": "備註",
         "finance_empty": "暫無收支紀錄",
@@ -1014,6 +1016,7 @@ const translations = {
 
         "income": "Income",
         "expense": "Expense",
+        "deposit": "Deposit",
         "finance_placeholder_amount": "Amount",
         "finance_placeholder_note": "Note",
         "finance_empty": "No records yet",

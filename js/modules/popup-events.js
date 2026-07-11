@@ -123,8 +123,61 @@ function initTabDragSort() {
     });
 }
 
-newTaskInput.addEventListener("keypress", (e) => { if(e.key==="Enter"){addTaskBtn.click();} });
-addTaskBtn.addEventListener("click", () => { const t=newTaskInput.value.trim(); if(t){currentTaskList.push({text:t,done:false});newTaskInput.value="";saveTaskData();} });
+let todoEnterConsumed = false;
+
+newTaskInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        if (todoEnterConsumed) { todoEnterConsumed = false; return; }
+        addTaskBtn.click();
+    }
+});
+
+// 待办历史下拉框：输入时弹出、上下键选择、回车填入
+newTaskInput.addEventListener('input', () => {
+    todoActiveIndex = -1;
+    const todos = getFilteredTodos();
+    if (todos.length > 0) renderTodoDropdown(todos);
+    else hideTodoDropdown();
+});
+
+newTaskInput.addEventListener('focus', () => {
+    if (todoHistory.length === 0) return;
+    todoActiveIndex = -1;
+    const todos = getFilteredTodos();
+    if (todos.length > 0) renderTodoDropdown(todos);
+});
+
+newTaskInput.addEventListener('blur', () => {
+    setTimeout(hideTodoDropdown, 150);
+});
+
+newTaskInput.addEventListener('keydown', (e) => {
+    if (todoDropdown && todoDropdown.classList.contains('hidden')) return;
+    const items = todoDropdown ? todoDropdown.querySelectorAll('.todo-dropdown-item') : [];
+    if (items.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        todoActiveIndex = (todoActiveIndex + 1) % items.length;
+        updateTodoActiveItem();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        todoActiveIndex = (todoActiveIndex - 1 + items.length) % items.length;
+        updateTodoActiveItem();
+    } else if (e.key === 'Enter') {
+        if (todoActiveIndex >= 0 && items[todoActiveIndex]) {
+            e.preventDefault();
+            newTaskInput.value = items[todoActiveIndex].textContent;
+            hideTodoDropdown();
+            todoEnterConsumed = true;
+        }
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hideTodoDropdown();
+    }
+});
+
+addTaskBtn.addEventListener("click", () => { const t=newTaskInput.value.trim(); if(t){currentTaskList.push({text:t,done:false});updateTodoHistory(t);newTaskInput.value="";saveTaskData();} });
 
 addFinBtn.addEventListener("click", addFinance);
 cancelFinBtn.addEventListener("click", exitFinEditMode);
@@ -183,9 +236,10 @@ finNote.addEventListener('keydown', (e) => {
     }
 });
 
-// 连按两次加号/减号快速切换收支类型
+// 连按两次加号/减号/星号快速切换收支类型
 let finLastPlusTime = 0;
 let finLastMinusTime = 0;
+let finLastStarTime = 0;
 const FIN_DOUBLE_PRESS_MS = 400;
 
 finAmount.addEventListener('keydown', (e) => {
@@ -213,9 +267,26 @@ finAmount.addEventListener('keydown', (e) => {
         } else {
             finLastMinusTime = now;
         }
+    } else if (e.key === '*') {
+        const now = Date.now();
+        if (now - finLastStarTime < FIN_DOUBLE_PRESS_MS) {
+            e.preventDefault();
+            finType.value = 'deposit';
+            finAmount.value = String(finAmount.value).replace(/^[+-]+/, '');
+            finLastStarTime = 0;
+            finType.style.borderColor = '#8b5cf6';
+            // 自动填写备注
+            if (!finNote.value.trim()) {
+                finNote.value = '转入存款账户';
+            }
+            setTimeout(() => finType.style.borderColor = '', 600);
+        } else {
+            finLastStarTime = now;
+        }
     } else {
         finLastPlusTime = 0;
         finLastMinusTime = 0;
+        finLastStarTime = 0;
     }
 });
 
@@ -323,9 +394,10 @@ function exportFinanceData(rangeType) {
                         if (Array.isArray(records)) {
                             records.forEach(r => {
                                 const amountVal = parseFloat(r.amount || 0);
-                                const typeStr = r.type === 'income' ? '收入' : '支出';
+                                const typeStr = r.type === 'income' ? '收入' : r.type === 'deposit' ? '存款' : '支出';
                                 
                                 if (r.type === 'income') totalIncome += amountVal;
+                                else if (r.type === 'deposit') { /* 存款不计入支出 */ }
                                 else totalExpense += amountVal;
 
                                 let safeNote = (r.note || '').replace(/"/g, '""'); 

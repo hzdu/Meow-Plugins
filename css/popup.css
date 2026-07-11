@@ -1797,6 +1797,50 @@ background: #eef2ff;
 color: var(--primary-color);
 }
 
+/* === 待办事项历史下拉框 === */
+.todo-input-wrapper {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.todo-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.todo-dropdown.hidden {
+    display: none;
+}
+
+.todo-dropdown-item {
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.12s;
+}
+
+.todo-dropdown-item:hover,
+.todo-dropdown-item.active {
+    background: #eef2ff;
+    color: var(--primary-color);
+}
+
 .fin-select:focus,
 .fin-input-amount:focus,
 .fin-input-note:focus {
@@ -1885,6 +1929,10 @@ color: var(--primary-color);
 
 .fin-val.exp {
     color: var(--mark-red);
+}
+
+.fin-val.dep {
+    color: #8b5cf6;
 }
 
 /* Footer & Tips */
@@ -1977,58 +2025,109 @@ color: var(--primary-color);
     justify-content: flex-start;
     padding: 10px 12px;
     margin-bottom: 6px;
-    background: #fdf4ff;
-    border: 1px solid #f0abfc;
+    background: #fff;
+    border: 1px solid #f3f4f6;
     border-radius: 8px;
     cursor: pointer;
     transition: 0.2s;
     position: relative;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    gap: 10px;
 }
 
 .habit-item:hover {
-    background: #fae8ff;
-    border-color: #e879f9;
+    background: #f9fafb;
+    border-color: #e5e7eb;
 }
 
 .habit-item.done {
-    background: #f0abfc;
-    color: white;
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #16a34a;
+}
+
+/* === 习惯打卡开关 === */
+.habit-switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.habit-checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.habit-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #d1d5db;
+    transition: .3s;
+    border-radius: 20px;
+}
+
+.habit-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.habit-checkbox:checked + .habit-slider {
+    background-color: #16a34a;
+}
+
+.habit-checkbox:checked + .habit-slider:before {
+    transform: translateX(16px);
 }
 
 .habit-text {
     flex: 1;
     font-size: 0.9rem;
     font-weight: 500;
-    color: #86198f;
+    color: #374151;
     margin-right: 10px;
 }
 
 .habit-actions {
     display: flex;
-    gap: 8px;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.habit-item:hover .habit-actions {
-    opacity: 1;
+    gap: 4px;
+    flex-shrink: 0;
 }
 
 .icon-btn {
-    font-size: 1.1rem;
-    color: #c026d3;
+    font-size: 0.9rem;
+    color: #d1d5db;
     cursor: pointer;
-    padding: 4px;
+    padding: 2px;
     border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
 }
 
 .icon-btn:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: #f3f4f6;
+    color: var(--primary-color);
 }
 
-.habit-item.done .habit-text,
+.habit-item.done .habit-text {
+    color: #16a34a;
+}
+
 .habit-item.done .icon-btn {
-    color: white;
+    color: #9ca3af;
 }
 
 .habit-time {
@@ -2118,8 +2217,8 @@ color: var(--primary-color);
 }
 
 .habit-item.done .habit-target-time {
-    color: rgba(255, 255, 255, 0.7);
-    background: rgba(255, 255, 255, 0.15);
+    color: #16a34a;
+    background: #dcfce7;
 }
 
 .habit-check-time {
@@ -2151,36 +2250,51 @@ color: var(--primary-color);
     display: flex !important;
 }
 
-.panel-progress-container {
-    padding: 10px 12px;
-    margin-bottom: 12px;
-    background: #fdf4ff;
-    border-radius: 8px;
-    border: 1px solid #f0abfc;
-}
-
-.panel-progress-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-    color: #86198f;
-    font-weight: 500;
-    margin-bottom: 6px;
-}
-
 .panel-progress-bar {
-    height: 8px;
+    position: relative;
+    height: 30px;
     width: 100%;
-    background: rgba(255, 255, 255, 0.6);
-    border-radius: 4px;
+    background: #f3f4f6;
+    border-radius: 15px;
     overflow: hidden;
+    margin-bottom: 12px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .panel-progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #d946ef 0%, #c026d3 100%);
-    border-radius: 4px;
-    transition: width 0.3s;
+    background: linear-gradient(90deg, var(--primary-color) 0%, #4f46e5 100%);
+    border-radius: 15px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.panel-progress-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    animation: progress-shimmer 2s linear infinite;
+}
+
+@keyframes progress-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.panel-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #374151;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 2;
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
 }
 
 /* === 闹钟输入容器（两行布局） === */
@@ -2379,33 +2493,50 @@ color: var(--primary-color);
 .alarm-info {
     display: flex;
     flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+}
+
+.alarm-time-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .alarm-time {
-    font-size: 1.4rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: #374151;
     font-family: monospace;
-    line-height: 1;
-    margin-bottom: 4px;
+    line-height: 1.2;
 }
 
-.alarm-label {
-    font-size: 0.85rem;
-    color: #9ca3af;
+.alarm-label-row {
     display: flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
+}
+
+.alarm-label {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .alarm-interval-badge {
     display: inline-block;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     color: #6366f1;
     background: #eef2ff;
     padding: 1px 6px;
     border-radius: 8px;
     font-weight: 500;
+    flex-shrink: 0;
 }
 
 .alarm-item.disabled .alarm-time,
@@ -2415,9 +2546,9 @@ color: var(--primary-color);
 
 .alarm-switch {
     position: relative;
-    width: 44px;
-    height: 24px;
-    margin-right: 12px;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .alarm-switch input {
@@ -2441,8 +2572,8 @@ color: var(--primary-color);
 .slider:before {
     position: absolute;
     content: "";
-    height: 18px;
-    width: 18px;
+    height: 14px;
+    width: 14px;
     left: 3px;
     bottom: 3px;
     background-color: white;
@@ -2456,12 +2587,32 @@ input:checked+.slider {
 }
 
 input:checked+.slider:before {
-    transform: translateX(20px);
+    transform: translateX(16px);
 }
 
 .alarm-actions {
     display: flex;
     align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.alarm-icon-btn {
+    font-size: 0.9rem;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.alarm-icon-btn:hover {
+    color: var(--primary-color);
+    background: #f3f4f6;
+}
+
+.alarm-item.disabled .alarm-icon-btn {
+    color: #d1d5db;
 }
 
 .cd-item {
@@ -2637,6 +2788,138 @@ input:checked+.slider:before {
     background-color: #fff;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* === 倒数日标题历史下拉框 === */
+.cd-title-wrapper {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.cd-title-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.cd-title-dropdown.hidden {
+    display: none;
+}
+
+.cd-title-dropdown-item {
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.12s;
+}
+
+.cd-title-dropdown-item:hover,
+.cd-title-dropdown-item.active {
+    background: #eef2ff;
+    color: var(--primary-color);
+}
+
+/* === 每日打卡历史下拉框 === */
+.habit-input-wrapper {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.habit-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.habit-dropdown.hidden {
+    display: none;
+}
+
+.habit-dropdown-item {
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.12s;
+}
+
+.habit-dropdown-item:hover,
+.habit-dropdown-item.active {
+    background: #eef2ff;
+    color: var(--primary-color);
+}
+
+/* === 闹钟备注历史下拉框 === */
+.alarm-label-wrapper {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.alarm-label-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.alarm-label-dropdown.hidden {
+    display: none;
+}
+
+.alarm-label-dropdown-item {
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.12s;
+}
+
+.alarm-label-dropdown-item:hover,
+.alarm-label-dropdown-item.active {
+    background: #eef2ff;
+    color: var(--primary-color);
 }
 
 /* 娣诲姞鎸夐挳 */
@@ -3150,6 +3433,50 @@ kbd {
     font-size: 13px;
     outline: none;
     min-width: 0;
+}
+
+/* === 财务规划项目名称历史下拉框 === */
+.pe-name-wrapper {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.pe-name-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.pe-name-dropdown.hidden {
+    display: none;
+}
+
+.pe-name-dropdown-item {
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.12s;
+}
+
+.pe-name-dropdown-item:hover,
+.pe-name-dropdown-item.active {
+    background: #eef2ff;
+    color: var(--primary-color);
 }
 
 .pe-add-btn {
@@ -6848,6 +7175,10 @@ transform: translateY(-1px);
     color: #ef4444;
 }
 
+.cal-day-tooltip .ct-amount.dep {
+    color: #8b5cf6;
+}
+
 .cal-day-tooltip .ct-num {
     width: 18px;
     height: 18px;
@@ -7069,6 +7400,7 @@ transform: translateY(-1px);
 }
 .fin-link-node-amount.inc { color: #10b981; }
 .fin-link-node-amount.exp { color: #ef4444; }
+.fin-link-node-amount.dep { color: #8b5cf6; }
 
 .fin-link-node-meta {
     font-size: 11px;
@@ -7310,6 +7642,7 @@ transform: translateY(-1px);
 }
 .fin-link-graph-node-amount.inc { color: #10b981; }
 .fin-link-graph-node-amount.exp { color: #ef4444; }
+.fin-link-graph-node-amount.dep { color: #8b5cf6; }
 .fin-link-graph-node-date {
     font-size: 10px;
     color: #9ca3af;
@@ -7562,6 +7895,7 @@ transform: translateY(-1px);
 }
 .fin-link-graph-panel-item-amount.inc { color: #10b981; }
 .fin-link-graph-panel-item-amount.exp { color: #ef4444; }
+.fin-link-graph-panel-item-amount.dep { color: #8b5cf6; }
 .fin-link-graph-panel-item-meta {
     font-size: 10px;
     color: #9ca3af;

@@ -31,7 +31,7 @@ const renderAlarmsView = async () => {
             const interval = alarm.intervalDays || 1;
             const intervalLabel = interval === 1 ? '每天' : `每${interval}天`;
             const stopBtnHtml = isRinging ? `<span class="material-icons stop-btn" title="停止响铃">stop_circle</span>` : '';
-            li.innerHTML = `<div class="alarm-info"><span class="alarm-interval-badge">${intervalLabel}</span><span class="alarm-time">${alarm.time}</span><span class="alarm-label">${escapeHtml(alarm.label || meowI18n.t('tab_alarms'))}</span></div><div class="alarm-actions"><label class="alarm-switch"><input type="checkbox" ${alarm.enabled ? 'checked' : ''}><span class="slider"></span></label>${stopBtnHtml}<span class="material-icons edit-btn" style="margin-left: ${isRinging ? '0' : '8'}px;">edit</span><span class="material-icons delete-btn">delete</span></div>`;
+            li.innerHTML = `<div class="alarm-info"><div class="alarm-time-row"><label class="alarm-switch"><input type="checkbox" ${alarm.enabled ? 'checked' : ''}><span class="slider"></span></label><span class="alarm-time">${alarm.time}</span></div><div class="alarm-label-row"><span class="alarm-interval-badge">${intervalLabel}</span><span class="alarm-label">${escapeHtml(alarm.label || meowI18n.t('tab_alarms'))}</span></div></div><div class="alarm-actions">${stopBtnHtml}<span class="material-icons alarm-icon-btn edit-btn">edit</span><span class="material-icons alarm-icon-btn delete-btn">close</span></div>`;
             const toggle = li.querySelector("input[type='checkbox']");
             toggle.addEventListener("change", () => { myAlarms[index].enabled = toggle.checked; updateSystemAlarm(myAlarms[index]); saveAlarms(); renderAlarmsView(); });
             li.querySelector(".delete-btn").addEventListener("click", () => { const item = myAlarms[index]; chrome.alarms.clear(`alarm_${item.id}`); myAlarms.splice(index, 1); saveAlarms(); renderAlarmsView(); });
@@ -70,11 +70,13 @@ const addAlarm = () => {
         myAlarms[editingAlarmIndex] = { ...oldAlarm, time: timeStr, label: label, intervalDays: intervalDays };
         updateSystemAlarm(myAlarms[editingAlarmIndex]);
         saveAlarms();
+        updateAlarmLabelHistory(alarmLabelInput.value.trim());
         exitAlarmEditMode();
     } else {
         // 新增模式
         const newAlarm = { id: Date.now(), time: timeStr, label: label, intervalDays: intervalDays, enabled: true };
         myAlarms.push(newAlarm); updateSystemAlarm(newAlarm); saveAlarms();
+        updateAlarmLabelHistory(alarmLabelInput.value.trim());
         alarmTimeInput.value = ""; alarmLabelInput.value = "";
         alarmIntervalInput.value = "1";
         renderAlarmsView();
@@ -120,12 +122,136 @@ const exitAlarmEditMode = () => {
 };
 
 addAlarmBtn.addEventListener("click", addAlarm);
-alarmLabelInput.addEventListener("keypress", (e) => { if (e.key === 'Enter') addAlarm(); });
+let alarmLabelEnterConsumed = false;
+alarmLabelInput.addEventListener("keypress", (e) => {
+    if (e.key === 'Enter') {
+        if (alarmLabelEnterConsumed) { alarmLabelEnterConsumed = false; return; }
+        addAlarm();
+    }
+});
 alarmPeriodicToggle.addEventListener("change", () => {
     alarmIntervalInput.disabled = !alarmPeriodicToggle.checked;
 });
 
 cancelAlarmBtn.addEventListener("click", exitAlarmEditMode);
+
+// === 闹钟备注历史下拉框 ===
+const loadAlarmLabelHistory = async () => {
+    const data = await getStorageData('meow_alarm_label_history');
+    alarmLabelHistory = Array.isArray(data) ? data : [];
+
+    // 如果历史为空，从现有闹钟项中预填充
+    if (alarmLabelHistory.length === 0 && myAlarms.length > 0) {
+        const labels = new Set();
+        myAlarms.forEach(item => {
+            if (item && item.label && item.label.trim()) {
+                labels.add(item.label.trim());
+            }
+        });
+        if (labels.size > 0) {
+            alarmLabelHistory = Array.from(labels).slice(0, 10);
+            chrome.storage.sync.set({ 'meow_alarm_label_history': alarmLabelHistory });
+        }
+    }
+};
+
+const getFilteredAlarmLabels = () => {
+    const input = alarmLabelInput.value.trim().toLowerCase();
+    if (!input) return alarmLabelHistory.slice();
+    return alarmLabelHistory.filter(n => n.toLowerCase().includes(input));
+};
+
+const renderAlarmLabelDropdown = (labels) => {
+    if (!alarmLabelDropdown) return;
+    alarmLabelDropdown.innerHTML = '';
+    if (labels.length === 0) {
+        hideAlarmLabelDropdown();
+        return;
+    }
+    labels.forEach((label, i) => {
+        const item = document.createElement('div');
+        item.className = 'alarm-label-dropdown-item';
+        if (i === alarmLabelActiveIndex) item.classList.add('active');
+        item.textContent = label;
+        item.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            alarmLabelInput.value = label;
+            hideAlarmLabelDropdown();
+            alarmLabelInput.focus();
+        });
+        alarmLabelDropdown.appendChild(item);
+    });
+    alarmLabelDropdown.classList.remove('hidden');
+};
+
+const hideAlarmLabelDropdown = () => {
+    if (alarmLabelDropdown) alarmLabelDropdown.classList.add('hidden');
+    alarmLabelActiveIndex = -1;
+};
+
+const updateAlarmLabelActiveItem = () => {
+    if (!alarmLabelDropdown) return;
+    const items = alarmLabelDropdown.querySelectorAll('.alarm-label-dropdown-item');
+    items.forEach((item, i) => {
+        item.classList.toggle('active', i === alarmLabelActiveIndex);
+    });
+    if (alarmLabelActiveIndex >= 0 && items[alarmLabelActiveIndex]) {
+        items[alarmLabelActiveIndex].scrollIntoView({ block: 'nearest' });
+    }
+};
+
+const updateAlarmLabelHistory = (label) => {
+    const trimmed = (label || '').trim();
+    if (!trimmed) return;
+    alarmLabelHistory = alarmLabelHistory.filter(n => n !== trimmed);
+    alarmLabelHistory.unshift(trimmed);
+    if (alarmLabelHistory.length > 10) alarmLabelHistory = alarmLabelHistory.slice(0, 10);
+    chrome.storage.sync.set({ 'meow_alarm_label_history': alarmLabelHistory });
+};
+
+alarmLabelInput.addEventListener('input', () => {
+    alarmLabelActiveIndex = -1;
+    const labels = getFilteredAlarmLabels();
+    if (labels.length > 0) renderAlarmLabelDropdown(labels);
+    else hideAlarmLabelDropdown();
+});
+
+alarmLabelInput.addEventListener('focus', () => {
+    if (alarmLabelHistory.length === 0) return;
+    alarmLabelActiveIndex = -1;
+    const labels = getFilteredAlarmLabels();
+    if (labels.length > 0) renderAlarmLabelDropdown(labels);
+});
+
+alarmLabelInput.addEventListener('blur', () => {
+    setTimeout(hideAlarmLabelDropdown, 150);
+});
+
+alarmLabelInput.addEventListener('keydown', (e) => {
+    if (alarmLabelDropdown && alarmLabelDropdown.classList.contains('hidden')) return;
+    const items = alarmLabelDropdown ? alarmLabelDropdown.querySelectorAll('.alarm-label-dropdown-item') : [];
+    if (items.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        alarmLabelActiveIndex = (alarmLabelActiveIndex + 1) % items.length;
+        updateAlarmLabelActiveItem();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        alarmLabelActiveIndex = (alarmLabelActiveIndex - 1 + items.length) % items.length;
+        updateAlarmLabelActiveItem();
+    } else if (e.key === 'Enter') {
+        if (alarmLabelActiveIndex >= 0 && items[alarmLabelActiveIndex]) {
+            e.preventDefault();
+            alarmLabelInput.value = items[alarmLabelActiveIndex].textContent;
+            hideAlarmLabelDropdown();
+            alarmLabelEnterConsumed = true;
+        }
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hideAlarmLabelDropdown();
+    }
+});
 
 // 停止响铃按钮
 stopAlarmBtn.addEventListener("click", () => {
@@ -320,13 +446,138 @@ const addCountdown = () => {
         }
         cdTitleInput.value = "";
     }
-    saveCountdowns(); 
+    saveCountdowns();
+    updateCdTitleHistory(title);
     renderCountdownsView();
 };
 
 addCdBtn.addEventListener("click", addCountdown);
 if(cancelCdBtn) cancelCdBtn.addEventListener("click", exitCdEditMode);
-cdTitleInput.addEventListener("keypress", (e) => { if(e.key === "Enter") addCountdown(); });
+let cdTitleEnterConsumed = false;
+cdTitleInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        if (cdTitleEnterConsumed) { cdTitleEnterConsumed = false; return; }
+        addCountdown();
+    }
+});
+
+// === 倒数日标题历史下拉框 ===
+const loadCdTitleHistory = async () => {
+    const data = await getStorageData('meow_cd_title_history');
+    cdTitleHistory = Array.isArray(data) ? data : [];
+
+    // 如果历史为空，从现有点数日项中预填充
+    if (cdTitleHistory.length === 0 && myCountdowns.length > 0) {
+        const titles = new Set();
+        myCountdowns.forEach(item => {
+            if (item && item.title && item.title.trim()) {
+                titles.add(item.title.trim());
+            }
+        });
+        if (titles.size > 0) {
+            cdTitleHistory = Array.from(titles).slice(0, 10);
+            chrome.storage.sync.set({ 'meow_cd_title_history': cdTitleHistory });
+        }
+    }
+};
+
+const getFilteredCdTitles = () => {
+    const input = cdTitleInput.value.trim().toLowerCase();
+    if (!input) return cdTitleHistory.slice();
+    return cdTitleHistory.filter(n => n.toLowerCase().includes(input));
+};
+
+const renderCdTitleDropdown = (titles) => {
+    if (!cdTitleDropdown) return;
+    cdTitleDropdown.innerHTML = '';
+    if (titles.length === 0) {
+        hideCdTitleDropdown();
+        return;
+    }
+    titles.forEach((title, i) => {
+        const item = document.createElement('div');
+        item.className = 'cd-title-dropdown-item';
+        if (i === cdTitleActiveIndex) item.classList.add('active');
+        item.textContent = title;
+        item.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            cdTitleInput.value = title;
+            hideCdTitleDropdown();
+            cdTitleInput.focus();
+        });
+        cdTitleDropdown.appendChild(item);
+    });
+    cdTitleDropdown.classList.remove('hidden');
+};
+
+const hideCdTitleDropdown = () => {
+    if (cdTitleDropdown) cdTitleDropdown.classList.add('hidden');
+    cdTitleActiveIndex = -1;
+};
+
+const updateCdTitleActiveItem = () => {
+    if (!cdTitleDropdown) return;
+    const items = cdTitleDropdown.querySelectorAll('.cd-title-dropdown-item');
+    items.forEach((item, i) => {
+        item.classList.toggle('active', i === cdTitleActiveIndex);
+    });
+    if (cdTitleActiveIndex >= 0 && items[cdTitleActiveIndex]) {
+        items[cdTitleActiveIndex].scrollIntoView({ block: 'nearest' });
+    }
+};
+
+const updateCdTitleHistory = (title) => {
+    const trimmed = (title || '').trim();
+    if (!trimmed) return;
+    cdTitleHistory = cdTitleHistory.filter(n => n !== trimmed);
+    cdTitleHistory.unshift(trimmed);
+    if (cdTitleHistory.length > 10) cdTitleHistory = cdTitleHistory.slice(0, 10);
+    chrome.storage.sync.set({ 'meow_cd_title_history': cdTitleHistory });
+};
+
+cdTitleInput.addEventListener('input', () => {
+    cdTitleActiveIndex = -1;
+    const titles = getFilteredCdTitles();
+    if (titles.length > 0) renderCdTitleDropdown(titles);
+    else hideCdTitleDropdown();
+});
+
+cdTitleInput.addEventListener('focus', () => {
+    if (cdTitleHistory.length === 0) return;
+    cdTitleActiveIndex = -1;
+    const titles = getFilteredCdTitles();
+    if (titles.length > 0) renderCdTitleDropdown(titles);
+});
+
+cdTitleInput.addEventListener('blur', () => {
+    setTimeout(hideCdTitleDropdown, 150);
+});
+
+cdTitleInput.addEventListener('keydown', (e) => {
+    if (cdTitleDropdown && cdTitleDropdown.classList.contains('hidden')) return;
+    const items = cdTitleDropdown ? cdTitleDropdown.querySelectorAll('.cd-title-dropdown-item') : [];
+    if (items.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        cdTitleActiveIndex = (cdTitleActiveIndex + 1) % items.length;
+        updateCdTitleActiveItem();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        cdTitleActiveIndex = (cdTitleActiveIndex - 1 + items.length) % items.length;
+        updateCdTitleActiveItem();
+    } else if (e.key === 'Enter') {
+        if (cdTitleActiveIndex >= 0 && items[cdTitleActiveIndex]) {
+            e.preventDefault();
+            cdTitleInput.value = items[cdTitleActiveIndex].textContent;
+            hideCdTitleDropdown();
+            cdTitleEnterConsumed = true;
+        }
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hideCdTitleDropdown();
+    }
+});
 
 // === 修复：倒数日通知栏多语言支持 ===
 const renderCountdownSummary = () => {

@@ -1023,6 +1023,10 @@ body {
     color: var(--danger-color);
 }
 
+.fin-detail-amount.deposit {
+    color: #8b5cf6;
+}
+
 .fin-detail-note {
     font-size: 12px;
     color: var(--text-muted);
