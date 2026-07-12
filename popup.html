@@ -1465,6 +1465,13 @@
                         <div class="date-detail-ai-content" id="date-detail-ai-content">
                             <div class="date-detail-ai-placeholder">点击✨按钮，由 AI 分析当日概况</div>
                         </div>
+                        <!-- AI 对话输入栏 -->
+                        <div class="date-detail-chat-bar" id="date-detail-chat-bar">
+                            <textarea class="date-detail-chat-input" id="date-detail-chat-input" placeholder="和AI聊聊这一天..." rows="1"></textarea>
+                            <button class="date-detail-chat-send" id="date-detail-chat-send" title="发送">
+                                <span class="material-icons" style="font-size:16px;">send</span>
+                            </button>
+                        </div>
                         <!-- 语音朗读开关 -->
                         <div class="date-detail-tts-bar" id="date-detail-tts-bar">
                             <span class="material-icons date-detail-tts-icon" style="font-size:14px;">volume_up</span>
@@ -1476,7 +1483,10 @@
                         </div>
                     </div>
                 </div>
-                <span class="material-icons date-detail-left-toggle" id="date-detail-left-toggle">chevron_right</span>
+                <div class="date-detail-resizer" id="date-detail-left-toggle" title="拖动调整大小，双击收起/展开">
+                    <div class="date-detail-resizer-grip"></div>
+                    <span class="material-icons date-detail-resizer-arrow" id="date-detail-resizer-arrow">chevron_right</span>
+                </div>
                 <!-- 右侧区域：待办事项 + 财务账本 -->
                 <div class="date-detail-right">
                     <div class="date-detail-section">

@@ -71,6 +71,8 @@ const openDateDetail = async (dateKey) => {
     if (aiContent) {
         aiContent.innerHTML = '<div class="date-detail-ai-placeholder">点击✨按钮，由 AI 分析当日概况</div>';
     }
+    // 重置对话历史
+    dateDetailChatHistory = [];
     
     // 解析日期
     const parts = dateKey.split('-');
@@ -152,6 +154,9 @@ const openDateDetail = async (dateKey) => {
         }
     }
     
+    // 恢复保存的左栏宽度
+    await loadDateDetailLeftWidth();
+
     // 显示弹窗
     dateDetailModal.classList.remove('hidden');
     dateDetailModal.classList.add('visible');
@@ -183,13 +188,96 @@ if (dateDetailModal) {
     });
 }
 
-// 左侧栏展开收起
+// === 左侧栏拖拽调整大小 + 展开/收起 ===
 const dateDetailLeftToggle = document.getElementById('date-detail-left-toggle');
 const dateDetailLeft = document.getElementById('date-detail-left');
+const dateDetailResizerArrow = document.getElementById('date-detail-resizer-arrow');
+const dateDetailBody = document.querySelector('.date-detail-body');
+let dateDetailSavedLeftWidth = 240; // 记住收起前的宽度，用于展开恢复
+
+// 更新箭头方向
+const updateResizerArrow = () => {
+    if (!dateDetailResizerArrow) return;
+    const isCollapsed = dateDetailLeft.classList.contains('collapsed');
+    dateDetailResizerArrow.textContent = isCollapsed ? 'chevron_right' : 'chevron_left';
+};
+
+// 从 storage 加载保存的宽度
+const loadDateDetailLeftWidth = async () => {
+    if (!dateDetailLeft) return;
+    const savedWidth = await getStorageData('dateDetailLeftWidth');
+    if (savedWidth && typeof savedWidth === 'number' && savedWidth >= 180 && savedWidth <= 600) {
+        dateDetailLeft.style.width = savedWidth + 'px';
+        dateDetailSavedLeftWidth = savedWidth;
+    }
+    updateResizerArrow();
+};
+
+// 保存宽度到 storage
+const saveDateDetailLeftWidth = (width) => {
+    chrome.storage.sync.set({ dateDetailLeftWidth: width });
+};
+
 if (dateDetailLeftToggle && dateDetailLeft) {
+    updateResizerArrow();
+
+    // 收起状态下点击展开
     dateDetailLeftToggle.addEventListener('click', () => {
-        const isCollapsed = dateDetailLeft.classList.toggle('collapsed');
-        dateDetailLeftToggle.textContent = isCollapsed ? 'chevron_right' : 'chevron_left';
+        if (dateDetailLeft.classList.contains('collapsed')) {
+            dateDetailLeft.classList.remove('collapsed');
+            dateDetailLeftToggle.classList.remove('collapsed');
+            dateDetailLeft.style.width = dateDetailSavedLeftWidth + 'px';
+            updateResizerArrow();
+        }
+    });
+
+    // 双击收起/展开
+    dateDetailLeftToggle.addEventListener('dblclick', () => {
+        if (dateDetailLeft.classList.contains('collapsed')) return; // 收起状态由 click 处理
+        dateDetailSavedLeftWidth = dateDetailLeft.offsetWidth || 240;
+        dateDetailLeft.classList.add('collapsed');
+        dateDetailLeftToggle.classList.add('collapsed');
+        dateDetailLeft.style.width = '';
+        updateResizerArrow();
+    });
+
+    // 拖拽调整大小
+    let isDragging = false;
+    let startX = 0;
+    let startWidth = 0;
+
+    dateDetailLeftToggle.addEventListener('mousedown', (e) => {
+        if (dateDetailLeft.classList.contains('collapsed')) return; // 收起时不启动拖拽
+        isDragging = true;
+        startX = e.clientX;
+        startWidth = dateDetailLeft.offsetWidth;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        if (dateDetailBody) dateDetailBody.classList.add('dragging');
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const delta = e.clientX - startX;
+        let newWidth = startWidth + delta;
+        const minWidth = 180;
+        const maxWidth = Math.min(600, window.innerWidth * 0.6);
+        newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+        dateDetailLeft.style.width = newWidth + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        if (dateDetailBody) dateDetailBody.classList.remove('dragging');
+        const currentWidth = dateDetailLeft.offsetWidth;
+        if (currentWidth > 0) {
+            saveDateDetailLeftWidth(currentWidth);
+            dateDetailSavedLeftWidth = currentWidth;
+        }
     });
 }
 
@@ -458,6 +546,191 @@ if (dateDetailAiBtn && dateDetailAiContent) {
             }
         } finally {
             dateDetailAiBtn.classList.remove('loading');
+        }
+    });
+}
+
+// === AI 对话功能 ===
+let dateDetailChatHistory = []; // 对话历史 [{role, content}]
+const dateDetailChatInput = document.getElementById('date-detail-chat-input');
+const dateDetailChatSend = document.getElementById('date-detail-chat-send');
+
+/**
+ * 构建当日数据的 system prompt（用于对话）
+ */
+async function buildDateDetailSystemPrompt() {
+    const todoData = await getStorageData(dateDetailCurrentKey);
+    const todoItems = Array.isArray(todoData) ? todoData : [];
+    const finData = await getStorageData(`fin_${dateDetailCurrentKey}`);
+    const finItems = Array.isArray(finData) ? finData : [];
+
+    const peParts = dateDetailCurrentKey.split('-');
+    const peDay = parseInt(peParts[2]);
+    const peYear = parseInt(peParts[0]);
+    const peMonth = parseInt(peParts[1]) - 1;
+    const peItems = (Array.isArray(preExpensesList) ? preExpensesList : [])
+        .filter(item => {
+            if (!item.recurring || item.enabled === false) return false;
+            const effectiveDay = getEffectiveRecurDay(item, peYear, peMonth);
+            return effectiveDay === peDay;
+        });
+
+    let assetsData = null;
+    const aiAssetsFlag = await getStorageData('meow_assets_ai_enabled');
+    if (aiAssetsFlag === true) {
+        assetsData = await getStorageData('meow_assets');
+        if (!Array.isArray(assetsData) || assetsData.length === 0) {
+            assetsData = null;
+        }
+    }
+
+    const lang = window.meowI18n ? (meowI18n.lang || 'zh-CN') : 'zh-CN';
+    // 复用 dateDetailPrompt 构建系统提示
+    const prompt = dateDetailPrompt(dateDetailCurrentKey, todoItems, finItems, lang, peItems, assetsData);
+    return `你是一个可爱的女朋友助手，正在和用户讨论某一天的生活安排。以下是当天数据，请基于这些数据回答用户的问题。\n\n${prompt}\n\n请保持可爱、粘人的女朋友口吻，回答简洁有趣。`;
+}
+
+/**
+ * 发送对话消息
+ */
+async function sendDateDetailChat(userText) {
+    if (!userText.trim()) return;
+
+    // 获取 AI 配置
+    let baseUrl = '', modelId = '', apiKey = '';
+    const aiConfig = await chrome.storage.local.get(['meow_ai_setting']);
+    const setting = aiConfig.meow_ai_setting || {};
+    baseUrl = (setting.baseUrl || '').replace(/\/+$/, '');
+    modelId = setting.modelId || '';
+    apiKey = setting.apiKey || '';
+
+    if (setting.autoProtocol !== false && !baseUrl) {
+        baseUrl = 'https://api.openai.com';
+    }
+
+    if (!baseUrl || !apiKey) {
+        throw new Error('请先在「设置-AI Setting」中配置接口信息');
+    }
+    if (!modelId) {
+        throw new Error('请先在「设置-AI Setting」中配置 Model ID');
+    }
+
+    // 构建 system prompt（首次对话时构建）
+    if (dateDetailChatHistory.length === 0) {
+        const systemPrompt = await buildDateDetailSystemPrompt();
+        dateDetailChatHistory.push({ role: 'system', content: systemPrompt });
+    }
+    dateDetailChatHistory.push({ role: 'user', content: userText });
+
+    let apiUrl;
+    const trimmedUrl = baseUrl.replace(/\/+$/, '');
+    if (/\/chat\/completions$/i.test(trimmedUrl)) {
+        apiUrl = trimmedUrl;
+    } else if (/\/v1$/i.test(trimmedUrl)) {
+        apiUrl = `${trimmedUrl}/chat/completions`;
+    } else {
+        apiUrl = `${trimmedUrl}/v1/chat/completions`;
+    }
+
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: modelId,
+            messages: dateDetailChatHistory,
+            max_tokens: 1024,
+            temperature: 0.7
+        })
+    });
+
+    if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        throw new Error(`API 请求失败 (${response.status}): ${errText}`);
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || 'AI 返回内容为空';
+    dateDetailChatHistory.push({ role: 'assistant', content: reply });
+    return reply;
+}
+
+/**
+ * 在 AI 内容区追加一条消息气泡
+ */
+function appendChatMessage(role, text, isError = false) {
+    const aiContent = document.getElementById('date-detail-ai-content');
+    if (!aiContent) return null;
+    // 首次添加消息时清空 placeholder
+    const placeholder = aiContent.querySelector('.date-detail-ai-placeholder');
+    if (placeholder) placeholder.remove();
+
+    const msgDiv = document.createElement('div');
+    if (isError) {
+        msgDiv.className = 'date-detail-chat-msg error';
+    } else if (role === 'loading') {
+        msgDiv.className = 'date-detail-chat-msg loading';
+        msgDiv.textContent = text;
+    } else {
+        msgDiv.className = `date-detail-chat-msg ${role === 'user' ? 'user' : 'ai'}`;
+        msgDiv.textContent = text;
+    }
+    aiContent.appendChild(msgDiv);
+    aiContent.scrollTop = aiContent.scrollHeight;
+    return msgDiv;
+}
+
+if (dateDetailChatInput && dateDetailChatSend && dateDetailAiContent) {
+    // 自动调整 textarea 高度
+    dateDetailChatInput.addEventListener('input', () => {
+        dateDetailChatInput.style.height = 'auto';
+        dateDetailChatInput.style.height = Math.min(dateDetailChatInput.scrollHeight, 80) + 'px';
+    });
+
+    // Enter 发送，Shift+Enter 换行
+    dateDetailChatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            dateDetailChatSend.click();
+        }
+    });
+
+    dateDetailChatSend.addEventListener('click', async () => {
+        if (!dateDetailCurrentKey) return;
+        const text = dateDetailChatInput.value.trim();
+        if (!text) return;
+
+        // 显示用户消息
+        appendChatMessage('user', text);
+        dateDetailChatInput.value = '';
+        dateDetailChatInput.style.height = 'auto';
+
+        // 显示加载状态
+        const loadingMsg = appendChatMessage('loading', 'AI 正在思考...');
+        dateDetailChatSend.classList.add('loading');
+        dateDetailChatSend.disabled = true;
+
+        // 停止正在进行的朗读
+        stopDateDetailTTS();
+
+        try {
+            const reply = await sendDateDetailChat(text);
+            if (loadingMsg) loadingMsg.remove();
+            appendChatMessage('ai', reply);
+            // 触发语音朗读
+            speakDateDetailTTS(reply);
+        } catch (e) {
+            if (loadingMsg) loadingMsg.remove();
+            appendChatMessage('error', e.message || '请求失败', true);
+            if (e.message && (e.message.includes('AI Setting') || e.message.includes('请先'))) {
+                showAIConfigPrompt();
+            }
+        } finally {
+            dateDetailChatSend.classList.remove('loading');
+            dateDetailChatSend.disabled = false;
+            dateDetailChatInput.focus();
         }
     });
 }

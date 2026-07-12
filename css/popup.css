@@ -6205,6 +6205,118 @@ transform: translateY(-1px);
     padding: 20px 0;
 }
 
+/* AI 对话消息样式 */
+.date-detail-chat-msg {
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.6;
+    word-break: break-word;
+    white-space: pre-wrap;
+    animation: chat-msg-in 0.3s ease;
+}
+
+@keyframes chat-msg-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.date-detail-chat-msg.user {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    margin-left: 24px;
+    border-bottom-right-radius: 3px;
+}
+
+.date-detail-chat-msg.ai {
+    background: #f1f5f9;
+    color: #334155;
+    margin-right: 24px;
+    border-bottom-left-radius: 3px;
+}
+
+.date-detail-chat-msg.error {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+.date-detail-chat-msg.loading {
+    color: #94a3b8;
+    font-style: italic;
+}
+
+/* AI 对话输入栏 */
+.date-detail-chat-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 6px 4px;
+    border-top: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.date-detail-chat-input {
+    flex: 1;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    resize: none;
+    max-height: 80px;
+    outline: none;
+    background: #fff;
+    color: #334155;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+}
+
+.date-detail-chat-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.date-detail-chat-input::placeholder {
+    color: #cbd5e1;
+}
+
+.date-detail-chat-send {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+    flex-shrink: 0;
+}
+
+.date-detail-chat-send:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.date-detail-chat-send:active {
+    transform: scale(0.95);
+}
+
+.date-detail-chat-send:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.date-detail-chat-send.loading {
+    pointer-events: none;
+    opacity: 0.7;
+    animation: spin 1s linear infinite;
+}
+
 /* 语音朗读开关 */
 .date-detail-tts-bar {
     display: flex;
@@ -6283,23 +6395,79 @@ transform: translateY(-1px);
     transform: translateX(14px);
 }
 
-.date-detail-left-toggle {
+.date-detail-resizer {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    cursor: pointer;
-    color: #94a3b8;
-    font-size: 18px;
+    width: 8px;
+    cursor: col-resize;
     background: #f1f5f9;
-    transition: color 0.2s, background 0.2s;
+    border-left: 1px solid #e2e8f0;
+    border-right: 1px solid #e2e8f0;
     flex-shrink: 0;
     user-select: none;
+    z-index: 5;
+    transition: background 0.2s;
 }
 
-.date-detail-left-toggle:hover {
-    color: #475569;
+.date-detail-resizer:hover {
     background: #e2e8f0;
+}
+
+.date-detail-resizer:active {
+    background: #cbd5e1;
+}
+
+/* 拖拽中时禁用左侧宽度过渡动画，使拖拽更跟手 */
+.date-detail-body.dragging .date-detail-left {
+    transition: none !important;
+}
+
+.date-detail-resizer-grip {
+    width: 4px;
+    height: 36px;
+    border-radius: 2px;
+    background: #cbd5e1;
+    transition: background 0.2s;
+    pointer-events: none;
+}
+
+.date-detail-resizer:hover .date-detail-resizer-grip {
+    background: #94a3b8;
+}
+
+.date-detail-resizer-arrow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px !important;
+    color: #94a3b8;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    background: #f1f5f9;
+    border-radius: 50%;
+    padding: 1px;
+}
+
+.date-detail-resizer:hover .date-detail-resizer-arrow {
+    opacity: 1;
+}
+
+/* 左栏收起后，resizer 变为可点击展开的小箭头 */
+.date-detail-resizer.collapsed {
+    cursor: pointer;
+    width: 20px;
+}
+
+.date-detail-resizer.collapsed .date-detail-resizer-grip {
+    display: none;
+}
+
+.date-detail-resizer.collapsed .date-detail-resizer-arrow {
+    opacity: 1;
 }
 
 .date-detail-right {
