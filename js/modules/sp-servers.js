@@ -98,7 +98,7 @@ function renderServers() {
             if (ws.dbType && ws.dbType !== 'none') {
                 if (ws.dbUser) wsRows.push(`<div class="srv-ws-detail-row srv-copy-row" data-copy="${escapeHtml(ws.dbUser)}" title="点击复制"><span class="srv-ws-detail-label">数据库用户</span><span class="srv-ws-detail-val">${escapeHtml(ws.dbUser)}</span></div>`);
                 if (ws.dbPass) wsRows.push(`<div class="srv-ws-detail-row srv-copy-row" data-copy="${escapeHtml(ws.dbPass)}" title="点击复制"><span class="srv-ws-detail-label">数据库密码</span><span class="srv-ws-detail-val srv-masked">••••••••</span></div>`);
-                if (ws.dbTable) wsRows.push(`<div class="srv-ws-detail-row srv-copy-row" data-copy="${escapeHtml(ws.dbTable)}" title="点击复制"><span class="srv-ws-detail-label">数据库表名</span><span class="srv-ws-detail-val">${escapeHtml(ws.dbTable)}</span></div>`);
+                if (ws.dbTable) wsRows.push(`<div class="srv-ws-detail-row srv-copy-row" data-copy="${escapeHtml(ws.dbTable)}" title="点击复制"><span class="srv-ws-detail-label">数据库名</span><span class="srv-ws-detail-val">${escapeHtml(ws.dbTable)}</span></div>`);
             }
             if (ws.path) wsRows.push(`<div class="srv-ws-detail-row srv-copy-row" data-copy="${escapeHtml(ws.path)}" title="点击复制"><span class="srv-ws-detail-label">绝对路径</span><span class="srv-ws-detail-val">${escapeHtml(ws.path)}</span></div>`);
             return `<div class="srv-ws-item" data-widx="${wi}">

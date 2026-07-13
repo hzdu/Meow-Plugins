@@ -404,3 +404,10 @@
 .meow-printing .meow-sticky-note-close {
     display: none !important;
 }
+
+/* 荧光笔高亮样式 */
+.meow-highlight {
+    border-radius: 2px !important;
+    box-decoration-break: clone !important;
+    -webkit-box-decoration-break: clone !important;
+}

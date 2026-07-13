@@ -24,7 +24,10 @@
 
   // 工具状态
   let currentTool = 'draw'; 
-  const toolCycle = ['draw', 'text', 'mosaic', 'eraser'];
+  const toolCycle = ['draw', 'text', 'mosaic', 'eraser', 'highlighter'];
+
+  // 荧光笔高亮记录
+  let highlightSpans = [];
 
   let textAnnotations = []; 
   let stickyNotes = []; 
@@ -89,6 +92,8 @@
     historyStack = [];
     document.removeEventListener('keydown', handleKeyDown);
     document.addEventListener('keydown', handleKeyDown);
+    document.removeEventListener('mouseup', handleHighlightMouseup);
+    document.addEventListener('mouseup', handleHighlightMouseup);
     setTool('draw'); 
   }
 
@@ -99,17 +104,24 @@
     if (toolbar) { toolbar.remove(); toolbar = null; }
     stickyNotes.forEach(note => note.remove());
     stickyNotes = [];
+    clearHighlights();
     historyStack = [];
     document.body.style.overflow = '';
     isDrawing = false;
     document.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('mouseup', handleHighlightMouseup);
   }
 
   // === 历史记录 (Undo) ===
   function saveState() {
       if (!ctx || !canvas) return;
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      historyStack.push(imageData);
+      historyStack.push({ type: 'canvas', data: imageData });
+      if (historyStack.length > MAX_HISTORY) historyStack.shift();
+  }
+
+  function saveHighlightState(span) {
+      historyStack.push({ type: 'highlight', span: span });
       if (historyStack.length > MAX_HISTORY) historyStack.shift();
   }
 
@@ -118,9 +130,23 @@
           showToast(meowI18n.t('anno_msg_no_undo'), 'warning');
           return;
       }
-      const previousState = historyStack.pop();
-      if (previousState && ctx) {
-          ctx.putImageData(previousState, 0, 0);
+      const action = historyStack.pop();
+      if (action.type === 'canvas') {
+          if (action.data && ctx) {
+              ctx.putImageData(action.data, 0, 0);
+          }
+          showToast(meowI18n.t('anno_msg_undo'), 'info');
+      } else if (action.type === 'highlight') {
+          const span = action.span;
+          if (span && span.parentNode) {
+              const parent = span.parentNode;
+              while (span.firstChild) {
+                  parent.insertBefore(span.firstChild, span);
+              }
+              parent.removeChild(span);
+              parent.normalize();
+          }
+          highlightSpans = highlightSpans.filter(s => s !== span);
           showToast(meowI18n.t('anno_msg_undo'), 'info');
       }
   }
@@ -136,14 +162,29 @@
           const drawOptions = toolbar.querySelectorAll('.meow-draw-options');
           const textOptions = toolbar.querySelector('.meow-text-options');
           const isText = (toolName === 'text');
-          drawOptions.forEach(opt => opt.style.setProperty('display', isText ? 'none' : 'flex', 'important'));
+          const isHighlighter = (toolName === 'highlighter');
+          drawOptions.forEach(opt => {
+              const isBrushSize = opt.querySelector('#meow-brush-slider');
+              if (isText) {
+                  opt.style.setProperty('display', 'none', 'important');
+              } else if (isHighlighter && isBrushSize) {
+                  opt.style.setProperty('display', 'none', 'important');
+              } else {
+                  opt.style.setProperty('display', 'flex', 'important');
+              }
+          });
           if (textOptions) textOptions.style.setProperty('display', isText ? 'block' : 'none', 'important');
       }
       if (canvas) {
-          if (toolName === 'text') canvas.style.cursor = 'text';
-          else if (toolName === 'eraser') canvas.style.cursor = 'grab';
-          else if (toolName === 'mosaic') canvas.style.cursor = 'crosshair';
-          else canvas.style.cursor = 'crosshair';
+          if (toolName === 'highlighter') {
+              canvas.style.setProperty('pointer-events', 'none', 'important');
+              canvas.style.setProperty('cursor', 'text', 'important');
+          } else {
+              canvas.style.setProperty('pointer-events', 'auto', 'important');
+              if (toolName === 'text') canvas.style.setProperty('cursor', 'text', 'important');
+              else if (toolName === 'eraser') canvas.style.setProperty('cursor', 'grab', 'important');
+              else canvas.style.setProperty('cursor', 'crosshair', 'important');
+          }
       }
       if (ctx) {
           ctx.globalCompositeOperation = (toolName === 'eraser') ? 'destination-out' : 'source-over';
@@ -153,7 +194,8 @@
           'draw': meowI18n.t('anno_tool_brush'), 
           'text': meowI18n.t('anno_tool_text'), 
           'eraser': meowI18n.t('anno_tool_eraser'), 
-          'mosaic': meowI18n.t('anno_tool_mosaic') 
+          'mosaic': meowI18n.t('anno_tool_mosaic'),
+          'highlighter': meowI18n.t('anno_tool_highlighter') 
       };
       showToast(meowI18n.t('anno_msg_switched', {tool: toolNames[toolName]}), 'info');
   }
@@ -204,6 +246,7 @@
     const tEraser = meowI18n.t('anno_tool_eraser');
     const tMosaic = meowI18n.t('anno_tool_mosaic');
     const tSticky = meowI18n.t('anno_tool_sticky');
+    const tHighlighter = meowI18n.t('anno_tool_highlighter');
     const tColorTip = meowI18n.t('anno_color_title');
     const tSizeTip = meowI18n.t('anno_size_title');
     const tConfirm = meowI18n.t('anno_hex_confirm');
@@ -372,6 +415,7 @@
           <button class="meow-mode-btn" data-mode="text" title="${tText} (Alt+F1)">📝</button>
           <button class="meow-mode-btn" data-mode="eraser" title="${tEraser} (Alt+F1)">🧹</button>
           <button class="meow-mode-btn" data-mode="mosaic" title="${tMosaic} (Alt+F1)">▒</button>
+          <button class="meow-mode-btn" data-mode="highlighter" title="${tHighlighter} (Alt+F1)">🖍️</button>
           <button class="meow-mode-btn meow-sticky-btn" title="${tSticky} (Alt+F2)">🗒️</button>
         </div>
       </div>
@@ -628,6 +672,75 @@
   function clearCanvas() {
     if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     stickyNotes.forEach(note => note.remove()); stickyNotes = [];
+    clearHighlights();
+  }
+
+  // === 荧光笔 ===
+  function hexToRgba(hex, alpha) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  function clearHighlights() {
+      highlightSpans.forEach(span => {
+          if (span && span.parentNode) {
+              const parent = span.parentNode;
+              while (span.firstChild) {
+                  parent.insertBefore(span.firstChild, span);
+              }
+              parent.removeChild(span);
+              parent.normalize();
+          }
+      });
+      highlightSpans = [];
+  }
+
+  function highlightSelection(color) {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed || selection.rangeCount === 0) return false;
+      
+      const range = selection.getRangeAt(0);
+      const span = document.createElement('span');
+      span.className = 'meow-highlight';
+      span.style.backgroundColor = hexToRgba(color, 0.4);
+      
+      try {
+          range.surroundContents(span);
+      } catch (e) {
+          try {
+              const contents = range.extractContents();
+              span.appendChild(contents);
+              range.insertNode(span);
+          } catch (e2) {
+              showToast(meowI18n.t('anno_msg_highlight_fail'), 'error');
+              return false;
+          }
+      }
+      
+      highlightSpans.push(span);
+      saveHighlightState(span);
+      selection.removeAllRanges();
+      showToast(meowI18n.t('anno_msg_highlighted'), 'info');
+      return true;
+  }
+
+  function handleHighlightMouseup(e) {
+      if (currentTool !== 'highlighter') return;
+      if (e.target && e.target.closest && e.target.closest('#meow-annotation-toolbar')) return;
+      
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
+      
+      const container = selection.getRangeAt(0).commonAncestorContainer;
+      const toolbarEl = document.getElementById('meow-annotation-toolbar');
+      if (toolbarEl && toolbarEl.contains(container)) {
+          selection.removeAllRanges();
+          return;
+      }
+      
+      highlightSelection(brushColor);
   }
 
   function handleResize() {
