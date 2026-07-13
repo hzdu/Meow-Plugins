@@ -595,8 +595,15 @@
                                 <input type="text" id="srv-ws-dbpass-input" class="converter-input full-border" placeholder="数据库密码">
                             </div>
                             <div class="form-group">
-                                <label>网站后台地址</label>
-                                <input type="text" id="srv-ws-adminurl-input" class="converter-input full-border" placeholder="例如：/admin">
+                                <label>数据库表名</label>
+                                <input type="text" id="srv-ws-dbtable-input" class="converter-input full-border" placeholder="例如：wp_options">
+                            </div>
+                            <div class="form-group">
+                                <div class="srv-form-label-bar">
+                                    <label>网站后台地址</label>
+                                    <label class="srv-wp-switch"><input type="checkbox" id="srv-ws-wp-toggle" checked><span class="srv-wp-slider"></span>WP</label>
+                                </div>
+                                <input type="text" id="srv-ws-adminurl-input" class="converter-input full-border" placeholder="例如：https://example.com（自动追加 /wp-login.php）">
                             </div>
                             <div class="form-group">
                                 <label>网站账号</label>

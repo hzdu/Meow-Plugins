@@ -98,6 +98,7 @@ function renderServers() {
             if (ws.dbType && ws.dbType !== 'none') {
                 if (ws.dbUser) wsRows.push(`<div class="srv-ws-detail-row srv-copy-row" data-copy="${escapeHtml(ws.dbUser)}" title="点击复制"><span class="srv-ws-detail-label">数据库用户</span><span class="srv-ws-detail-val">${escapeHtml(ws.dbUser)}</span></div>`);
                 if (ws.dbPass) wsRows.push(`<div class="srv-ws-detail-row srv-copy-row" data-copy="${escapeHtml(ws.dbPass)}" title="点击复制"><span class="srv-ws-detail-label">数据库密码</span><span class="srv-ws-detail-val srv-masked">••••••••</span></div>`);
+                if (ws.dbTable) wsRows.push(`<div class="srv-ws-detail-row srv-copy-row" data-copy="${escapeHtml(ws.dbTable)}" title="点击复制"><span class="srv-ws-detail-label">数据库表名</span><span class="srv-ws-detail-val">${escapeHtml(ws.dbTable)}</span></div>`);
             }
             if (ws.path) wsRows.push(`<div class="srv-ws-detail-row srv-copy-row" data-copy="${escapeHtml(ws.path)}" title="点击复制"><span class="srv-ws-detail-label">绝对路径</span><span class="srv-ws-detail-val">${escapeHtml(ws.path)}</span></div>`);
             return `<div class="srv-ws-item" data-widx="${wi}">
@@ -442,7 +443,9 @@ function openSrvWebsiteModal(editIdx) {
     const dbTypeInput = document.getElementById('srv-ws-dbtype-input');
     const dbUserInput = document.getElementById('srv-ws-dbuser-input');
     const dbPassInput = document.getElementById('srv-ws-dbpass-input');
+    const dbTableInput = document.getElementById('srv-ws-dbtable-input');
     const adminUrlInput = document.getElementById('srv-ws-adminurl-input');
+    const wpToggle = document.getElementById('srv-ws-wp-toggle');
     const adminUserInput = document.getElementById('srv-ws-adminuser-input');
     const adminPassInput = document.getElementById('srv-ws-adminpass-input');
     const pathInput = document.getElementById('srv-ws-path-input');
@@ -454,7 +457,10 @@ function openSrvWebsiteModal(editIdx) {
     dbTypeInput.value = 'none';
     dbUserInput.value = '';
     dbPassInput.value = '';
+    dbTableInput.value = '';
     adminUrlInput.value = '';
+    wpToggle.checked = true;
+    adminUrlInput.placeholder = '例如：https://example.com（自动追加 /wp-login.php）';
     adminUserInput.value = '';
     adminPassInput.value = '';
     pathInput.value = '';
@@ -468,7 +474,10 @@ function openSrvWebsiteModal(editIdx) {
         dbTypeInput.value = ws.dbType || 'none';
         dbUserInput.value = ws.dbUser || '';
         dbPassInput.value = ws.dbPass || '';
-        adminUrlInput.value = ws.adminUrl || '';
+        dbTableInput.value = ws.dbTable || '';
+        adminUrlInput.value = (ws.adminUrl || '').replace(/\/wp-login\.php$/, '');
+        wpToggle.checked = (ws.adminUrl || '').endsWith('wp-login.php');
+        if (!wpToggle.checked) adminUrlInput.placeholder = '例如：/admin';
         adminUserInput.value = ws.adminUser || '';
         adminPassInput.value = ws.adminPass || '';
         pathInput.value = ws.path || '';
@@ -512,6 +521,7 @@ function exportServers() {
             dbType: w.dbType,
             dbUser: w.dbUser,
             dbPass: w.dbPass,
+            dbTable: w.dbTable,
             adminUrl: w.adminUrl,
             adminUser: w.adminUser,
             adminPass: w.adminPass,
@@ -716,18 +726,37 @@ function setupServerLogic() {
         }
     });
 
+    // WP 开关切换时更新 placeholder
+    const wpToggleInit = document.getElementById('srv-ws-wp-toggle');
+    const adminUrlInputInit = document.getElementById('srv-ws-adminurl-input');
+    wpToggleInit.addEventListener('change', function() {
+        adminUrlInputInit.placeholder = this.checked
+            ? '例如：https://example.com（自动追加 /wp-login.php）'
+            : '例如：/admin';
+    });
+
     // 保存网站
     document.getElementById('srv-ws-save-btn').addEventListener('click', function() {
         const domain = document.getElementById('srv-ws-domain-input').value.trim();
         const dbType = document.getElementById('srv-ws-dbtype-input').value;
         const dbUser = document.getElementById('srv-ws-dbuser-input').value.trim();
         const dbPass = document.getElementById('srv-ws-dbpass-input').value;
-        const adminUrl = document.getElementById('srv-ws-adminurl-input').value.trim();
+        const dbTable = document.getElementById('srv-ws-dbtable-input').value.trim();
+        const wpChecked = document.getElementById('srv-ws-wp-toggle').checked;
+        let adminUrl = document.getElementById('srv-ws-adminurl-input').value.trim();
+        // WP 开关：打开时自动追加 wp-login.php，关闭时去除
+        if (wpChecked) {
+            if (adminUrl && !adminUrl.endsWith('wp-login.php')) {
+                adminUrl = adminUrl.replace(/\/+$/, '') + '/wp-login.php';
+            }
+        } else {
+            adminUrl = adminUrl.replace(/\/wp-login\.php$/, '');
+        }
         const adminUser = document.getElementById('srv-ws-adminuser-input').value.trim();
         const adminPass = document.getElementById('srv-ws-adminpass-input').value;
         const path = document.getElementById('srv-ws-path-input').value.trim();
 
-        const wsData = { domain, dbType, dbUser, dbPass, adminUrl, adminUser, adminPass, path };
+        const wsData = { domain, dbType, dbUser, dbPass, dbTable, adminUrl, adminUser, adminPass, path };
 
         if (editingWebsiteId !== null && editingWebsiteId !== undefined) {
             srvEditWebsites[editingWebsiteId] = { ...srvEditWebsites[editingWebsiteId], ...wsData };
