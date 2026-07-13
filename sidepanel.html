@@ -43,6 +43,9 @@
                 <button class="tab-btn active" data-target="tools" data-i18n-title="sp_tab_tools" title="工具箱">
                     <span class="material-icons">straighten</span>
                 </button>
+                <button class="tab-btn" data-target="servers" title="服务器管理">
+                    <span class="material-icons">dns</span>
+                </button>
             </div>
 
             <!-- === 搜索区域 === -->
@@ -432,6 +435,190 @@
                 </div>
             </div>
 
+            <!-- 服务器管理视图 -->
+            <div id="view-servers" class="view-content hidden">
+                <div class="gallery-controls" id="srv-controls">
+                    <div class="ctrl-btn" id="srv-add-btn">
+                        <span class="material-icons" style="font-size:16px">add</span> <span>添加服务器</span>
+                    </div>
+                    <div style="display:flex;gap:4px">
+                        <div class="ctrl-btn" id="srv-export-btn" title="导出备份">
+                            <span class="material-icons" style="font-size:16px">file_download</span> <span>导出备份</span>
+                        </div>
+                        <div class="ctrl-btn" id="srv-import-btn" title="导入备份">
+                            <span class="material-icons" style="font-size:16px">file_upload</span> <span>导入备份</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ai-filter-row" style="position:relative;margin:8px 0;">
+                    <span class="material-icons" style="font-size:16px;color:#9ca3af;position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;">search</span>
+                    <input type="text" id="srv-filter-input" class="ai-filter-input" placeholder="搜索 IP / 域名 / 用户名..." style="width:100%;padding:6px 10px 6px 32px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">
+                    <span class="material-icons ai-filter-clear" id="srv-filter-clear" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:#9ca3af;">close</span>
+                </div>
+                <div id="srv-list" class="srv-list"></div>
+                <div id="srv-empty" class="empty-state">
+                    <span class="material-icons">dns</span>
+                    <p>暂无服务器记录<br>点击上方 + 添加</p>
+                </div>
+            </div>
+
+            <!-- 服务器编辑弹窗 -->
+            <div id="srv-modal" class="modal hidden">
+                <div class="modal-content" style="width: 92%; max-height: 92vh;">
+                    <div class="modal-header">
+                        <h3 id="srv-modal-title">添加服务器</h3>
+                        <span class="material-icons close-modal" id="close-srv-modal">close</span>
+                    </div>
+                    <div class="modal-body" style="overflow-y:auto;max-height:75vh;">
+                        <!-- 服务器基本信息 -->
+                        <div class="srv-section-title"><span class="material-icons" style="font-size:14px;color:#6366f1;">computer</span> 服务器信息</div>
+                        <div class="srv-form-grid">
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>标题</label>
+                                <input type="text" id="srv-title-input" class="converter-input full-border" placeholder="例如：生产环境-Web服务器">
+                            </div>
+                            <div class="form-group">
+                                <label>操作系统</label>
+                                <select id="srv-os-input" class="converter-input full-border">
+                                    <option value="Windows">Windows</option>
+                                    <option value="Ubuntu">Ubuntu</option>
+                                    <option value="Debian">Debian</option>
+                                    <option value="CentOS">CentOS</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>连接协议</label>
+                                <select id="srv-protocol-input" class="converter-input full-border">
+                                    <option value="ssh">SSH</option>
+                                    <option value="rdp">远程桌面 (RDP)</option>
+                                    <option value="vnc">VNC</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>IP 地址</label>
+                                <input type="text" id="srv-ip-input" class="converter-input full-border" placeholder="例如：192.168.1.100">
+                            </div>
+                            <div class="form-group">
+                                <label>端口</label>
+                                <input type="text" id="srv-port-input" class="converter-input full-border" placeholder="例如：22">
+                            </div>
+                            <div class="form-group">
+                                <label>用户名</label>
+                                <input type="text" id="srv-user-input" class="converter-input full-border" placeholder="例如：root">
+                            </div>
+                            <div class="form-group">
+                                <label>密码</label>
+                                <input type="text" id="srv-pass-input" class="converter-input full-border" placeholder="服务器密码">
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>供应商链接</label>
+                                <input type="text" id="srv-provider-url-input" class="converter-input full-border" placeholder="例如：https://console.aliyun.com">
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>备注</label>
+                                <textarea id="srv-note-input" class="converter-input full-border" rows="2" placeholder="可选备注信息"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 管理面板 -->
+                        <div class="srv-section-title"><span class="material-icons" style="font-size:14px;color:#0891b2;">dashboard</span> 管理面板</div>
+                        <div class="srv-form-grid">
+                            <div class="form-group">
+                                <label>面板类型</label>
+                                <select id="srv-panel-type-input" class="converter-input full-border">
+                                    <option value="none">无</option>
+                                    <option value="bt">宝塔</option>
+                                    <option value="cyberpanel">Cyberpanel</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>面板地址</label>
+                                <input type="text" id="srv-panel-url-input" class="converter-input full-border" placeholder="https://...:8888">
+                            </div>
+                            <div class="form-group">
+                                <label>面板账号</label>
+                                <input type="text" id="srv-panel-user-input" class="converter-input full-border" placeholder="面板用户名">
+                            </div>
+                            <div class="form-group">
+                                <label>面板密码</label>
+                                <input type="text" id="srv-panel-pass-input" class="converter-input full-border" placeholder="面板密码">
+                            </div>
+                        </div>
+
+                        <!-- 网站管理 -->
+                        <div class="srv-section-title">
+                            <span class="material-icons" style="font-size:14px;color:#10b981;">language</span> 绑定网站
+                            <button type="button" id="srv-add-website-btn" class="srv-mini-add-btn"><span class="material-icons" style="font-size:14px;">add</span> 添加网站</button>
+                        </div>
+                        <div id="srv-website-list" class="srv-website-list"></div>
+                        <div id="srv-website-empty" class="srv-website-empty" style="display:none;">
+                            <span style="font-size:12px;color:#94a3b8;">暂无网站记录</span>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px; margin-top:4px;">
+                        <button id="srv-delete-btn" class="cancel-btn hidden" style="color:#ef4444;">删除</button>
+                        <button id="srv-save-btn" class="add-btn">保存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 网站编辑弹窗（子弹窗） -->
+            <div id="srv-website-modal" class="modal hidden">
+                <div class="modal-content" style="width: 90%;">
+                    <div class="modal-header">
+                        <h3 id="srv-website-modal-title">添加网站</h3>
+                        <span class="material-icons close-modal" id="close-srv-website-modal">close</span>
+                    </div>
+                    <div class="modal-body" style="overflow-y:auto;max-height:65vh;">
+                        <div class="srv-form-grid">
+                            <div class="form-group">
+                                <label>域名</label>
+                                <input type="text" id="srv-ws-domain-input" class="converter-input full-border" placeholder="例如：example.com">
+                            </div>
+                            <div class="form-group">
+                                <label>数据库</label>
+                                <select id="srv-ws-dbtype-input" class="converter-input full-border">
+                                    <option value="none">无</option>
+                                    <option value="mssql">MSSQL</option>
+                                    <option value="mysql">MYSQL</option>
+                                    <option value="mariadb">MariaDB</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>数据库用户名</label>
+                                <input type="text" id="srv-ws-dbuser-input" class="converter-input full-border" placeholder="例如：root">
+                            </div>
+                            <div class="form-group">
+                                <label>数据库密码</label>
+                                <input type="text" id="srv-ws-dbpass-input" class="converter-input full-border" placeholder="数据库密码">
+                            </div>
+                            <div class="form-group">
+                                <label>网站后台地址</label>
+                                <input type="text" id="srv-ws-adminurl-input" class="converter-input full-border" placeholder="例如：/admin">
+                            </div>
+                            <div class="form-group">
+                                <label>网站账号</label>
+                                <input type="text" id="srv-ws-adminuser-input" class="converter-input full-border" placeholder="后台用户名">
+                            </div>
+                            <div class="form-group">
+                                <label>网站密码</label>
+                                <input type="text" id="srv-ws-adminpass-input" class="converter-input full-border" placeholder="后台密码">
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>网站绝对路径</label>
+                                <input type="text" id="srv-ws-path-input" class="converter-input full-border" placeholder="例如：/www/wwwroot/example">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px; margin-top:4px;">
+                        <button id="srv-ws-delete-btn" class="cancel-btn hidden" style="color:#ef4444;">删除</button>
+                        <button id="srv-ws-save-btn" class="add-btn">保存</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- 2FA 视图 -->
             <div id="view-2fa" class="view-content hidden">
                 <div class="gallery-controls" id="fa-controls">
@@ -656,6 +843,7 @@
     <script src="js/modules/sp-readlater.js"></script>
     <script src="js/modules/sp-gallery.js"></script>
     <script src="js/modules/sp-tools.js"></script>
+    <script src="js/modules/sp-servers.js"></script>
     <script src="js/modules/sp-2fa.js"></script>
     <script src="js/modules/sp-ai-provider.js"></script>
     <script src="js/modules/sp-ai-collection.js"></script>

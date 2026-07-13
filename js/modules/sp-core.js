@@ -56,6 +56,7 @@ const viewGallery = document.getElementById('view-gallery');
 const viewHot = document.getElementById('view-hot');
 const viewClock = document.getElementById('view-clock');
 const viewTools = document.getElementById('view-tools');
+const viewServers = document.getElementById('view-servers');
 const viewAiCollection = document.getElementById('view-aicollection');
 const view2fa = document.getElementById('view-2fa');
 const viewAiProvider = document.getElementById('view-ai-provider');
@@ -522,6 +523,7 @@ async function initSidepanel() {
     applySavedToolOrder();
     setup2FALogic();
     setupAILogic();
+    setupServerLogic();
     addPasteHandler(scratchInput);
     addPasteHandler(scratchModalInput);
 
@@ -554,7 +556,7 @@ tabBtns.forEach(btn => {
         saveLastTab(target);
 
         // 1. 隐藏所有视图
-        [viewPrompts, viewScratchpad, viewReadLater, viewGallery, viewTools, viewHot, viewClock, viewAiCollection, view2fa, viewAiProvider].forEach(el => {
+        [viewPrompts, viewScratchpad, viewReadLater, viewGallery, viewTools, viewHot, viewClock, viewAiCollection, view2fa, viewAiProvider, viewServers].forEach(el => {
             if(el) el.classList.add('hidden');
         });
         [filterSection.parentElement, toolsSection, readLaterTools].forEach(el => el.classList.add('hidden'));
@@ -611,6 +613,9 @@ tabBtns.forEach(btn => {
         } else if (target === 'tools') {
             viewTools.classList.remove('hidden');
             checkAndInitIpTools();
+        } else if (target === 'servers') {
+            viewServers.classList.remove('hidden');
+            if (typeof renderServers === 'function') renderServers();
         } else if (target === 'aicollection') {
             viewAiCollection.classList.remove('hidden');
             renderAiTags();
