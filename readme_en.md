@@ -46,6 +46,8 @@ A feature-rich Chrome extension (Manifest V3) integrating calendar & to-dos, fin
 | Header Formatter / Pip to Requirements / UUID Generator | Developer utilities |
 
 ### 🧰 Server Management
+| Feature | Description |
+|---------|-------------|
 | Centralized Server Info Management / Centralized Server Info Management | Ops tools |
 
 ### 🤖 AI Related
