@@ -1299,16 +1299,25 @@
                 <div id="finance-chart-left-panel" class="finance-chart-left-panel">
                     <div class="finance-chart-left-header">
                         <span class="finance-chart-left-title">AI 分析</span>
+                        <button id="finance-ai-summary-btn" class="finance-ai-summary-btn" title="AI 总结">
+                            <span class="material-icons" style="font-size:14px;">auto_awesome</span>
+                        </button>
                     </div>
-                    <button id="finance-ai-summary-btn" class="finance-ai-summary-btn">
-                        <span class="material-icons" style="font-size:16px;">psychology</span>
-                        <span>总结</span>
-                    </button>
                     <div id="finance-ai-summary-content" class="finance-ai-summary-content">
-                        <div class="finance-ai-summary-placeholder">点击「总结」按钮，由 AI 分析本月财务状况</div>
+                        <div class="finance-ai-summary-placeholder">点击✨按钮，由 AI 分析本月财务状况</div>
+                    </div>
+                    <!-- AI 对话输入栏 -->
+                    <div class="finance-chart-chat-bar" id="finance-chart-chat-bar">
+                        <textarea class="finance-chart-chat-input" id="finance-chart-chat-input" placeholder="和AI聊聊本月财务..." rows="1"></textarea>
+                        <button class="finance-chart-chat-send" id="finance-chart-chat-send" title="发送">
+                            <span class="material-icons" style="font-size:16px;">send</span>
+                        </button>
                     </div>
                 </div>
-                <span class="material-icons finance-chart-left-toggle" id="finance-chart-left-toggle">chevron_left</span>
+                <div class="finance-chart-resizer" id="finance-chart-left-toggle" title="拖动调整大小，双击收起/展开">
+                    <div class="finance-chart-resizer-grip"></div>
+                    <span class="material-icons finance-chart-resizer-arrow" id="finance-chart-resizer-arrow">chevron_left</span>
+                </div>
 
                 <!-- 主图表区域 -->
                 <div id="chart-main-content" style="flex:1;padding:0;">
@@ -2003,44 +2012,42 @@
             background: linear-gradient(160deg, #ffffff 0%, #f8faff 100%);
             border-radius: 18px;
             width: 760px;
+            height: 90vh;
             overflow: hidden;
             position: relative;
             box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2), 0 0 0 1px rgba(99, 102, 241, 0.08);
             animation: modal-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex;
             flex-direction: column;
-            max-height: 85vh;
         }
         .chart-modal-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 14px 20px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: #fff;
+            padding: 7px 20px;
+            border-bottom: 1px solid #e2e8f0;
         }
         .chart-modal-title {
-            font-size: 0.95rem;
+            font-size: 15px;
             font-weight: 600;
-            letter-spacing: 0.5px;
+            color: #1e293b;
             display: flex;
             align-items: center;
         }
         .chart-close-x {
-            font-size: 22px;
+            font-size: 20px;
             cursor: pointer;
+            color: #94a3b8;
             width: 28px;
             height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            transition: all 0.2s;
-            opacity: 0.7;
+            transition: color 0.2s;
         }
         .chart-close-x:hover {
-            opacity: 1;
-            background: rgba(255,255,255,0.2);
+            color: #475569;
         }
         .chart-modal-body {
             flex: 1;
@@ -2127,12 +2134,14 @@
             border-right: none;
         }
         .finance-chart-left-panel.collapsed .finance-ai-summary-btn,
-        .finance-chart-left-panel.collapsed .finance-ai-summary-content {
+        .finance-chart-left-panel.collapsed .finance-ai-summary-content,
+        .finance-chart-left-panel.collapsed .finance-chart-chat-bar {
             display: none;
         }
         .finance-chart-left-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             padding: 10px 8px 4px 12px;
             flex-shrink: 0;
         }
@@ -2141,59 +2150,98 @@
             font-weight: 600;
             color: #8b5cf6;
         }
-        .finance-chart-left-toggle {
-            position: absolute;
-            left: 208px;
-            top: 10px;
-            z-index: 5;
-            font-size: 18px;
-            color: #8b5cf6;
-            cursor: pointer;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        /* 拖拽分隔条 */
+        .finance-chart-resizer {
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            width: 8px;
+            cursor: col-resize;
+            background: #f1f5f9;
+            border-left: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            flex-shrink: 0;
+            user-select: none;
+            z-index: 5;
+            transition: background 0.2s;
         }
-        .finance-chart-left-toggle:hover {
-            background: #ede9fe;
-            border-color: #8b5cf6;
+        .finance-chart-resizer:hover {
+            background: #e2e8f0;
         }
-        .finance-chart-left-panel.collapsed + .finance-chart-left-toggle {
-            left: -2px;
+        .finance-chart-resizer:active {
+            background: #cbd5e1;
+        }
+        /* 拖拽中时禁用左栏宽度过渡动画 */
+        .chart-modal-body.dragging .finance-chart-left-panel {
+            transition: none !important;
+        }
+        .finance-chart-resizer-grip {
+            width: 4px;
+            height: 36px;
+            border-radius: 2px;
+            background: #cbd5e1;
+            transition: background 0.2s;
+            pointer-events: none;
+        }
+        .finance-chart-resizer:hover .finance-chart-resizer-grip {
+            background: #94a3b8;
+        }
+        .finance-chart-resizer-arrow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px !important;
+            color: #94a3b8;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            background: #f1f5f9;
+            border-radius: 50%;
+            padding: 1px;
+        }
+        .finance-chart-resizer:hover .finance-chart-resizer-arrow {
+            opacity: 1;
+        }
+        /* 左栏收起后，resizer 变为可点击展开的小箭头 */
+        .finance-chart-resizer.collapsed {
+            cursor: pointer;
+            width: 20px;
+        }
+        .finance-chart-resizer.collapsed .finance-chart-resizer-grip {
+            display: none;
+        }
+        .finance-chart-resizer.collapsed .finance-chart-resizer-arrow {
+            opacity: 1;
         }
         .finance-ai-summary-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            margin: 12px 12px 8px;
-            padding: 8px 12px;
+            margin-left: auto;
+            width: 28px;
+            height: 28px;
             border: none;
             background: linear-gradient(135deg, #8b5cf6, #6366f1);
             color: #fff;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
+            border-radius: 50%;
             cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 2px 6px rgba(99,102,241,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+            flex-shrink: 0;
         }
         .finance-ai-summary-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
         }
         .finance-ai-summary-btn:active {
-            transform: translateY(0);
+            transform: scale(0.95);
         }
         .finance-ai-summary-btn.loading {
             pointer-events: none;
             opacity: 0.7;
+            animation: finance-ai-spin 1s linear infinite;
         }
         .finance-ai-summary-content {
             flex: 1;
@@ -2240,6 +2288,104 @@
             font-size: 11px;
             padding: 12px;
             text-align: center;
+        }
+
+        /* === AI 对话输入栏 === */
+        .finance-chart-chat-bar {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            padding: 4px 12px 8px;
+            flex-shrink: 0;
+        }
+        .finance-chart-chat-input {
+            flex: 1;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            line-height: 1.5;
+            resize: none;
+            max-height: 80px;
+            outline: none;
+            background: #fff;
+            color: #374151;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+        .finance-chart-chat-input:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+        }
+        .finance-chart-chat-input::placeholder {
+            color: #cbd5e1;
+        }
+        .finance-chart-chat-send {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+            flex-shrink: 0;
+        }
+        .finance-chart-chat-send:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        .finance-chart-chat-send:active {
+            transform: scale(0.95);
+        }
+        .finance-chart-chat-send:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .finance-chart-chat-send.loading {
+            pointer-events: none;
+            opacity: 0.7;
+            animation: finance-ai-spin 1s linear infinite;
+        }
+
+        /* AI 对话消息气泡 */
+        .finance-chat-msg {
+            margin-bottom: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            line-height: 1.6;
+            word-break: break-word;
+            white-space: pre-wrap;
+            animation: finance-chat-msg-in 0.3s ease;
+        }
+        @keyframes finance-chat-msg-in {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .finance-chat-msg.user {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: #fff;
+            margin-left: 24px;
+            border-bottom-right-radius: 3px;
+        }
+        .finance-chat-msg.ai {
+            background: #f1f5f9;
+            color: #334155;
+            margin-right: 24px;
+            border-bottom-left-radius: 3px;
+        }
+        .finance-chat-msg.error {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+        .finance-chat-msg.loading {
+            color: #9ca3af;
+            font-style: italic;
         }
 
         /* === 详情侧边栏样式 === */

@@ -370,8 +370,15 @@ const renderCountdownsView = () => {
             if (item.originalIndex === editingCdIndex) {
                  li.style.backgroundColor = "#f0f9ff";
             }
-            li.innerHTML = `<div class="cd-info"><span class="cd-title${isExpired ? ' expired' : ''}">${escapeHtml(item.title)}</span><div class="cd-meta-row"><span class="cd-date">${item.date}</span><span class="cd-days-left${isUrgent ? ' urgent' : ''}${isExpired ? ' expired' : ''}">${displayDays}</span></div></div><div class="cd-actions"><span class="material-icons edit-btn">edit</span><span class="material-icons delete-btn">close</span></div>`;
+            li.innerHTML = `<div class="cd-info"><div class="cd-title-row"><label class="cd-toggle"><input type="checkbox" class="cd-checkbox"${item.completed ? ' checked' : ''}><span class="cd-slider"></span></label><span class="cd-title${isExpired ? ' expired' : ''}${item.completed ? ' completed' : ''}">${escapeHtml(item.title)}</span></div><div class="cd-meta-row"><span class="cd-date">${item.date}</span><span class="cd-days-left${isUrgent ? ' urgent' : ''}${isExpired ? ' expired' : ''}${item.completed ? ' completed' : ''}">${displayDays}</span></div></div><div class="cd-actions"><span class="material-icons edit-btn">edit</span><span class="material-icons delete-btn">close</span></div>`;
             
+            // 完成状态开关
+            li.querySelector(".cd-checkbox").addEventListener("change", (e) => {
+                myCountdowns[item.originalIndex].completed = e.target.checked;
+                saveCountdowns();
+                renderCountdownsView();
+            });
+
             // 编辑按钮
             li.querySelector(".edit-btn").addEventListener("click", () => enterCdEditMode(item.originalIndex, item));
             
@@ -438,7 +445,7 @@ const addCountdown = () => {
         exitCdEditMode();
     } else {
         // Add new
-        myCountdowns.push({ id: Date.now(), date: dateStr, title: title });
+        myCountdowns.push({ id: Date.now(), date: dateStr, title: title, completed: false });
         if (cdDateInput._flatpickr) {
             cdDateInput._flatpickr.clear(false);
         } else {

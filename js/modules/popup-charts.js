@@ -1,6 +1,21 @@
 // popup-charts.js - Big Calendar + 折线图报表 + 趋势Modal + 设置折叠
 // 此文件由 popup.js 拆分而来，请勿手动修改源文件 popup.js
 
+/**
+ * 过滤 AI 回复中的思考过程标签
+ * 支持 <thought>...</thought>、<thinking>...</thinking>、<reasoning>...</reasoning>、<think>...</think>
+ * 以及未闭合的标签（部分模型不闭合）
+ */
+function stripAIThinking(text) {
+    if (!text || typeof text !== 'string') return text;
+    return text
+        // 移除闭合的思考标签块
+        .replace(/<(?:thought|thinking|reason|reasoning|think)>[\s\S]*?<\/(?:thought|thinking|reason|reasoning|think)>\s*/gi, '')
+        // 移除未闭合的思考标签（到文本末尾）
+        .replace(/<(?:thought|thinking|reason|reasoning|think)>[\s\S]*$/gi, '')
+        .trim();
+}
+
 // === Big Calendar ===
 const btnOpenBigCalendar = document.getElementById('btn-open-big-calendar');
 if (btnOpenBigCalendar) {
@@ -464,17 +479,12 @@ async function fetchDateDetailAISummary() {
     const finData = await getStorageData(`fin_${dateDetailCurrentKey}`);
     const finItems = Array.isArray(finData) ? finData : [];
 
-    // 收集当天财务规划（每月重复项）
-    const peParts = dateDetailCurrentKey.split('-');
-    const peDay = parseInt(peParts[2]);
-    const peYear = parseInt(peParts[0]);
-    const peMonth = parseInt(peParts[1]) - 1;
-    const peItems = (Array.isArray(preExpensesList) ? preExpensesList : [])
-        .filter(item => {
-            if (!item.recurring || item.enabled === false) return false;
-            const effectiveDay = getEffectiveRecurDay(item, peYear, peMonth);
-            return effectiveDay === peDay;
-        });
+    // 收集全部财务规划数据（包含已完成和待完成的项）
+    const allPeItems = Array.isArray(preExpensesList) ? preExpensesList : [];
+
+    // 收集倒数日数据
+    const cdData = await getStorageData('countdowns_config');
+    const cdItems = Array.isArray(cdData) ? cdData : [];
 
     // 读取固定资产 AI 开关，开启时收集固定资产数据
     let assetsData = null;
@@ -487,7 +497,7 @@ async function fetchDateDetailAISummary() {
     }
 
     const lang = window.meowI18n ? (meowI18n.lang || 'zh-CN') : 'zh-CN';
-    const prompt = dateDetailPrompt(dateDetailCurrentKey, todoItems, finItems, lang, peItems, assetsData);
+    const prompt = dateDetailPrompt(dateDetailCurrentKey, todoItems, finItems, lang, allPeItems, assetsData, cdItems);
 
     let apiUrl;
     const trimmedUrl = baseUrl.replace(/\/+$/, '');
@@ -519,7 +529,7 @@ async function fetchDateDetailAISummary() {
     }
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content || 'AI 返回内容为空';
+    return stripAIThinking(data.choices?.[0]?.message?.content || 'AI 返回内容为空');
 }
 
 if (dateDetailAiBtn && dateDetailAiContent) {
@@ -564,16 +574,12 @@ async function buildDateDetailSystemPrompt() {
     const finData = await getStorageData(`fin_${dateDetailCurrentKey}`);
     const finItems = Array.isArray(finData) ? finData : [];
 
-    const peParts = dateDetailCurrentKey.split('-');
-    const peDay = parseInt(peParts[2]);
-    const peYear = parseInt(peParts[0]);
-    const peMonth = parseInt(peParts[1]) - 1;
-    const peItems = (Array.isArray(preExpensesList) ? preExpensesList : [])
-        .filter(item => {
-            if (!item.recurring || item.enabled === false) return false;
-            const effectiveDay = getEffectiveRecurDay(item, peYear, peMonth);
-            return effectiveDay === peDay;
-        });
+    // 收集全部财务规划数据（包含已完成和待完成的项）
+    const allPeItems = Array.isArray(preExpensesList) ? preExpensesList : [];
+
+    // 收集倒数日数据
+    const cdData = await getStorageData('countdowns_config');
+    const cdItems = Array.isArray(cdData) ? cdData : [];
 
     let assetsData = null;
     const aiAssetsFlag = await getStorageData('meow_assets_ai_enabled');
@@ -586,7 +592,7 @@ async function buildDateDetailSystemPrompt() {
 
     const lang = window.meowI18n ? (meowI18n.lang || 'zh-CN') : 'zh-CN';
     // 复用 dateDetailPrompt 构建系统提示
-    const prompt = dateDetailPrompt(dateDetailCurrentKey, todoItems, finItems, lang, peItems, assetsData);
+    const prompt = dateDetailPrompt(dateDetailCurrentKey, todoItems, finItems, lang, allPeItems, assetsData, cdItems);
     return `你是一个可爱的女朋友助手，正在和用户讨论某一天的生活安排。以下是当天数据，请基于这些数据回答用户的问题。\n\n${prompt}\n\n请保持可爱、粘人的女朋友口吻，回答简洁有趣。`;
 }
 
@@ -652,7 +658,7 @@ async function sendDateDetailChat(userText) {
     }
 
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || 'AI 返回内容为空';
+    const reply = stripAIThinking(data.choices?.[0]?.message?.content || 'AI 返回内容为空');
     dateDetailChatHistory.push({ role: 'assistant', content: reply });
     return reply;
 }
@@ -744,6 +750,17 @@ const chartDetailPanel = document.getElementById('chart-detail-panel');
 const detailPanelDate = document.getElementById('detail-panel-date');
 const detailPanelClose = document.getElementById('detail-panel-close');
 const detailListContainer = document.getElementById('detail-list-container');
+// 左栏拖拽相关
+let financeChartSavedLeftWidth = 220; // 记住收起前的宽度，用于展开恢复
+
+// 更新分隔条箭头方向
+const updateFinanceResizerArrow = () => {
+    const arrow = document.getElementById('finance-chart-resizer-arrow');
+    if (!arrow) return;
+    const leftPanel = document.getElementById('finance-chart-left-panel');
+    const isCollapsed = leftPanel && leftPanel.classList.contains('collapsed');
+    arrow.textContent = isCollapsed ? 'chevron_right' : 'chevron_left';
+};
 
 // 图表状态
 let chartState = {
@@ -1279,8 +1296,26 @@ const openFinanceChart = async () => {
     // 清空 AI 总结内容区
     const summaryContent = document.getElementById('finance-ai-summary-content');
     if (summaryContent) {
-        summaryContent.innerHTML = '<div class="finance-ai-summary-placeholder">点击「总结」按钮，由 AI 分析本月财务状况</div>';
+        summaryContent.innerHTML = '<div class="finance-ai-summary-placeholder">点击✨按钮，由 AI 分析本月财务状况</div>';
     }
+    // 恢复保存的左栏宽度
+    const savedLeftWidth = await getStorageData('financeChartLeftWidth');
+    const leftPanelEl = document.getElementById('finance-chart-left-panel');
+    if (leftPanelEl) {
+        if (savedLeftWidth && typeof savedLeftWidth === 'number' && savedLeftWidth >= 180 && savedLeftWidth <= 600) {
+            leftPanelEl.style.width = savedLeftWidth + 'px';
+            financeChartSavedLeftWidth = savedLeftWidth;
+        } else {
+            leftPanelEl.style.width = '';
+        }
+        // 确保非收起状态
+        leftPanelEl.classList.remove('collapsed');
+        const resizerEl = document.getElementById('finance-chart-left-toggle');
+        if (resizerEl) resizerEl.classList.remove('collapsed');
+        updateFinanceResizerArrow();
+    }
+    // 重置对话历史
+    financeChatHistory = [];
     
     // 显示 Modal（必须在 resize 之前，确保容器可见以获取正确尺寸）
     financeChartModal.classList.remove('hidden');
@@ -1322,21 +1357,77 @@ const openFinanceChart = async () => {
         });
     }
 
-    // 绑定左栏收起/展开按钮
+    // 绑定左栏拖拽调整大小 + 收起/展开
     const toggleBtn = document.getElementById('finance-chart-left-toggle');
     const leftPanel = document.getElementById('finance-chart-left-panel');
+    const chartModalBody = financeChartModal.querySelector('.chart-modal-body');
     if (toggleBtn && leftPanel && !toggleBtn.dataset.hasListener) {
         toggleBtn.dataset.hasListener = 'true';
-        toggleBtn.addEventListener('click', function() {
-            leftPanel.classList.toggle('collapsed');
-            const isCollapsed = leftPanel.classList.contains('collapsed');
-            this.textContent = isCollapsed ? 'chevron_right' : 'chevron_left';
-            // 等待 CSS 过渡动画完成后自适应图表宽度
-            setTimeout(function() {
-                if (typeof resizeFinanceChart === 'function') {
-                    resizeFinanceChart();
-                }
+
+        // 收起状态下点击展开
+        toggleBtn.addEventListener('click', () => {
+            if (leftPanel.classList.contains('collapsed')) {
+                leftPanel.classList.remove('collapsed');
+                toggleBtn.classList.remove('collapsed');
+                leftPanel.style.width = financeChartSavedLeftWidth + 'px';
+                updateFinanceResizerArrow();
+                setTimeout(() => {
+                    if (typeof resizeFinanceChart === 'function') resizeFinanceChart();
+                }, 350);
+            }
+        });
+
+        // 双击收起/展开
+        toggleBtn.addEventListener('dblclick', () => {
+            if (leftPanel.classList.contains('collapsed')) return;
+            financeChartSavedLeftWidth = leftPanel.offsetWidth || 220;
+            leftPanel.classList.add('collapsed');
+            toggleBtn.classList.add('collapsed');
+            leftPanel.style.width = '';
+            updateFinanceResizerArrow();
+            setTimeout(() => {
+                if (typeof resizeFinanceChart === 'function') resizeFinanceChart();
             }, 350);
+        });
+
+        // 拖拽调整大小
+        let isDragging = false;
+        let startX = 0;
+        let startWidth = 0;
+
+        toggleBtn.addEventListener('mousedown', (e) => {
+            if (leftPanel.classList.contains('collapsed')) return;
+            isDragging = true;
+            startX = e.clientX;
+            startWidth = leftPanel.offsetWidth;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            if (chartModalBody) chartModalBody.classList.add('dragging');
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const delta = e.clientX - startX;
+            let newWidth = startWidth + delta;
+            const minWidth = 180;
+            const maxWidth = Math.min(600, window.innerWidth * 0.6);
+            newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+            leftPanel.style.width = newWidth + 'px';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            if (chartModalBody) chartModalBody.classList.remove('dragging');
+            const currentWidth = leftPanel.offsetWidth;
+            if (currentWidth > 0) {
+                chrome.storage.sync.set({ financeChartLeftWidth: currentWidth });
+                financeChartSavedLeftWidth = currentWidth;
+            }
+            if (typeof resizeFinanceChart === 'function') resizeFinanceChart();
         });
     }
 };
@@ -1435,8 +1526,194 @@ async function fetchFinanceAISummary() {
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || 'AI 返回内容为空';
+    const content = stripAIThinking(data.choices?.[0]?.message?.content || 'AI 返回内容为空');
     return content;
+}
+
+// === 本月收支报表 AI 对话功能 ===
+let financeChatHistory = []; // 对话历史 [{role, content}]
+const financeChatInput = document.getElementById('finance-chart-chat-input');
+const financeChatSend = document.getElementById('finance-chart-chat-send');
+
+/**
+ * 构建本月财务数据的 system prompt（用于对话）
+ */
+async function buildFinanceSystemPrompt() {
+    const lastDate = new Date(currYear, currMonth + 1, 0).getDate();
+    const allItems = [];
+
+    const allData = await new Promise(r => chrome.storage.sync.get(null, items => r(items || {})));
+    for (let d = 1; d <= lastDate; d++) {
+        const dateKey = `fin_${currYear}-${currMonth + 1}-${d}`;
+        const dayData = allData[dateKey];
+        if (Array.isArray(dayData) && dayData.length > 0) {
+            dayData.forEach(item => {
+                if (item.amount && parseFloat(item.amount) !== 0) {
+                    allItems.push({
+                        date: `${currYear}-${currMonth + 1}-${d}`,
+                        type: item.type || 'expense',
+                        amount: parseFloat(item.amount),
+                        note: item.note || ''
+                    });
+                }
+            });
+        }
+    }
+
+    const totalIncome = allItems.filter(i => i.type === 'income').reduce((s, i) => s + i.amount, 0);
+    const totalExpense = allItems.filter(i => i.type === 'expense').reduce((s, i) => s + i.amount, 0);
+
+    // 固定资产数据
+    let assetsData = null;
+    if (allData['meow_assets_ai_enabled'] === true) {
+        const rawAssets = allData['meow_assets'];
+        if (Array.isArray(rawAssets) && rawAssets.length > 0) {
+            assetsData = rawAssets;
+        }
+    }
+
+    const lang = window.meowI18n ? (meowI18n.lang || 'zh-CN') : 'zh-CN';
+    const prompt = AI_PROMPTS.financeSummary(currYear, currMonth, allItems, totalIncome, totalExpense, lang, assetsData);
+    return `你是一个可爱的女朋友助手，正在和用户讨论本月的财务状况。以下是本月收支数据，请基于这些数据回答用户的问题。\n\n${prompt}\n\n请保持可爱、粘人的女朋友口吻，回答简洁有趣。`;
+}
+
+/**
+ * 发送对话消息
+ */
+async function sendFinanceChat(userText) {
+    if (!userText.trim()) return;
+
+    // 获取 AI 配置
+    let baseUrl = '', modelId = '', apiKey = '';
+    const aiConfig = await chrome.storage.local.get(['meow_ai_setting']);
+    const setting = aiConfig.meow_ai_setting || {};
+    baseUrl = (setting.baseUrl || '').replace(/\/+$/, '');
+    modelId = setting.modelId || '';
+    apiKey = setting.apiKey || '';
+
+    if (setting.autoProtocol !== false && !baseUrl) {
+        baseUrl = 'https://api.openai.com';
+    }
+
+    if (!baseUrl || !apiKey) {
+        throw new Error('请先在「设置-AI Setting」中配置接口信息');
+    }
+    if (!modelId) {
+        throw new Error('请先在「设置-AI Setting」中配置 Model ID');
+    }
+
+    // 构建 system prompt（首次对话时构建）
+    if (financeChatHistory.length === 0) {
+        const systemPrompt = await buildFinanceSystemPrompt();
+        financeChatHistory.push({ role: 'system', content: systemPrompt });
+    }
+    financeChatHistory.push({ role: 'user', content: userText });
+
+    let apiUrl;
+    const trimmedUrl = baseUrl.replace(/\/+$/, '');
+    if (/\/chat\/completions$/i.test(trimmedUrl)) {
+        apiUrl = trimmedUrl;
+    } else if (/\/v1$/i.test(trimmedUrl)) {
+        apiUrl = `${trimmedUrl}/chat/completions`;
+    } else {
+        apiUrl = `${trimmedUrl}/v1/chat/completions`;
+    }
+
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: modelId,
+            messages: financeChatHistory,
+            max_tokens: 1024,
+            temperature: 0.7
+        })
+    });
+
+    if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        throw new Error(`API 请求失败 (${response.status}): ${errText}`);
+    }
+
+    const data = await response.json();
+    const reply = stripAIThinking(data.choices?.[0]?.message?.content || 'AI 返回内容为空');
+    financeChatHistory.push({ role: 'assistant', content: reply });
+    return reply;
+}
+
+/**
+ * 在 AI 内容区追加一条消息气泡
+ */
+function appendFinanceChatMessage(role, text, isError = false) {
+    const aiContent = document.getElementById('finance-ai-summary-content');
+    if (!aiContent) return null;
+    // 首次添加消息时清空 placeholder
+    const placeholder = aiContent.querySelector('.finance-ai-summary-placeholder');
+    if (placeholder) placeholder.remove();
+
+    const msgDiv = document.createElement('div');
+    if (isError) {
+        msgDiv.className = 'finance-chat-msg error';
+    } else if (role === 'loading') {
+        msgDiv.className = 'finance-chat-msg loading';
+        msgDiv.textContent = text;
+    } else {
+        msgDiv.className = `finance-chat-msg ${role === 'user' ? 'user' : 'ai'}`;
+        msgDiv.textContent = text;
+    }
+    aiContent.appendChild(msgDiv);
+    aiContent.scrollTop = aiContent.scrollHeight;
+    return msgDiv;
+}
+
+if (financeChatInput && financeChatSend) {
+    // 自动调整 textarea 高度
+    financeChatInput.addEventListener('input', () => {
+        financeChatInput.style.height = 'auto';
+        financeChatInput.style.height = Math.min(financeChatInput.scrollHeight, 80) + 'px';
+    });
+
+    // Enter 发送，Shift+Enter 换行
+    financeChatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            financeChatSend.click();
+        }
+    });
+
+    financeChatSend.addEventListener('click', async () => {
+        const text = financeChatInput.value.trim();
+        if (!text) return;
+
+        // 显示用户消息
+        appendFinanceChatMessage('user', text);
+        financeChatInput.value = '';
+        financeChatInput.style.height = 'auto';
+
+        // 显示加载状态
+        const loadingMsg = appendFinanceChatMessage('loading', 'AI 正在思考...');
+        financeChatSend.classList.add('loading');
+        financeChatSend.disabled = true;
+
+        try {
+            const reply = await sendFinanceChat(text);
+            if (loadingMsg) loadingMsg.remove();
+            appendFinanceChatMessage('ai', reply);
+        } catch (e) {
+            if (loadingMsg) loadingMsg.remove();
+            appendFinanceChatMessage('error', e.message || '请求失败', true);
+            if (e.message && (e.message.includes('AI Setting') || e.message.includes('请先'))) {
+                showAIConfigPrompt();
+            }
+        } finally {
+            financeChatSend.classList.remove('loading');
+            financeChatSend.disabled = false;
+            financeChatInput.focus();
+        }
+    });
 }
 
 // 限制 OffsetX 范围，不让图表移出视野太远

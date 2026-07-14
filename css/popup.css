@@ -2722,6 +2722,71 @@ input:checked+.slider:before {
     color: var(--primary-color);
 }
 
+/* === 倒数日完成状态开关 === */
+.cd-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cd-toggle {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.cd-checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.cd-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #d1d5db;
+    transition: .3s;
+    border-radius: 18px;
+}
+
+.cd-slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.cd-checkbox:checked + .cd-slider {
+    background-color: #16a34a;
+}
+
+.cd-checkbox:checked + .cd-slider:before {
+    transform: translateX(14px);
+}
+
+.cd-title.completed {
+    text-decoration: line-through;
+    color: #b0b0b0;
+}
+
+.cd-days-left.completed {
+    text-decoration: line-through;
+    color: #b0b0b0;
+}
+
 /* === 鍊掓暟鏃ヨ緭鍏ョ粍浠 (Modern) === */
 .cd-input-container {
     background-color: #fff;
@@ -6085,11 +6150,11 @@ transform: translateY(-1px);
 }
 
 .date-detail-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #e2e8f0;
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 7px 20px;
+border-bottom: 1px solid #e2e8f0;
 }
 
 .date-detail-title {
