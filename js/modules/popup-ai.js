@@ -423,6 +423,7 @@ function applyProviderToAISetting(provider) {
         myAiSetting.baseUrl = aiSettingBaseUrl ? aiSettingBaseUrl.value : '';
         myAiSetting.modelId = aiSettingModelId ? aiSettingModelId.value : '';
         myAiSetting.apiKey = aiSettingApiKey ? aiSettingApiKey.value : '';
+        myAiSetting.providerTitle = provider.title || '';
         saveAISetting();
         showToast('已从 Provider 填入 AI Setting');
     };

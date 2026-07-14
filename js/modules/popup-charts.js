@@ -788,7 +788,7 @@ const initChartData = async () => {
     const dailyIncome = new Array(lastDateOfMonth).fill(0);
     const dailyExpense = new Array(lastDateOfMonth).fill(0);
     const days = Array.from({length: lastDateOfMonth}, (_, i) => i + 1);
-    let totalIncome = 0, totalExpense = 0;
+    let totalIncome = 0, totalExpense = 0, totalDeposit = 0;
 
     for (let i = 1; i <= lastDateOfMonth; i++) {
         const dateKey = `fin_${currYear}-${currMonth + 1}-${i}`;
@@ -800,7 +800,7 @@ const initChartData = async () => {
                     dailyIncome[i - 1] += val;
                     totalIncome += val;
                 } else if (item.type === 'deposit') {
-                    /* 存款不计入收支 */
+                    totalDeposit += val;
                 } else {
                     dailyExpense[i - 1] += val;
                     totalExpense += val;
@@ -814,7 +814,8 @@ const initChartData = async () => {
         income: dailyIncome,
         expense: dailyExpense,
         totalIncome,
-        totalExpense
+        totalExpense,
+        totalDeposit
     };
 };
 
@@ -1135,8 +1136,9 @@ const openFinanceChart = async () => {
     // 更新汇总栏
     const summaryBar = document.getElementById('chart-summary-bar');
     if (summaryBar) {
-        const { totalIncome, totalExpense } = chartState.data;
-        const balance = totalIncome - totalExpense;
+        const { totalIncome, totalExpense, totalDeposit } = chartState.data;
+        let balance = totalIncome - totalExpense;
+        if (!depositInBalance) balance -= (totalDeposit || 0);
         summaryBar.innerHTML = `
             <div class="chart-summary-item"><span class="label">总收入</span><span class="value inc">¥${totalIncome.toFixed(2)}</span></div>
             <div class="chart-summary-item"><span class="label">总支出</span><span class="value exp">¥${totalExpense.toFixed(2)}</span></div>

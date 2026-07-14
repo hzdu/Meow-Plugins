@@ -73,6 +73,17 @@ body {
     text-overflow: ellipsis;
 }
 
+.titlebar-model-id {
+    font-size: 11px;
+    font-weight: 400;
+    color: #9ca3af;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+    display: none;
+}
+
 .titlebar-buttons {
     display: flex;
     align-items: center;
@@ -1614,31 +1625,31 @@ body.panel-minimized .panel-titlebar-mini {
 
 .fin-summary {
     display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .fin-card {
     flex: 1;
-    padding: 8px 12px;
-    border-radius: 10px;
+    padding: 4px 8px;
+    border-radius: 8px;
     text-align: center;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .fin-card .label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     opacity: 0.9;
     font-weight: 500;
 }
 
 .fin-card .amount {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: 700;
 }
 
@@ -1650,6 +1661,60 @@ body.panel-minimized .panel-titlebar-mini {
 .fin-card.expense {
     background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
     color: #991b1b;
+}
+
+/* === 存款计入余额开关 === */
+.fin-deposit-toggle-row {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.fin-deposit-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.fin-deposit-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.fin-toggle-track {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    background: #cbd5e1;
+    border-radius: 10px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.fin-deposit-toggle input:checked + .fin-toggle-track {
+    background: var(--primary-color);
+}
+
+.fin-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.fin-deposit-toggle input:checked + .fin-toggle-track .fin-toggle-thumb {
+    transform: translateX(14px);
+}
+
+.fin-deposit-toggle-label {
+    font-size: 0.72rem;
+    color: #64748b;
 }
 
 /* === 璐㈠姟杈撳叆琛屼紭鍖 (New Design) === */

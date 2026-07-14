@@ -228,6 +228,12 @@ const aiProviderNoteViewer = document.getElementById('ai-provider-note-viewer');
 const aiProviderNoteViewerContent = document.getElementById('ai-provider-note-viewer-content');
 const closeAiProviderNoteViewer = document.getElementById('close-ai-provider-note-viewer');
 
+// AI Setting 选择弹窗元素
+const aiSettingSelectModal = document.getElementById('ai-setting-select-modal');
+const aiSettingSelectTitle = document.getElementById('ai-setting-select-title');
+const aiSettingSelectList = document.getElementById('ai-setting-select-list');
+const closeAiSettingSelectModal = document.getElementById('close-ai-setting-select-modal');
+
 // AI合集元素
 const aiTagsContainer = document.getElementById('ai-tags-container');
 const aiIframeWrapper = document.getElementById('ai-iframe-wrapper');

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Meow",
-  "version": "18.10.11",
+  "version": "18.10.12",
   "description": "这家伙不仅能摸鱼，现在还能帮你过日子。除了不掉毛，日历、记账、闹钟、网页涂鸦等样样精通，喵~🐱",
   "permissions": [
     "storage",

@@ -397,7 +397,7 @@ function exportFinanceData(rangeType) {
                                 const typeStr = r.type === 'income' ? '收入' : r.type === 'deposit' ? '存款' : '支出';
                                 
                                 if (r.type === 'income') totalIncome += amountVal;
-                                else if (r.type === 'deposit') { /* 存款不计入支出 */ }
+                                else if (r.type === 'deposit') { /* 存款不计入收支 */ }
                                 else totalExpense += amountVal;
 
                                 let safeNote = (r.note || '').replace(/"/g, '""'); 

@@ -51,6 +51,8 @@ const summaryIncome = document.getElementById("summary-income");
 const summaryExpense = document.getElementById("summary-expense");
 const finInputRow = document.querySelector(".fin-input-container");
 const finNoteDropdown = document.getElementById("fin-note-dropdown");
+const depositInBalanceToggle = document.getElementById("deposit-in-balance-toggle");
+let depositInBalance = false; // 是否将存款计入余额，默认关闭
 
 // 账本关联 Modal 元素
 const finLinkModal = document.getElementById('fin-link-modal');
@@ -498,6 +500,9 @@ const renderApp = async () => {
     await meowI18n.init();
     updateTabTitleTips();
 
+    // 2. 尽早加载存款计入余额开关设置，确保后续所有渲染使用正确状态
+    await loadDepositInBalanceSetting();
+
     // 绑定语言选择事件
     const langSelect = document.getElementById('language-select');
     if (langSelect) {
@@ -583,4 +588,13 @@ const renderApp = async () => {
     // 初始化 tab 拖放排序
     initTabDragSort();
 };
+
+// popup 重新可见时重新加载存款开关设置并重算
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+        await loadDepositInBalanceSetting();
+        renderCalendar();
+        renderFinanceView();
+    }
+});
 

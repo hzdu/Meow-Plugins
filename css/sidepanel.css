@@ -3832,6 +3832,58 @@ body {
     word-break: break-all;
 }
 
+/* === AI Setting 选择弹窗样式 === */
+.ai-setting-select-item {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+    color: #1e293b;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    font-family: monospace;
+}
+.ai-setting-select-item:hover {
+    border-color: #8b5cf6;
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+
+/* 暗色：AI Setting 选择弹窗 */
+.dark .ai-setting-select-item,
+.theme-dark .ai-setting-select-item {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+.dark .ai-setting-select-item:hover,
+.theme-dark .ai-setting-select-item:hover {
+    border-color: #6366f1;
+    background: #1e1b4b;
+    color: #c7d2fe;
+}
+
+/* === AI Provider 卡片：应用到 AI Setting 按钮 === */
+.ai-card-actions .ai-apply-btn {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.ai-card-actions .ai-apply-btn:hover {
+    color: #6d28d9 !important;
+}
+.dark .ai-card-actions .ai-apply-btn,
+.theme-dark .ai-card-actions .ai-apply-btn {
+    color: #818cf8 !important;
+}
+.dark .ai-card-actions .ai-apply-btn:hover,
+.theme-dark .ai-card-actions .ai-apply-btn:hover {
+    color: #a5b4fc !important;
+}
+
 /* 暗色：供应商链接 */
 .dark .srv-provider-link:hover .material-icons,
 .theme-dark .srv-provider-link:hover .material-icons {

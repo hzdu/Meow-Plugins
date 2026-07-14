@@ -8,6 +8,22 @@ const loadAndRenderFinanceList = async (dateKey) => {
     exitFinEditMode(); 
 };
 
+// === 存款计入余额开关 ===
+const loadDepositInBalanceSetting = async () => {
+    const data = await getStorageData('meow_deposit_in_balance');
+    depositInBalance = data === true; // 默认关闭，仅当明确存为 true 时才开启
+    if (depositInBalanceToggle) depositInBalanceToggle.checked = depositInBalance;
+};
+
+if (depositInBalanceToggle) {
+    depositInBalanceToggle.addEventListener('change', () => {
+        depositInBalance = depositInBalanceToggle.checked;
+        chrome.storage.sync.set({ 'meow_deposit_in_balance': depositInBalance });
+        renderFinanceView();
+        renderCalendar();
+    });
+}
+
 const renderFinanceView = () => {
     finList.innerHTML = "";
     let totalIncome = 0, totalExpense = 0;
@@ -17,7 +33,7 @@ const renderFinanceView = () => {
         currentFinList.forEach((item, index) => {
             const val = parseFloat(item.amount);
             if (item.type === 'income') totalIncome += val;
-            else if (item.type === 'deposit') { /* 存款不计入支出 */ }
+            else if (item.type === 'deposit') { /* 存款不计入收支显示 */ }
             else totalExpense += val;
             const li = document.createElement("li"); li.className = "fin-item";
             li.draggable = true; // 允许拖拽

@@ -15,6 +15,7 @@
         <span class="titlebar-drag-handle" id="titlebar-drag-handle">
             <span class="material-icons" style="font-size:16px;">drag_indicator</span>
             <span class="titlebar-title">Meow</span>
+            <span class="titlebar-model-id" id="titlebar-model-id"></span>
         </span>
         <div class="titlebar-buttons">
             <button class="titlebar-btn" id="titlebar-minimize" title="收起面板">
@@ -211,6 +212,15 @@
                         <span class="label" data-i18n="expense">支出</span>
                         <span class="amount" id="summary-expense">-0.00</span>
                     </div>
+                </div>
+                <div class="fin-deposit-toggle-row">
+                    <label class="fin-deposit-toggle">
+                        <input type="checkbox" id="deposit-in-balance-toggle">
+                        <span class="fin-toggle-track">
+                            <span class="fin-toggle-thumb"></span>
+                        </span>
+                        <span class="fin-deposit-toggle-label" data-i18n="deposit_in_balance">将存款计入余额</span>
+                    </label>
                 </div>
                 <div class="fin-input-container">
                     <div class="fin-row-top">

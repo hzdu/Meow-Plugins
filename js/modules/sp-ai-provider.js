@@ -2,6 +2,8 @@
 // 此文件由 sidepanel.js 拆分而来
 
 // === AI Provider 模块 ===
+let myAiSetting = { baseUrl: '', modelId: '', apiKey: '', autoProtocol: true };
+
 function saveAIProviders() {
     chrome.storage.local.set({ 'meow_ai_providers': myAiProviders });
 }
@@ -58,6 +60,7 @@ function renderAIProviders() {
                 <span class="material-icons ai-card-toggle">expand_more</span>
                 <span class="ai-card-name">${nameDisplay}</span>
                 <div class="ai-card-actions">
+                    <span class="material-icons ai-apply-btn" title="应用到 AI Setting" style="font-size:16px;color:#8b5cf6;">play_arrow</span>
                     ${hasNote ? `<span class="material-icons ai-note-btn" title="查看备注">description</span>` : ''}
                     ${officialLink ? `<a class="ai-official-link" href="${officialLink}" target="_blank" title="打开官网" onclick="event.stopPropagation()"><span class="material-icons">open_in_new</span></a>` : ''}
                     <span class="material-icons ai-edit-btn" data-id="${provider.id}">edit</span>
@@ -108,6 +111,11 @@ function renderAIProviders() {
         card.querySelector('.ai-edit-btn').addEventListener('click', function(e) {
             e.stopPropagation();
             openAIModal(provider);
+        });
+
+        card.querySelector('.ai-apply-btn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            applyProviderToAISetting(provider);
         });
 
         const noteBtn = card.querySelector('.ai-note-btn');
@@ -284,6 +292,116 @@ function importAIProviders() {
     document.body.removeChild(fileInput);
 }
 
+// === AI Setting 选择弹窗 ===
+function openAISettingSelectModal(title, items, callback) {
+    if (!aiSettingSelectModal || !aiSettingSelectTitle || !aiSettingSelectList) return;
+    aiSettingSelectTitle.textContent = title;
+    aiSettingSelectList.innerHTML = '';
+    items.forEach((item) => {
+        const btn = document.createElement('button');
+        btn.className = 'ai-setting-select-item';
+        btn.textContent = item;
+        btn.addEventListener('click', function() {
+            closeAISettingSelectModalFn();
+            callback(item);
+        });
+        aiSettingSelectList.appendChild(btn);
+    });
+    aiSettingSelectModal.classList.remove('hidden');
+}
+
+function closeAISettingSelectModalFn() {
+    if (aiSettingSelectModal) {
+        aiSettingSelectModal.classList.add('hidden');
+    }
+}
+
+/**
+ * 将 AI Provider 的内容填入 AI Setting
+ */
+async function applyProviderToAISetting(provider) {
+    const urls = Array.isArray(provider.baseUrls) ? provider.baseUrls : (provider.baseUrl ? [provider.baseUrl] : []);
+    const models = Array.isArray(provider.models) ? provider.models : (provider.model ? [provider.model] : []);
+
+    // 加载当前 AI Setting
+    try {
+        const result = await chrome.storage.local.get(['meow_ai_setting']);
+        myAiSetting = result.meow_ai_setting || { baseUrl: '', modelId: '', apiKey: '', autoProtocol: true };
+    } catch (e) {
+        myAiSetting = { baseUrl: '', modelId: '', apiKey: '', autoProtocol: true };
+    }
+
+    // 处理 API Key（立即设置）
+    if (provider.key) {
+        myAiSetting.apiKey = provider.key;
+    }
+
+    // 收集需要弹窗选择的项目（按顺序：先 URL 后 Model）
+    const selections = [];
+
+    // 处理 Base URL
+    if (urls.length === 0) {
+        myAiSetting.baseUrl = '';
+    } else if (urls.length === 1) {
+        myAiSetting.baseUrl = urls[0];
+    } else {
+        // 多个 URL，稍后弹窗选择
+        selections.push({
+            title: '选择 Base URL',
+            items: urls,
+            apply: function(selected) { myAiSetting.baseUrl = selected; }
+        });
+    }
+
+    // 处理 Model
+    if (models.length === 0) {
+        myAiSetting.modelId = '';
+    } else if (models.length === 1) {
+        myAiSetting.modelId = models[0];
+    } else {
+        // 多个 Model，稍后弹窗选择
+        selections.push({
+            title: '选择 Model',
+            items: models,
+            apply: function(selected) { myAiSetting.modelId = selected; }
+        });
+    }
+
+    // 自动补充协议地址：如果开启且 Base URL 为空则填入 OpenAI 地址
+    if (myAiSetting.autoProtocol !== false) {
+        if (!myAiSetting.baseUrl || !myAiSetting.baseUrl.trim()) {
+            myAiSetting.baseUrl = 'https://api.openai.com';
+        }
+    }
+
+    myAiSetting.providerTitle = provider.title || '';
+
+    // 保存函数：写入 storage
+    const doSave = () => {
+        chrome.storage.local.set({ 'meow_ai_setting': myAiSetting });
+        showToast('已从 Provider 填入 AI Setting');
+    };
+
+    if (selections.length === 0) {
+        // 无需弹窗，直接保存
+        doSave();
+    } else {
+        // 依次弹窗选择，最后一个选择完成后再保存
+        const showNext = (index) => {
+            if (index >= selections.length) {
+                doSave();
+                return;
+            }
+            const sel = selections[index];
+            openAISettingSelectModal(sel.title, sel.items, function(selected) {
+                sel.apply(selected);
+                showNext(index + 1);
+            });
+        };
+        showNext(0);
+    }
+}
+
 function setupAILogic() {
     if (!aiProviderList) return;
 
@@ -324,6 +442,14 @@ function setupAILogic() {
     if (aiProviderNoteViewer) {
         aiProviderNoteViewer.addEventListener('click', function(e) {
             if (e.target === aiProviderNoteViewer) aiProviderNoteViewer.classList.add('hidden');
+        });
+    }
+    if (closeAiSettingSelectModal) {
+        closeAiSettingSelectModal.addEventListener('click', closeAISettingSelectModalFn);
+    }
+    if (aiSettingSelectModal) {
+        aiSettingSelectModal.addEventListener('click', function(e) {
+            if (e.target === aiSettingSelectModal) closeAISettingSelectModalFn();
         });
     }
     if (aiProviderSaveBtn) {

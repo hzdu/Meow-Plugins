@@ -4,6 +4,33 @@
 // === Title Bar Initialization (Panel Integration) ===
 
 /**
+ * 更新标题栏上显示的 AI Model ID 及来源
+ */
+async function updateTitleBarModelId() {
+    try {
+        const result = await chrome.storage.local.get(['meow_ai_setting']);
+        const setting = result.meow_ai_setting || {};
+        const modelId = setting.modelId || '';
+        const providerTitle = setting.providerTitle || '';
+        const el = document.getElementById('titlebar-model-id');
+        if (el) {
+            if (modelId) {
+                const source = providerTitle || '自定义Provider';
+                el.textContent = '- ' + modelId + ' - ' + source;
+                el.title = 'AI Model: ' + modelId + '\n来源: ' + source;
+                el.style.display = 'inline-block';
+            } else {
+                el.textContent = '';
+                el.removeAttribute('title');
+                el.style.display = 'none';
+            }
+        }
+    } catch (e) {
+        console.error('[Meow TitleBar] Failed to load model ID:', e);
+    }
+}
+
+/**
  * 关闭面板：在 iframe 嵌入模式通过 postMessage 通知父页面关闭；
  * 在浏览器弹出窗口模式直接调用 window.close()。
  */
@@ -58,6 +85,16 @@ function closePanel() {
             window.parent.postMessage({ action: 'panel-restore' }, '*');
         });
     }
+
+    // 初始化：加载并显示 AI Model ID
+    updateTitleBarModelId();
+
+    // 监听 AI Setting 变化，实时更新标题栏 Model ID
+    chrome.storage.onChanged.addListener(function(changes, area) {
+        if (area === 'local' && changes.meow_ai_setting) {
+            updateTitleBarModelId();
+        }
+    });
 
     // Drag - track pointer deltas inside iframe, send to parent via postMessage
     if (dragHandle) {

@@ -79,6 +79,7 @@ const renderCalendar = async () => {
     
     let monthTotalIncome = 0;
     let monthTotalExpense = 0;
+    let monthTotalDeposit = 0;
     const balanceKey = `fin_bal_${currYear}-${currMonth + 1}`;
     let beginBalance = parseFloat(allData[balanceKey]) || 0;
 
@@ -103,7 +104,7 @@ const renderCalendar = async () => {
             finData.forEach(item => {
                 const val = parseFloat(item.amount) || 0;
                 if (item.type === 'income') { dayInc += val; monthTotalIncome += val; } 
-                else if (item.type === 'deposit') { /* 存款不计入支出 */ }
+                else if (item.type === 'deposit') { monthTotalDeposit += val; }
                 else { dayExp += val; monthTotalExpense += val; }
             });
             let finClass = "";
@@ -160,8 +161,10 @@ const renderCalendar = async () => {
     monthBeginVal.innerText = beginBalance.toFixed(2);
     document.getElementById('month-total-income').innerText = monthTotalIncome.toFixed(2);
     document.getElementById('month-total-expense').innerText = monthTotalExpense.toFixed(2);
-    document.getElementById('month-total-balance').innerText = (monthTotalIncome - monthTotalExpense).toFixed(2);
-    let endBalance = beginBalance + monthTotalIncome - monthTotalExpense;
+    let monthBalance = monthTotalIncome - monthTotalExpense;
+    if (!depositInBalance) monthBalance -= monthTotalDeposit;
+    document.getElementById('month-total-balance').innerText = monthBalance.toFixed(2);
+    let endBalance = beginBalance + monthBalance;
     monthEndVal.innerText = endBalance.toFixed(2);
     addClickEventToDays();
 };
@@ -325,16 +328,18 @@ const buildTooltipContent = (tipType, dateKey) => {
     } else if (tipType === 'finance') {
         const finData = data[`fin_${dateKey}`];
         const finList = Array.isArray(finData) ? finData : [];
-        let totalInc = 0, totalExp = 0;
+        let totalInc = 0, totalExp = 0, totalDep = 0;
         finList.forEach(item => {
             const val = parseFloat(item.amount) || 0;
             if (item.type === 'income') totalInc += val;
-            else if (item.type === 'deposit') { /* 存款不计入支出 */ }
+            else if (item.type === 'deposit') totalDep += val;
             else totalExp += val;
         });
+        let dayBalance = totalInc - totalExp;
+        if (!depositInBalance) dayBalance -= totalDep;
 
         html += `<div class="ct-header" style="color:#f59e0b;"><span class="material-icons">account_balance_wallet</span>财务账本</div>`;
-        html += `<div class="ct-summary"><span style="color:#10b981;">收 +${totalInc.toFixed(2)}</span><span style="color:#ef4444;">支 -${totalExp.toFixed(2)}</span><span style="color:#6b7280;">余 ${(totalInc - totalExp).toFixed(2)}</span></div>`;
+        html += `<div class="ct-summary"><span style="color:#10b981;">收 +${totalInc.toFixed(2)}</span><span style="color:#ef4444;">支 -${totalExp.toFixed(2)}</span><span style="color:#6b7280;">余 ${dayBalance.toFixed(2)}</span></div>`;
         if (finList.length > 0) {
             html += '<div class="ct-list">';
             finList.forEach(item => {

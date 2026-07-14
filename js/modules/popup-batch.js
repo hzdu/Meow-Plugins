@@ -414,6 +414,7 @@ function closeBatchModal() {
             myAiSetting.modelId = aiSettingModelId ? aiSettingModelId.value.trim() : '';
             myAiSetting.apiKey = aiSettingApiKey ? aiSettingApiKey.value.trim() : '';
             myAiSetting.autoProtocol = aiSettingAutoProtocol ? aiSettingAutoProtocol.checked : true;
+            myAiSetting.providerTitle = '';
             // 自动补充协议地址
             if (myAiSetting.autoProtocol && !myAiSetting.baseUrl) {
                 myAiSetting.baseUrl = 'https://api.openai.com';
