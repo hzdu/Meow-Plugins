@@ -479,12 +479,16 @@ async function fetchDateDetailAISummary() {
     const finData = await getStorageData(`fin_${dateDetailCurrentKey}`);
     const finItems = Array.isArray(finData) ? finData : [];
 
-    // 收集全部财务规划数据（包含已完成和待完成的项）
-    const allPeItems = Array.isArray(preExpensesList) ? preExpensesList : [];
+    // 收集本月财务规划数据（排除已禁用的重复项，它们本月不生效）
+    const allPeItems = (Array.isArray(preExpensesList) ? preExpensesList : [])
+        .filter(item => !(item.recurring && item.enabled === false));
 
     // 收集倒数日数据
     const cdData = await getStorageData('countdowns_config');
     const cdItems = Array.isArray(cdData) ? cdData : [];
+
+    // 收集账本关联数据
+    const finLinksMap = await buildDateDetailFinLinksMap(finItems);
 
     // 读取固定资产 AI 开关，开启时收集固定资产数据
     let assetsData = null;
@@ -497,7 +501,7 @@ async function fetchDateDetailAISummary() {
     }
 
     const lang = window.meowI18n ? (meowI18n.lang || 'zh-CN') : 'zh-CN';
-    const prompt = dateDetailPrompt(dateDetailCurrentKey, todoItems, finItems, lang, allPeItems, assetsData, cdItems);
+    const prompt = dateDetailPrompt(dateDetailCurrentKey, todoItems, finItems, lang, allPeItems, assetsData, cdItems, finLinksMap);
 
     let apiUrl;
     const trimmedUrl = baseUrl.replace(/\/+$/, '');
@@ -574,12 +578,16 @@ async function buildDateDetailSystemPrompt() {
     const finData = await getStorageData(`fin_${dateDetailCurrentKey}`);
     const finItems = Array.isArray(finData) ? finData : [];
 
-    // 收集全部财务规划数据（包含已完成和待完成的项）
-    const allPeItems = Array.isArray(preExpensesList) ? preExpensesList : [];
+    // 收集本月财务规划数据（排除已禁用的重复项，它们本月不生效）
+    const allPeItems = (Array.isArray(preExpensesList) ? preExpensesList : [])
+        .filter(item => !(item.recurring && item.enabled === false));
 
     // 收集倒数日数据
     const cdData = await getStorageData('countdowns_config');
     const cdItems = Array.isArray(cdData) ? cdData : [];
+
+    // 收集账本关联数据
+    const finLinksMap = await buildDateDetailFinLinksMap(finItems);
 
     let assetsData = null;
     const aiAssetsFlag = await getStorageData('meow_assets_ai_enabled');
@@ -592,7 +600,7 @@ async function buildDateDetailSystemPrompt() {
 
     const lang = window.meowI18n ? (meowI18n.lang || 'zh-CN') : 'zh-CN';
     // 复用 dateDetailPrompt 构建系统提示
-    const prompt = dateDetailPrompt(dateDetailCurrentKey, todoItems, finItems, lang, allPeItems, assetsData, cdItems);
+    const prompt = dateDetailPrompt(dateDetailCurrentKey, todoItems, finItems, lang, allPeItems, assetsData, cdItems, finLinksMap);
     return `你是一个可爱的女朋友助手，正在和用户讨论某一天的生活安排。以下是当天数据，请基于这些数据回答用户的问题。\n\n${prompt}\n\n请保持可爱、粘人的女朋友口吻，回答简洁有趣。`;
 }
 
@@ -1434,6 +1442,88 @@ const openFinanceChart = async () => {
     }
 };
 
+// 构建月度财务账本关联数据（供 AI 分析使用）
+function buildMonthlyFinLinks(allItems, allData) {
+    const finLinksData = Array.isArray(allData['meow_fin_links']) ? allData['meow_fin_links'] : [];
+    if (finLinksData.length === 0) return [];
+
+    const itemMap = new Map();
+    allItems.forEach(item => {
+        if (item.id) itemMap.set(item.id, item);
+    });
+
+    const linksForAI = [];
+    finLinksData.forEach(link => {
+        const fromItem = itemMap.get(link.from?.id);
+        const toItem = itemMap.get(link.to?.id);
+        if (fromItem && toItem) {
+            linksForAI.push({
+                fromDate: fromItem.date,
+                fromNote: fromItem.note,
+                fromType: fromItem.type,
+                fromAmount: fromItem.amount,
+                toDate: toItem.date,
+                toNote: toItem.note,
+                toType: toItem.type,
+                toAmount: toItem.amount
+            });
+        }
+    });
+    return linksForAI;
+}
+
+// 构建日期详情的账本关联映射（供 AI 分析使用）
+// 返回: { itemId: [{date, note, type, amount}] }
+async function buildDateDetailFinLinksMap(finItems) {
+    const finLinksMap = {};
+    if (!Array.isArray(finItems) || finItems.length === 0) return finLinksMap;
+
+    const finLinksRaw = await getStorageData('meow_fin_links');
+    const finLinksData = Array.isArray(finLinksRaw) ? finLinksRaw : [];
+    if (finLinksData.length === 0) return finLinksMap;
+
+    const itemIds = new Set(finItems.map(item => item.id).filter(Boolean));
+
+    for (const link of finLinksData) {
+        const fromId = link.from?.id;
+        const toId = link.to?.id;
+        const fromDateKey = link.from?.dateKey;
+        const toDateKey = link.to?.dateKey;
+
+        // 当日项是 from 端，取 to 端的数据
+        if (itemIds.has(fromId) && toDateKey) {
+            const toData = await getStorageData(`fin_${toDateKey}`);
+            const toItem = Array.isArray(toData) ? toData.find(x => x.id === toId) : null;
+            if (toItem) {
+                if (!finLinksMap[fromId]) finLinksMap[fromId] = [];
+                finLinksMap[fromId].push({
+                    date: toDateKey,
+                    note: toItem.note || '',
+                    type: toItem.type || 'expense',
+                    amount: parseFloat(toItem.amount) || 0
+                });
+            }
+        }
+
+        // 当日项是 to 端，取 from 端的数据
+        if (itemIds.has(toId) && fromDateKey) {
+            const fromData = await getStorageData(`fin_${fromDateKey}`);
+            const fromItem = Array.isArray(fromData) ? fromData.find(x => x.id === fromId) : null;
+            if (fromItem) {
+                if (!finLinksMap[toId]) finLinksMap[toId] = [];
+                finLinksMap[toId].push({
+                    date: fromDateKey,
+                    note: fromItem.note || '',
+                    type: fromItem.type || 'expense',
+                    amount: parseFloat(fromItem.amount) || 0
+                });
+            }
+        }
+    }
+
+    return finLinksMap;
+}
+
 // 获取本月财务数据（含备注）并调用 AI 总结
 async function fetchFinanceAISummary() {
     // 1. 从 AI Setting 获取配置
@@ -1469,6 +1559,7 @@ async function fetchFinanceAISummary() {
             dayData.forEach(item => {
                 if (item.amount && parseFloat(item.amount) !== 0) {
                     allItems.push({
+                        id: item.id,
                         date: `${currYear}-${currMonth + 1}-${d}`,
                         type: item.type || 'expense',
                         amount: parseFloat(item.amount),
@@ -1491,10 +1582,13 @@ async function fetchFinanceAISummary() {
         }
     }
 
+    // 收集账本关联数据
+    const linksForAI = buildMonthlyFinLinks(allItems, allData);
+
     // 3. 构造请求
     const lang = window.meowI18n ? (meowI18n.lang || 'zh-CN') : 'zh-CN';
 
-    const prompt = AI_PROMPTS.financeSummary(currYear, currMonth, allItems, totalIncome, totalExpense, lang, assetsData);
+    const prompt = AI_PROMPTS.financeSummary(currYear, currMonth, allItems, totalIncome, totalExpense, lang, assetsData, linksForAI);
 
     let apiUrl;
     const trimmedUrl = baseUrl.replace(/\/+$/, '');
@@ -1552,6 +1646,7 @@ async function buildFinanceSystemPrompt() {
             dayData.forEach(item => {
                 if (item.amount && parseFloat(item.amount) !== 0) {
                     allItems.push({
+                        id: item.id,
                         date: `${currYear}-${currMonth + 1}-${d}`,
                         type: item.type || 'expense',
                         amount: parseFloat(item.amount),
@@ -1574,8 +1669,11 @@ async function buildFinanceSystemPrompt() {
         }
     }
 
+    // 收集账本关联数据
+    const linksForAI = buildMonthlyFinLinks(allItems, allData);
+
     const lang = window.meowI18n ? (meowI18n.lang || 'zh-CN') : 'zh-CN';
-    const prompt = AI_PROMPTS.financeSummary(currYear, currMonth, allItems, totalIncome, totalExpense, lang, assetsData);
+    const prompt = AI_PROMPTS.financeSummary(currYear, currMonth, allItems, totalIncome, totalExpense, lang, assetsData, linksForAI);
     return `你是一个可爱的女朋友助手，正在和用户讨论本月的财务状况。以下是本月收支数据，请基于这些数据回答用户的问题。\n\n${prompt}\n\n请保持可爱、粘人的女朋友口吻，回答简洁有趣。`;
 }
 

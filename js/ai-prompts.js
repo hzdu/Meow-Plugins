@@ -7,14 +7,15 @@ const AI_PROMPTS = {
      * 月度财务分析提示词
      * @param {number} year - 年份
      * @param {number} month - 月份 (0-11)
-     * @param {Array} items - 收支数据数组 [{date, type, amount, note}]
+     * @param {Array} items - 收支数据数组 [{date, type, amount, note, id}]
      * @param {number} totalIncome - 总收入
      * @param {number} totalExpense - 总支出
      * @param {string} lang - 语言代码 (如 'zh-CN', 'en')
      * @param {Array} [assets] - 固定资产数组 [{name, type, quantity, payment, note}]
+     * @param {Array} [links] - 账本关联数组 [{fromDate, fromNote, fromType, fromAmount, toDate, toNote, toType, toAmount}]
      * @returns {string} 完整的 prompt
      */
-    financeSummary: (year, month, items, totalIncome, totalExpense, lang, assets) => {
+    financeSummary: (year, month, items, totalIncome, totalExpense, lang, assets, links) => {
         const langHint = (lang || '').startsWith('zh') ? '请用中文回答' : 'Please answer in English';
         let assetsText = '';
         if (Array.isArray(assets) && assets.length > 0) {
@@ -31,14 +32,24 @@ const AI_PROMPTS = {
                 return `${i + 1}. ${typeLabel}: ${item.name || ''} ×${qty} [${payLabel}] [${usageLabel}]${rent}${note}`;
             }).join('\n');
         }
+        // 账本关联信息
+        let linksText = '';
+        if (Array.isArray(links) && links.length > 0) {
+            linksText = '\n\n【账本关联】\n以下账目之间存在关联关系，请将关联的账目一起分析，说明它们之间的关联关系：\n' + links.map((l, i) => {
+                const fromSign = l.fromType === 'income' ? '+' : '-';
+                const toSign = l.toType === 'income' ? '+' : '-';
+                return `${i + 1}. ${l.fromDate} ${l.fromNote} ${fromSign}¥${l.fromAmount.toFixed(2)} ↔ ${l.toDate} ${l.toNote} ${toSign}¥${l.toAmount.toFixed(2)}`;
+            }).join('\n');
+        }
         return `你是专业的财务分析师。以下是我 ${year}年${month + 1}月 的收支数据（JSON格式）。` +
             `请分析我的月度财务状况，包括：总收入、总支出、结余、消费特点、是否有异常支出，` +
             `并给出合理的财务建议。${langHint}\n\n数据：\`\`\`json\n${JSON.stringify(items, null, 2)}\n\`\`\`` +
             `\n\n月度汇总：总收入 ¥${totalIncome.toFixed(2)}，总支出 ¥${totalExpense.toFixed(2)}，结余 ¥${(totalIncome - totalExpense).toFixed(2)}。` +
-            assetsText +
+            assetsText + linksText +
 			`\n说明：** 不用告诉我你是谁，我不感兴趣\n`+
 			`** 使用可爱、粘人的女朋友角度回答\n` + 
-			`** 数据返回的格式清晰，排版易于阅读`;
+			`** 数据返回的格式清晰，排版易于阅读` +
+            (linksText ? `\n** 存在关联的账目请一起分析，说明它们之间的关系` : '');
     }
 
 };
@@ -47,14 +58,15 @@ const AI_PROMPTS = {
  * 日期详情 AI 总结提示词
  * @param {string} dateKey - 日期 YYYY-M-D
  * @param {Array} todos - 待办事项数组
- * @param {Array} financeItems - 财务记录数组 [{type, amount, note}]
+ * @param {Array} financeItems - 财务记录数组 [{type, amount, note, id}]
  * @param {string} lang - 语言代码
  * @param {Array} [preExpenses] - 财务规划数组 [{name, amount, type, completed, recurring, recurDay, enabled}]
  * @param {Array} [assets] - 固定资产数组 [{name, type, quantity, payment, note}]
  * @param {Array} [countdowns] - 倒数日数组 [{title, date, completed}]
+ * @param {Object} [finLinksMap] - 账本关联映射 {itemId: [{date, note, type, amount}]}
  * @returns {string} 完整的 prompt
  */
-function dateDetailPrompt(dateKey, todos, financeItems, lang, preExpenses, assets, countdowns) {
+function dateDetailPrompt(dateKey, todos, financeItems, lang, preExpenses, assets, countdowns, finLinksMap) {
     const langHint = (lang || '').startsWith('zh') ? '请用中文回答' : 'Please answer in English';
     const parts = dateKey.split('-');
     const dateStr = `${parts[0]}年${parts[1]}月${parts[2]}日`;
@@ -73,7 +85,15 @@ function dateDetailPrompt(dateKey, todos, financeItems, lang, preExpenses, asset
         financeText = financeItems.map((item, i) => {
             const val = parseFloat(item.amount) || 0;
             const type = item.type === 'income' ? '收入' : '支出';
-            return `${i + 1}. ${type}: ${item.note || ''} ¥${val.toFixed(2)}`;
+            // 附加账本关联信息
+            let linkAnnotation = '';
+            if (finLinksMap && item.id && finLinksMap[item.id]) {
+                linkAnnotation = finLinksMap[item.id].map(l => {
+                    const lSign = l.type === 'income' ? '+' : '-';
+                    return `[关联→ ${l.date} ${l.note} ${lSign}¥${l.amount.toFixed(2)}]`;
+                }).join(' ');
+            }
+            return `${i + 1}. ${type}: ${item.note || ''} ¥${val.toFixed(2)}${linkAnnotation ? ' ' + linkAnnotation : ''}`;
         }).join('\n');
     }
 
@@ -140,10 +160,10 @@ function dateDetailPrompt(dateKey, todos, financeItems, lang, preExpenses, asset
     return `请分析 ${dateStr} 的日程和财务状况。${langHint}\n\n` +
         `【待办事项】\n${todoText}\n\n` +
         `【财务记录】\n${financeText}\n\n` +
-        `【财务规划】\n${preExpenseText}\n\n` +
+        `【本月财务规划】\n${preExpenseText}\n\n` +
         `【倒数日】\n${countdownText}` +
         assetsText + `\n\n` +
-        `请给出简要总结：当天任务完成情况、收支概况、财务规划执行情况、即将到来的倒数日提醒，以及简要建议。回答不要太长，控制在 200 字以内。\n` +
+        `请给出简要总结：当天任务完成情况、收支概况、本月财务规划执行情况、即将到来的倒数日提醒（含完成状态），以及简要建议。回答不要太长，控制在 200 字以内。\n` +
 		`说明：** 数据返回的格式清晰，排版易于阅读\n` +
 		`** 使用可爱、粘人的女朋友角度回答`;
 }

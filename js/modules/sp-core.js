@@ -316,9 +316,17 @@ function formatTime(timestamp) {
 // ================== 数据加载与保存 ==================
 async function loadData() {
     const syncData = await chrome.storage.sync.get(['meow_prompts', 'prompt_categories', 'meow_scratchpad_list', 'meow_read_later', 'meow_ai_tags', 'meow_hot_tab_order']);
-    const localData = await chrome.storage.local.get(['meow_gallery', 'meow_scratchpad', 'meow_scratchpad_list_local', 'meow_2fa_accounts']);
+    const localData = await chrome.storage.local.get(['meow_gallery', 'meow_scratchpad', 'meow_scratchpad_list_local', 'meow_2fa_accounts', 'meow_prompts']);
 
-    if (syncData.meow_prompts) myPrompts = syncData.meow_prompts;
+    // 提示词从 sync 迁移到 local（sync 有 8KB 单项限制，长提示词会存储失败）
+    if (localData.meow_prompts) {
+        myPrompts = localData.meow_prompts;
+    } else if (syncData.meow_prompts) {
+        myPrompts = syncData.meow_prompts;
+        // 迁移到 local 并清理 sync 中的旧数据
+        chrome.storage.local.set({ 'meow_prompts': myPrompts });
+        chrome.storage.sync.remove('meow_prompts');
+    }
     if (syncData.prompt_categories) promptCategories = syncData.prompt_categories;
 
     if (localData.meow_scratchpad_list_local) {
@@ -336,12 +344,12 @@ async function loadData() {
 
 function saveData() {
     chrome.storage.sync.set({
-        'meow_prompts': myPrompts,
         'prompt_categories': promptCategories,
         'meow_read_later': myReadLaterList,
         'meow_ai_tags': myAiTags
     });
     chrome.storage.local.set({
+        'meow_prompts': myPrompts,
         'meow_gallery': myGalleryImages,
         'meow_scratchpad_list_local': myScratchList,
         'meow_2fa_accounts': my2faAccounts
@@ -387,6 +395,74 @@ function restoreLastTab() {
         }
         const defaultBtn = document.querySelector('.tab-btn.active');
         if (defaultBtn) defaultBtn.click();
+    });
+}
+
+// ================== 侧边栏顶部 Tab 拖拽排序 ==================
+function saveSpTabOrder() {
+    const tabGroup = document.querySelector('.tab-group');
+    if (!tabGroup) return;
+    const tabs = tabGroup.querySelectorAll('.tab-btn');
+    const order = Array.from(tabs).map(t => t.dataset.target);
+    chrome.storage.local.set({ 'meow_sp_tab_order': order });
+}
+
+function restoreSpTabOrder() {
+    const tabGroup = document.querySelector('.tab-group');
+    if (!tabGroup) return;
+    chrome.storage.local.get(['meow_sp_tab_order'], (result) => {
+        const order = result.meow_sp_tab_order;
+        if (!order || !Array.isArray(order) || order.length === 0) return;
+        const currentTabs = tabGroup.querySelectorAll('.tab-btn');
+        const currentOrder = Array.from(currentTabs).map(t => t.dataset.target);
+        if (JSON.stringify(order) === JSON.stringify(currentOrder)) return;
+        const tabMap = {};
+        currentTabs.forEach(t => { tabMap[t.dataset.target] = t; });
+        order.forEach(tabKey => {
+            if (tabMap[tabKey]) tabGroup.appendChild(tabMap[tabKey]);
+        });
+    });
+}
+
+function initSpTabDragSort() {
+    const tabGroup = document.querySelector('.tab-group');
+    if (!tabGroup) return;
+    const tabs = tabGroup.querySelectorAll('.tab-btn');
+    let dragSrcEl = null;
+    tabs.forEach(tab => {
+        tab.draggable = true;
+        tab.addEventListener('dragstart', (e) => {
+            dragSrcEl = tab;
+            tab.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', tab.dataset.target);
+        });
+        tab.addEventListener('dragend', () => {
+            tab.classList.remove('dragging');
+            tabGroup.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('drag-over'));
+            dragSrcEl = null;
+        });
+        tab.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            tab.classList.add('drag-over');
+        });
+        tab.addEventListener('dragleave', () => {
+            tab.classList.remove('drag-over');
+        });
+        tab.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            tab.classList.remove('drag-over');
+            if (!dragSrcEl || dragSrcEl === tab) return;
+            const allTabs = tabGroup.querySelectorAll('.tab-btn');
+            const srcIdx = Array.from(allTabs).indexOf(dragSrcEl);
+            const tgtIdx = Array.from(allTabs).indexOf(tab);
+            if (srcIdx < 0 || tgtIdx < 0) return;
+            if (srcIdx < tgtIdx) tabGroup.insertBefore(dragSrcEl, tab.nextSibling);
+            else tabGroup.insertBefore(dragSrcEl, tab);
+            saveSpTabOrder();
+        });
     });
 }
 
@@ -546,6 +622,12 @@ async function initSidepanel() {
     searchPromptsInput.addEventListener('input', renderPromptList);
     searchScratchInput.addEventListener('input', renderScratchList);
     searchReadLaterInput.addEventListener('input', renderReadLaterList);
+
+    // === 恢复顶部 Tab 排序 ===
+    restoreSpTabOrder();
+
+    // === 初始化顶部 Tab 拖拽排序 ===
+    initSpTabDragSort();
 
     // === 恢复上次停留的标签页 ===
     restoreLastTab();

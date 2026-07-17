@@ -82,6 +82,27 @@ body {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+/* Tab 拖拽排序 */
+.tab-btn.dragging {
+    opacity: 0.4;
+    transform: scale(0.9);
+}
+.tab-btn.drag-over {
+    position: relative;
+}
+.tab-btn.drag-over::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: #6366f1;
+    border-radius: 1px;
+    z-index: 10;
+    pointer-events: none;
+}
+
 /* === 搜索框样式 === */
 .search-wrapper {
     position: relative;
