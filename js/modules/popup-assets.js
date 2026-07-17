@@ -215,14 +215,9 @@ function renderAssetsSummary() {
         const count = typeCounts[type] || 0;
         const unit = meowI18n.t(cfg.unit) || '';
         html += `
-            <div class="assets-summary-card" style="border-color:${cfg.color}33;">
-                <div class="assets-summary-icon" style="background:${cfg.color}1a;color:${cfg.color};">
-                    <span class="material-icons" style="font-size:18px;">${cfg.icon}</span>
-                </div>
-                <div class="assets-summary-info">
-                    <span class="assets-summary-count" style="color:${cfg.color};">${count}</span>
-                    <span class="assets-summary-label">${meowI18n.t(cfg.label) || ''}${unit ? ' ' + unit : ''}</span>
-                </div>
+            <div class="assets-summary-card" style="background:${cfg.color}1a;">
+                <span class="material-icons" style="font-size:14px;color:${cfg.color};">${cfg.icon}</span>
+                <span class="assets-summary-text" style="color:${cfg.color};">${meowI18n.t(cfg.label) || ''}${count}${unit}</span>
             </div>
         `;
     });
@@ -450,10 +445,10 @@ if (assetsSaveBtn) {
 if (assetsDeleteBtn) {
     assetsDeleteBtn.addEventListener('click', handleAssetsDelete);
 }
-// 点击遮罩关闭
+// 点击遮罩不关闭，防止丢失焦点
 if (assetsModal) {
-    assetsModal.addEventListener('click', (e) => {
-        if (e.target === assetsModal) closeAssetsModalFn();
+    assetsModal.addEventListener('mousedown', (e) => {
+        if (e.target === assetsModal) e.preventDefault();
     });
 }
 // 回车保存

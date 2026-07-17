@@ -300,16 +300,15 @@ function closeBatchModal() {
         });
     }
     if (aiNoteViewer) {
-        aiNoteViewer.addEventListener('click', function(e) {
-            if (e.target === aiNoteViewer) {
-                aiNoteViewer.classList.add('hidden');
-                aiNoteViewer.classList.remove('visible');
-            }
+        aiNoteViewer.addEventListener('mousedown', function(e) {
+            if (e.target === aiNoteViewer) e.preventDefault();
         });
     }
+    // AI Provider 弹窗：禁止点击外部关闭，只能通过按钮关闭
+    // 阻止点击遮罩层时丢失焦点
     if (aiModal) {
-        aiModal.addEventListener('click', function(e) {
-            if (e.target === aiModal) closeAIModal();
+        aiModal.addEventListener('mousedown', function(e) {
+            if (e.target === aiModal) e.preventDefault();
         });
     }
     if (aiSaveBtn) {
@@ -429,8 +428,8 @@ function closeBatchModal() {
         closeAiSettingSelectModal.addEventListener('click', closeAISettingSelectModalFn);
     }
     if (aiSettingSelectModal) {
-        aiSettingSelectModal.addEventListener('click', function(e) {
-            if (e.target === aiSettingSelectModal) closeAISettingSelectModalFn();
+        aiSettingSelectModal.addEventListener('mousedown', function(e) {
+            if (e.target === aiSettingSelectModal) e.preventDefault();
         });
     }
 
@@ -483,8 +482,8 @@ function closeBatchModal() {
         batchCloseBtn.addEventListener('click', closeBatchModal);
     }
     if (batchModal) {
-        batchModal.addEventListener('click', function(e) {
-            if (e.target === batchModal) closeBatchModal();
+        batchModal.addEventListener('mousedown', function(e) {
+            if (e.target === batchModal) e.preventDefault();
         });
     }
     if (batchLogClearBtn) {
@@ -605,8 +604,8 @@ function closeBatchModal() {
         closeFaModal.addEventListener('click', close2FAModal);
     }
     if (faModal) {
-        faModal.addEventListener('click', function(e) {
-            if (e.target === faModal) close2FAModal();
+        faModal.addEventListener('mousedown', function(e) {
+            if (e.target === faModal) e.preventDefault();
         });
     }
     if (faSaveBtn) {

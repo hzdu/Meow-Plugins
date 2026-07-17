@@ -480,7 +480,7 @@ const drawFinLinkCanvas = () => {
 // 关联窗口事件绑定
 if (finLinkClose) finLinkClose.addEventListener('click', closeFinLinkModal);
 if (finLinkModal) {
-    finLinkModal.addEventListener('click', (e) => { if (e.target === finLinkModal) closeFinLinkModal(); });
+    finLinkModal.addEventListener('mousedown', (e) => { if (e.target === finLinkModal) e.preventDefault(); });
 }
 if (finLinkBody) {
     const redrawOnScroll = () => drawFinLinkCanvas();

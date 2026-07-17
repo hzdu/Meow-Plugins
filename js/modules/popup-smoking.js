@@ -747,10 +747,10 @@ const showDeepBreathModal = async (onClose) => {
     if (closeBtnBottom) closeBtnBottom.onclick = () => closeModal(false); // 点上 -> 记录
     if (cancelBtn) cancelBtn.onclick = () => closeModal(true); // 不点 -> 不记录
     
-    // 点击遮罩关闭
-    deepBreathModal.onclick = (e) => {
-        if (e.target === deepBreathModal) closeModal(false); // Mask click -> record (default behavior)
-    };
+    // 点击遮罩不关闭，防止丢失焦点
+    deepBreathModal.addEventListener('mousedown', (e) => {
+        if (e.target === deepBreathModal) e.preventDefault();
+    });
     
     // 倒计时辅助函数
     const startCountdown = (seconds) => {

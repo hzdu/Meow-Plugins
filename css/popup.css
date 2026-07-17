@@ -1346,14 +1346,26 @@ body.panel-minimized .panel-titlebar-mini {
     padding: 2px;
 }
 
-/* 火焰流动边框 — 渐变层 */
+/* 火焰流动边框 — 仅边框光晕流动（mask 裁切为环形，中心无任何效果） */
+@property --fire-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes fire-flow-angle {
+    0%   { --fire-angle: 0deg; }
+    100% { --fire-angle: 360deg; }
+}
+
 .todo-item::before {
     content: '';
     position: absolute;
-    inset: -1px;
-    border-radius: 11px;
+    inset: 0;
+    border-radius: 10px;
+    padding: 1.5px;
     background: conic-gradient(
-        from 0deg,
+        from var(--fire-angle, 0deg),
         transparent,
         transparent,
         #ff4500,
@@ -1364,24 +1376,19 @@ body.panel-minimized .panel-titlebar-mini {
         transparent,
         transparent
     );
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
     z-index: 0;
     opacity: 0;
     transition: opacity 0.4s ease;
-    animation: fire-flow 2.5s linear infinite;
+    animation: fire-flow-angle 2.5s linear infinite;
     pointer-events: none;
-}
-
-/* 火焰流动边框 — 白色遮罩层，留出边框环形区域 */
-.todo-item::after {
-    content: '';
-    position: absolute;
-    inset: 2px;
-    border-radius: 9px;
-    background: #fff;
-    z-index: 1;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.4s ease;
 }
 
 .todo-item:hover {
@@ -1390,8 +1397,7 @@ body.panel-minimized .panel-titlebar-mini {
     transform: translateY(-1px);
 }
 
-.todo-item:hover::before,
-.todo-item:hover::after {
+.todo-item:hover::before {
     opacity: 1;
 }
 
@@ -1399,11 +1405,6 @@ body.panel-minimized .panel-titlebar-mini {
 .todo-item > * {
     position: relative;
     z-index: 2;
-}
-
-@keyframes fire-flow {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
 }
 
 /* === 火焰流动边框 — 通用卡片效果（财务账本、财务规划、固定资产、倒数日、闹钟提醒） === */
@@ -1422,10 +1423,11 @@ body.panel-minimized .panel-titlebar-mini {
 .alarm-item::before {
     content: '';
     position: absolute;
-    inset: -1px;
-    border-radius: 11px;
+    inset: 0;
+    border-radius: 10px;
+    padding: 1.5px;
     background: conic-gradient(
-        from 0deg,
+        from var(--fire-angle, 0deg),
         transparent,
         transparent,
         #ff4500,
@@ -1436,27 +1438,19 @@ body.panel-minimized .panel-titlebar-mini {
         transparent,
         transparent
     );
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
     z-index: 0;
     opacity: 0;
     transition: opacity 0.4s ease;
-    animation: fire-flow 2.5s linear infinite;
+    animation: fire-flow-angle 2.5s linear infinite;
     pointer-events: none;
-}
-
-.fin-item::after,
-.pe-item::after,
-.assets-item::after,
-.cd-item::after,
-.alarm-item::after {
-    content: '';
-    position: absolute;
-    inset: 2px;
-    border-radius: 9px;
-    background: #fff;
-    z-index: 1;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.4s ease;
 }
 
 .fin-item:hover,
@@ -1471,12 +1465,7 @@ body.panel-minimized .panel-titlebar-mini {
 .pe-item:hover::before,
 .assets-item:hover::before,
 .cd-item:hover::before,
-.alarm-item:hover::before,
-.fin-item:hover::after,
-.pe-item:hover::after,
-.assets-item:hover::after,
-.cd-item:hover::after,
-.alarm-item:hover::after {
+.alarm-item:hover::before {
     opacity: 1;
 }
 
@@ -2663,7 +2652,7 @@ input:checked+.slider:before {
 }
 
 .alarm-icon-btn {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #9ca3af;
     cursor: pointer;
     padding: 2px;
@@ -2737,6 +2726,13 @@ input:checked+.slider:before {
     display: flex;
     flex-direction: row;
     gap: 4px;
+}
+
+/* 倒数日卡片操作按钮缩小 */
+.cd-item .edit-btn,
+.cd-item .delete-btn {
+    font-size: 0.85rem;
+    padding: 2px;
 }
 
 .cd-actions .delete-btn {
@@ -3112,14 +3108,15 @@ input:checked+.slider:before {
     overflow: hidden;
 }
 
-/* 渐变边框 — 仅在折叠时悬停显示流动效果 */
+/* 渐变边框 — 仅在折叠时悬停显示流动效果（mask 裁切为环形，中心无效果） */
 .settings-section::before {
     content: '';
     position: absolute;
-    inset: -1px;
+    inset: 0;
     border-radius: 12px;
+    padding: 1.5px;
     background: conic-gradient(
-        from 0deg,
+        from var(--fire-angle, 0deg),
         transparent,
         transparent,
         #ff4500,
@@ -3130,26 +3127,22 @@ input:checked+.slider:before {
         transparent,
         transparent
     );
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
     z-index: 0;
     opacity: 0;
     transition: opacity 0.4s ease;
-    animation: flow-border 2.5s linear infinite;
+    animation: fire-flow-angle 2.5s linear infinite;
     pointer-events: none;
 }
-.settings-section:hover::before,
-.settings-section:hover::after {
+.settings-section:hover::before {
     opacity: 1;
-}
-.settings-section::after {
-    content: '';
-    position: absolute;
-    inset: 1px;
-    border-radius: 11px;
-    background: #fff;
-    z-index: 1;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.4s ease;
 }
 .settings-section:hover {
     border-color: transparent;
@@ -3178,11 +3171,6 @@ input:checked+.slider:before {
 .settings-section > * {
     position: relative;
     z-index: 2;
-}
-
-@keyframes flow-border {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
 }
 
 .settings-section h3 {
@@ -6808,15 +6796,59 @@ border-bottom: 1px solid #e2e8f0;
     gap: 4px;
     transition: all 0.2s;
     cursor: grab;
+    position: relative;
+    overflow: hidden;
 }
 
 .ai-card:active {
     cursor: grabbing;
 }
 
+.ai-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    padding: 1.5px;
+    background: conic-gradient(
+        from var(--fire-angle, 0deg),
+        transparent,
+        transparent,
+        #ff4500,
+        #ff8c00,
+        #ffd700,
+        #ff6b00,
+        #ff4500,
+        transparent,
+        transparent
+    );
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: fire-flow-angle 2.5s linear infinite;
+    pointer-events: none;
+}
+
 .ai-card:hover {
-    border-color: #8b5cf6;
+    border-color: transparent;
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08);
+}
+
+.ai-card:hover::before {
+    opacity: 1;
+}
+
+.ai-card > * {
+    position: relative;
+    z-index: 2;
 }
 
 .ai-card.dragging {
@@ -7084,9 +7116,50 @@ border-bottom: 1px solid #e2e8f0;
     flex-direction: column;
     gap: 4px;
     transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+.batch-timer-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    padding: 1.5px;
+    background: conic-gradient(
+        from var(--fire-angle, 0deg),
+        transparent,
+        transparent,
+        #ff4500,
+        #ff8c00,
+        #ffd700,
+        #ff6b00,
+        #ff4500,
+        transparent,
+        transparent
+    );
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: fire-flow-angle 2.5s linear infinite;
+    pointer-events: none;
 }
 .batch-timer-item:hover {
-    border-color: #f59e0b;
+    border-color: transparent;
+}
+.batch-timer-item:hover::before {
+    opacity: 1;
+}
+.batch-timer-item > * {
+    position: relative;
+    z-index: 2;
 }
 .batch-timer-item.disabled {
     opacity: 0.55;
@@ -8273,48 +8346,24 @@ border-bottom: 1px solid #e2e8f0;
 .assets-summary {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 6px;
+    margin-bottom: 8px;
     flex-shrink: 0;
 }
 .assets-summary-card {
-    flex: 1 1 calc(50% - 4px);
+    flex: 1 1 calc(50% - 3px);
     min-width: 0;
-    border: 1px solid #f1f5f9;
-    border-radius: 10px;
-    padding: 8px 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #fff;
-}
-.assets-summary-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    border-radius: 6px;
+    padding: 4px 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    gap: 4px;
 }
-.assets-summary-info {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    min-width: 0;
-}
-.assets-summary-count {
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.2;
-}
-.assets-summary-label {
-    font-size: 10px;
-    color: #94a3b8;
-    font-weight: 500;
+.assets-summary-text {
+    font-size: 0.75rem;
+    font-weight: 600;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 /* 资产列表项 */

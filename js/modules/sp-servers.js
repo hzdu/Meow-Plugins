@@ -106,7 +106,7 @@ function renderServers() {
                     <div class="srv-ws-domain">
                         <span class="material-icons srv-ws-toggle" style="font-size:14px;color:#94a3b8;cursor:pointer;">expand_more</span>
                         <span class="material-icons" style="font-size:12px;color:#10b981;">language</span>
-                        <span>${escapeHtml(ws.domain || '(未设置域名)')}</span>
+                        <span class="srv-copy-row" data-copy="${escapeHtml(ws.domain || '')}" title="点击复制域名" style="cursor:pointer;">${escapeHtml(ws.domain || '(未设置域名)')}</span>
                         ${dbInfo}
                         ${ws.adminUrl ? `<a class="srv-ws-link" href="${escapeHtml(ws.adminUrl)}" target="_blank" onclick="event.stopPropagation()" title="打开后台"><span class="material-icons" style="font-size:12px;color:#0891b2;">open_in_new</span></a>` : ''}
                     </div>
@@ -240,7 +240,7 @@ function renderServers() {
         // 网站折叠/展开（默认收起）
         card.querySelectorAll('.srv-ws-item-header').forEach(header => {
             header.addEventListener('click', function(e) {
-                if (e.target.closest('.srv-copy-btn, .srv-ws-edit-btn, .srv-ws-del-btn, .srv-ws-link')) return;
+                if (e.target.closest('.srv-copy-btn, .srv-ws-edit-btn, .srv-ws-del-btn, .srv-ws-link, .srv-copy-row')) return;
                 const item = this.closest('.srv-ws-item');
                 const details = item.querySelector('.srv-ws-details');
                 const toggle = this.querySelector('.srv-ws-toggle');
@@ -620,10 +620,10 @@ function setupServerLogic() {
     document.getElementById('srv-export-btn').addEventListener('click', exportServers);
     document.getElementById('srv-import-btn').addEventListener('click', importServers);
 
-    // 关闭服务器弹窗
+    // 关闭服务器弹窗（仅通过关闭按钮关闭，点击遮罩不关闭且不丢失焦点）
     document.getElementById('close-srv-modal').addEventListener('click', closeSrvModal);
     const srvModal = document.getElementById('srv-modal');
-    srvModal.addEventListener('click', function(e) { if (e.target === srvModal) closeSrvModal(); });
+    srvModal.addEventListener('mousedown', function(e) { if (e.target === srvModal) e.preventDefault(); });
 
     // 保存服务器
     document.getElementById('srv-save-btn').addEventListener('click', function() {
@@ -705,15 +705,36 @@ function setupServerLogic() {
         }
     });
 
+    // 面板类型变更：Cyberpanel 自动填充面板地址和账号
+    document.getElementById('srv-panel-type-input').addEventListener('change', function() {
+        if (this.value === 'cyberpanel') {
+            const ip = document.getElementById('srv-ip-input').value.trim();
+            if (ip) {
+                document.getElementById('srv-panel-url-input').value = `https://${ip}:8090`;
+                document.getElementById('srv-panel-user-input').value = 'admin';
+            }
+        }
+    });
+
+    // IP 地址变更：Cyberpanel 时自动更新面板地址
+    document.getElementById('srv-ip-input').addEventListener('input', function() {
+        if (document.getElementById('srv-panel-type-input').value === 'cyberpanel') {
+            const ip = this.value.trim();
+            if (ip) {
+                document.getElementById('srv-panel-url-input').value = `https://${ip}:8090`;
+            }
+        }
+    });
+
     // 添加网站按钮
     document.getElementById('srv-add-website-btn').addEventListener('click', function() {
         openSrvWebsiteModal(null);
     });
 
-    // 关闭网站子弹窗
+    // 关闭网站子弹窗（仅通过关闭按钮关闭，点击遮罩不关闭且不丢失焦点）
     document.getElementById('close-srv-website-modal').addEventListener('click', closeSrvWebsiteModal);
     const wsModal = document.getElementById('srv-website-modal');
-    wsModal.addEventListener('click', function(e) { if (e.target === wsModal) closeSrvWebsiteModal(); });
+    wsModal.addEventListener('mousedown', function(e) { if (e.target === wsModal) e.preventDefault(); });
 
     // 数据库类型变更时自动填充默认数据库用户名
     document.getElementById('srv-ws-dbtype-input').addEventListener('change', function() {
@@ -733,6 +754,33 @@ function setupServerLogic() {
         adminUrlInputInit.placeholder = this.checked
             ? '例如：https://example.com（自动追加 /wp-login.php）'
             : '例如：/admin';
+    });
+
+    // 域名输入联动：自动填充后台地址、数据库名、绝对路径
+    document.getElementById('srv-ws-domain-input').addEventListener('input', function() {
+        const domain = this.value.trim();
+        if (!domain) return;
+
+        // 后台地址自动填入 https://域名
+        document.getElementById('srv-ws-adminurl-input').value = `https://${domain}`;
+
+        // 数据库名：域名中 . 替换为 _
+        document.getElementById('srv-ws-dbtable-input').value = domain.replace(/\./g, '_');
+
+        // 获取当前服务器面板类型（服务器弹窗打开中 或 独立编辑模式）
+        let panelType = 'none';
+        const srvModalEl = document.getElementById('srv-modal');
+        if (srvModalEl && !srvModalEl.classList.contains('hidden')) {
+            panelType = document.getElementById('srv-panel-type-input').value;
+        } else if (editingSrvId) {
+            const srv = myServers.find(s => s.id === editingSrvId);
+            if (srv) panelType = srv.panelType || 'none';
+        }
+
+        // Cyberpanel 面板：绝对路径填入 /home/域名/public_html
+        if (panelType === 'cyberpanel') {
+            document.getElementById('srv-ws-path-input').value = `/home/${domain}/public_html`;
+        }
     });
 
     // 保存网站
@@ -810,6 +858,51 @@ function setupServerLogic() {
         filterInput.focus();
         filterClear.style.display = 'none';
         renderServers();
+    });
+
+    // 常用命令模块：加载与保存
+    let srvCommandsCache = '';
+    async function loadSrvCommands() {
+        try {
+            const localData = await chrome.storage.local.get(['meow_srv_commands']);
+            srvCommandsCache = localData.meow_srv_commands || '';
+            const textarea = document.getElementById('srv-commands-textarea');
+            if (textarea) textarea.value = srvCommandsCache;
+        } catch (e) {
+            console.error('加载常用命令失败:', e);
+            srvCommandsCache = '';
+        }
+    }
+    function saveSrvCommands() {
+        chrome.storage.local.set({ 'meow_srv_commands': srvCommandsCache });
+    }
+
+    // 打开常用命令弹窗
+    function openSrvCommandsModal() {
+        loadSrvCommands();
+        document.getElementById('srv-commands-modal').classList.remove('hidden');
+        setTimeout(() => {
+            const textarea = document.getElementById('srv-commands-textarea');
+            if (textarea) textarea.focus();
+        }, 100);
+    }
+    // 关闭常用命令弹窗
+    function closeSrvCommandsModal() {
+        document.getElementById('srv-commands-modal').classList.add('hidden');
+    }
+
+    // 按钮事件：打开常用命令弹窗
+    document.getElementById('srv-commands-btn').addEventListener('click', openSrvCommandsModal);
+
+    // 关闭常用命令弹窗（仅通过关闭按钮关闭，点击遮罩不关闭且不丢失焦点）
+    document.getElementById('close-srv-commands-modal').addEventListener('click', closeSrvCommandsModal);
+    const commandsModal = document.getElementById('srv-commands-modal');
+    commandsModal.addEventListener('mousedown', function(e) { if (e.target === commandsModal) e.preventDefault(); });
+
+    // 监听 Textarea 输入并实时保存
+    document.getElementById('srv-commands-textarea').addEventListener('input', function() {
+        srvCommandsCache = this.value;
+        saveSrvCommands();
     });
 
     // 存储变化监听

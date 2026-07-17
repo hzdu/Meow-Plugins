@@ -198,8 +198,8 @@ if (dateDetailClose) {
     dateDetailClose.addEventListener('click', closeDateDetail);
 }
 if (dateDetailModal) {
-    dateDetailModal.addEventListener('click', (e) => {
-        if (e.target === dateDetailModal) closeDateDetail();
+    dateDetailModal.addEventListener('mousedown', (e) => {
+        if (e.target === dateDetailModal) e.preventDefault();
     });
 }
 
@@ -1760,8 +1760,8 @@ if (chartCloseX) {
     chartCloseX.addEventListener('click', closeFinanceChart);
 }
 if (financeChartModal) {
-    financeChartModal.addEventListener('click', (e) => {
-    if (e.target === financeChartModal) closeFinanceChart();
+    financeChartModal.addEventListener('mousedown', (e) => {
+    if (e.target === financeChartModal) e.preventDefault();
     });
 }
 if (detailPanelClose) {
@@ -2391,8 +2391,8 @@ if (smokingChartCloseX) {
     smokingChartCloseX.addEventListener('click', closeSmokingChart);
 }
 if (smokingChartModal) {
-    smokingChartModal.addEventListener('click', (e) => {
-        if (e.target === smokingChartModal) closeSmokingChart();
+    smokingChartModal.addEventListener('mousedown', (e) => {
+        if (e.target === smokingChartModal) e.preventDefault();
     });
 }
 if (smokingDetailClose) {
@@ -2841,8 +2841,8 @@ if (dailySmokingChartCloseX) {
     dailySmokingChartCloseX.addEventListener('click', closeDailySmokingChart);
 }
 if (dailySmokingChartModal) {
-    dailySmokingChartModal.addEventListener('click', (e) => {
-        if (e.target === dailySmokingChartModal) closeDailySmokingChart();
+    dailySmokingChartModal.addEventListener('mousedown', (e) => {
+        if (e.target === dailySmokingChartModal) e.preventDefault();
     });
 }
 
