@@ -24,7 +24,9 @@ const SRV_PROTOCOL_LABELS = {
 const SRV_PANEL_LABELS = {
     none: '无',
     bt: '宝塔',
-    cyberpanel: 'Cyberpanel'
+    cyberpanel: 'Cyberpanel',
+    cloudpanel: 'CloudPanel',
+    other: '其它'
 };
 
 // 数据库类型标签
@@ -705,23 +707,27 @@ function setupServerLogic() {
         }
     });
 
-    // 面板类型变更：Cyberpanel 自动填充面板地址和账号
+    // 面板类型变更：Cyberpanel/CloudPanel 自动填充面板地址和账号
     document.getElementById('srv-panel-type-input').addEventListener('change', function() {
-        if (this.value === 'cyberpanel') {
+        const panelType = this.value;
+        if (panelType === 'cyberpanel' || panelType === 'cloudpanel') {
             const ip = document.getElementById('srv-ip-input').value.trim();
+            const port = panelType === 'cyberpanel' ? '8090' : '8443';
             if (ip) {
-                document.getElementById('srv-panel-url-input').value = `https://${ip}:8090`;
+                document.getElementById('srv-panel-url-input').value = `https://${ip}:${port}`;
                 document.getElementById('srv-panel-user-input').value = 'admin';
             }
         }
     });
 
-    // IP 地址变更：Cyberpanel 时自动更新面板地址
+    // IP 地址变更：Cyberpanel/CloudPanel 时自动更新面板地址
     document.getElementById('srv-ip-input').addEventListener('input', function() {
-        if (document.getElementById('srv-panel-type-input').value === 'cyberpanel') {
+        const panelType = document.getElementById('srv-panel-type-input').value;
+        if (panelType === 'cyberpanel' || panelType === 'cloudpanel') {
             const ip = this.value.trim();
+            const port = panelType === 'cyberpanel' ? '8090' : '8443';
             if (ip) {
-                document.getElementById('srv-panel-url-input').value = `https://${ip}:8090`;
+                document.getElementById('srv-panel-url-input').value = `https://${ip}:${port}`;
             }
         }
     });
@@ -778,8 +784,11 @@ function setupServerLogic() {
         }
 
         // Cyberpanel 面板：绝对路径填入 /home/域名/public_html
+        // CloudPanel 面板：绝对路径填入 /home/域名/htdocs
         if (panelType === 'cyberpanel') {
             document.getElementById('srv-ws-path-input').value = `/home/${domain}/public_html`;
+        } else if (panelType === 'cloudpanel') {
+            document.getElementById('srv-ws-path-input').value = `/home/${domain}/htdocs`;
         }
     });
 
