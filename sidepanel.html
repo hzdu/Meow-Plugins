@@ -446,10 +446,10 @@
                         <span class="material-icons" style="font-size:16px">terminal</span>
                     </div>
                     <div class="ctrl-btn" id="srv-export-btn" title="导出备份">
-                        <span class="material-icons" style="font-size:16px">file_download</span>
+                        <span class="material-icons" style="font-size:16px">file_upload</span>
                     </div>
                     <div class="ctrl-btn" id="srv-import-btn" title="导入备份">
-                        <span class="material-icons" style="font-size:16px">file_upload</span>
+                        <span class="material-icons" style="font-size:16px">file_download</span>
                     </div>
                 </div>
                 </div>
@@ -590,6 +590,13 @@
                         <span class="material-icons close-modal" id="close-srv-website-modal">close</span>
                     </div>
                     <div class="modal-body" style="overflow-y:auto;max-height:65vh;">
+                        <!-- 从已有站点复制配置（仅添加模式显示） -->
+                        <div id="srv-ws-template-wrapper" class="srv-ws-template-bar" style="display:none;">
+                            <span class="material-icons" style="font-size:14px;color:#6366f1;flex-shrink:0;">content_copy</span>
+                            <select id="srv-ws-template-select" class="converter-input full-border" style="flex:1;padding:5px 8px;font-size:12px;">
+                                <option value="">从同服务器站点复制配置...</option>
+                            </select>
+                        </div>
                         <div class="srv-form-grid">
                             <div class="form-group">
                                 <label>域名</label>
@@ -652,10 +659,10 @@
                     </div>
                     <div style="display:flex;gap:4px">
                         <div class="ctrl-btn" id="fa-export-btn" title="导出备份密钥">
-                            <span class="material-icons" style="font-size:16px">file_download</span> <span>导出备份</span>
+                            <span class="material-icons" style="font-size:16px">file_upload</span> <span>导出备份</span>
                         </div>
                         <div class="ctrl-btn" id="fa-import-btn" title="导入备份密钥">
-                            <span class="material-icons" style="font-size:16px">file_upload</span> <span>导入备份</span>
+                            <span class="material-icons" style="font-size:16px">file_download</span> <span>导入备份</span>
                         </div>
                     </div>
                 </div>
@@ -674,10 +681,10 @@
                     </div>
                     <div style="display:flex;gap:4px">
                         <div class="ctrl-btn" id="ai-provider-export-btn" title="导出备份">
-                            <span class="material-icons" style="font-size:16px">file_download</span> <span>导出备份</span>
+                            <span class="material-icons" style="font-size:16px">file_upload</span> <span>导出备份</span>
                         </div>
                         <div class="ctrl-btn" id="ai-provider-import-btn" title="导入备份">
-                            <span class="material-icons" style="font-size:16px">file_upload</span> <span>导入备份</span>
+                            <span class="material-icons" style="font-size:16px">file_download</span> <span>导入备份</span>
                         </div>
                     </div>
                 </div>

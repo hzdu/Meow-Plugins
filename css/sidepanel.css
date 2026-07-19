@@ -3317,6 +3317,33 @@ body {
     color: #64748b;
 }
 
+.srv-ws-header > span:first-child,
+.srv-ws-header > span:nth-child(2) {
+    flex-shrink: 0;
+}
+
+.srv-ws-add-btn {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #16a34a;
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.srv-ws-add-btn:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+}
+
 .srv-ws-item {
     padding: 8px;
     background: #f0fdf4;
@@ -3621,6 +3648,37 @@ body {
     padding: 10px 0;
 }
 
+/* 网站模板选择条 */
+.srv-ws-template-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: #f0f9ff;
+    border: 1px dashed #bae6fd;
+    border-radius: 8px;
+    margin-bottom: 6px;
+}
+
+.srv-ws-template-bar select {
+    flex: 1;
+    padding: 5px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 12px;
+    background: #fff;
+    color: #334155;
+    cursor: pointer;
+    outline: none;
+    appearance: auto;
+    transition: border-color 0.2s;
+}
+
+.srv-ws-template-bar select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
 /* === 服务器管理 暗色主题 === */
 .dark #view-servers,
 .theme-dark #view-servers {
@@ -3738,7 +3796,20 @@ body {
 
 .dark .srv-ws-header,
 .theme-dark .srv-ws-header {
-    color: #94a3b8;
+color: #94a3b8;
+}
+
+.dark .srv-ws-add-btn,
+.theme-dark .srv-ws-add-btn {
+background: #052e16;
+border-color: #166534;
+color: #4ade80;
+}
+
+.dark .srv-ws-add-btn:hover,
+.theme-dark .srv-ws-add-btn:hover {
+background: #14532d;
+border-color: #16a34a;
 }
 
 .dark .srv-ws-item,
@@ -3873,6 +3944,20 @@ body {
 .theme-dark .srv-mini-add-btn:hover {
     background: #14532d;
     border-color: #16a34a;
+}
+
+/* 暗色：网站模板选择条 */
+.dark .srv-ws-template-bar,
+.theme-dark .srv-ws-template-bar {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.dark .srv-ws-template-bar select,
+.theme-dark .srv-ws-template-bar select {
+    background: #0f172a;
+    border-color: #475569;
+    color: #e2e8f0;
 }
 
 /* 服务器卡片：供应商链接 */

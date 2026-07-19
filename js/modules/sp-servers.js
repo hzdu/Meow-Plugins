@@ -158,6 +158,7 @@ function renderServers() {
                     <div class="srv-ws-header">
                         <span class="material-icons" style="font-size:12px;color:#10b981;">language</span>
                         <span>绑定网站 (${wsCount})</span>
+                        <button type="button" class="srv-ws-add-btn" title="添加网站"><span class="material-icons" style="font-size:14px;">add</span></button>
                     </div>
                     ${wsCount > 0 ? websitesHtml : '<div class="srv-ws-empty-hint">暂无网站</div>'}
                 </div>
@@ -166,7 +167,7 @@ function renderServers() {
 
         // 折叠/展开
         card.querySelector('.srv-card-header').addEventListener('click', function(e) {
-            if (e.target.closest('.srv-card-actions, .srv-ws-del-btn, .srv-ws-edit-btn, .srv-ws-link, .srv-provider-link, .srv-copy-btn')) return;
+            if (e.target.closest('.srv-card-actions, .srv-ws-del-btn, .srv-ws-edit-btn, .srv-ws-link, .srv-provider-link, .srv-copy-btn, .srv-ws-add-btn')) return;
             const body = card.querySelector('.srv-card-body');
             const toggle = card.querySelector('.srv-card-toggle');
             const isExpanded = card.classList.toggle('expanded');
@@ -263,6 +264,15 @@ function renderServers() {
                 srvWebsiteStandalone = true;
                 openSrvWebsiteModal(wi);
             });
+        });
+
+        // 添加网站（卡片内直接添加，仅打开网站弹窗）
+        card.querySelector('.srv-ws-add-btn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            editingSrvId = srv.id;
+            srvEditWebsites = (srv.websites || []).map(w => ({ ...w }));
+            srvWebsiteStandalone = true;
+            openSrvWebsiteModal(null);
         });
 
         // 拖拽排序
@@ -433,6 +443,29 @@ function renderSrvEditWebsites() {
     });
 }
 
+// 填充网站模板下拉（从当前服务器的已有网站中收集）
+function populateWsTemplateSelect() {
+    const select = document.getElementById('srv-ws-template-select');
+    const wrapper = document.getElementById('srv-ws-template-wrapper');
+    if (!select || !wrapper) return;
+
+    select.innerHTML = '<option value="">从同服务器站点复制配置...</option>';
+
+    let count = 0;
+    srvEditWebsites.forEach((ws, wi) => {
+        const wsDomain = ws.domain || '(未命名)';
+        const option = document.createElement('option');
+        option.value = `${wi}`;
+        option.textContent = wsDomain;
+        select.appendChild(option);
+        count++;
+    });
+
+    // 仅在有可选模板且当前为添加模式时显示
+    const isAdding = editingWebsiteId === null || editingWebsiteId === undefined;
+    wrapper.style.display = (count > 0 && isAdding) ? 'flex' : 'none';
+}
+
 // === 网站子弹窗 ===
 function openSrvWebsiteModal(editIdx) {
     editingWebsiteId = null;
@@ -489,6 +522,8 @@ function openSrvWebsiteModal(editIdx) {
     }
 
     document.getElementById('srv-website-modal').classList.remove('hidden');
+    // 填充网站模板下拉（依赖 editingWebsiteId 判断添加/编辑模式）
+    populateWsTemplateSelect();
     setTimeout(() => domainInput.focus(), 100);
 }
 
@@ -741,6 +776,53 @@ function setupServerLogic() {
     document.getElementById('close-srv-website-modal').addEventListener('click', closeSrvWebsiteModal);
     const wsModal = document.getElementById('srv-website-modal');
     wsModal.addEventListener('mousedown', function(e) { if (e.target === wsModal) e.preventDefault(); });
+
+    // 网站模板选择：从同服务器已有站点复制配置
+    document.getElementById('srv-ws-template-select').addEventListener('change', function() {
+        const val = this.value;
+        if (!val) return;
+        const wi = parseInt(val);
+        const ws = srvEditWebsites[wi];
+        if (!ws) return;
+
+        // 填充所有字段（含域名，方便用户参考后修改）
+        const domainInputEl = document.getElementById('srv-ws-domain-input');
+        const dbTypeInputEl = document.getElementById('srv-ws-dbtype-input');
+        const dbUserInputEl = document.getElementById('srv-ws-dbuser-input');
+        const dbPassInputEl = document.getElementById('srv-ws-dbpass-input');
+        const dbTableInputEl = document.getElementById('srv-ws-dbtable-input');
+        const adminUrlInputEl = document.getElementById('srv-ws-adminurl-input');
+        const wpToggleEl = document.getElementById('srv-ws-wp-toggle');
+        const adminUserInputEl = document.getElementById('srv-ws-adminuser-input');
+        const adminPassInputEl = document.getElementById('srv-ws-adminpass-input');
+        const pathInputEl = document.getElementById('srv-ws-path-input');
+
+        domainInputEl.value = ws.domain || '';
+        dbTypeInputEl.value = ws.dbType || 'none';
+        dbUserInputEl.value = ws.dbUser || '';
+        dbPassInputEl.value = ws.dbPass || '';
+        dbTableInputEl.value = ws.dbTable || '';
+
+        adminUrlInputEl.value = (ws.adminUrl || '').replace(/\/wp-login\.php$/, '');
+        wpToggleEl.checked = (ws.adminUrl || '').endsWith('wp-login.php');
+        adminUrlInputEl.placeholder = wpToggleEl.checked
+            ? '例如：https://example.com（自动追加 /wp-login.php）'
+            : '例如：/admin';
+
+        adminUserInputEl.value = ws.adminUser || '';
+        adminPassInputEl.value = ws.adminPass || '';
+        pathInputEl.value = ws.path || '';
+
+        // 聚焦域名输入框并全选，方便用户直接输入新域名
+        setTimeout(() => {
+            domainInputEl.focus();
+            domainInputEl.select();
+        }, 50);
+
+        // 重置下拉到占位符
+        this.value = '';
+        showToast('已套用站点模板，请修改域名');
+    });
 
     // 数据库类型变更时自动填充默认数据库用户名
     document.getElementById('srv-ws-dbtype-input').addEventListener('change', function() {
