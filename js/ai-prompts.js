@@ -113,8 +113,9 @@ function dateDetailPrompt(dateKey, todos, financeItems, lang, preExpenses, asset
             } else {
                 status = item.completed ? '[已完成]' : '[未完成]';
             }
+            const completedDateStr = item.completed && item.completedDate ? `（完成于${item.completedDate}）` : '';
             const recur = item.recurring ? `（每月${item.recurDay || 1}号重复）` : '（单次）';
-            return `${i + 1}. ${status} ${typeLabel}: ${item.name || ''} ¥${val.toFixed(2)}${recur}`;
+            return `${i + 1}. ${status} ${typeLabel}: ${item.name || ''} ¥${val.toFixed(2)}${recur}${completedDateStr}`;
         }).join('\n');
     }
 

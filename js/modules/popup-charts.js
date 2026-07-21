@@ -152,7 +152,8 @@ const openDateDetail = async (dateKey) => {
                 const typeLabel = item.type === 'necessary' ? meowI18n.t('pre_necessary') : item.type === 'income' ? meowI18n.t('pre_income') : meowI18n.t('pre_unnecessary');
                 const done = item.completed === true;
                 const monthDone = item.enabled !== false;
-                const doneBadge = monthDone ? '<span style="font-size:0.7rem;color:#16a34a;margin-left:4px;font-weight:600;">本月已完成</span>' : '';
+                const completedDateStr = done && item.completedDate ? formatPeCompletedDate(item.completedDate) : '';
+                const doneBadge = monthDone ? '<span style="font-size:0.7rem;color:#16a34a;margin-left:4px;font-weight:600;">本月已完成' + (completedDateStr ? ' (' + completedDateStr + ')' : '') + '</span>' : '';
                 const div = document.createElement('div');
                 div.className = 'date-detail-item';
                 div.innerHTML = `

@@ -1293,6 +1293,17 @@ const updateFinNoteHistory = (note) => {
 // === 预支出功能 ===
 let editingPeIndex = -1;
 
+// 格式化完成日期用于显示（YYYY-M-D → M月D日 或 M/D）
+const formatPeCompletedDate = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const m = parseInt(parts[1]);
+    const d = parseInt(parts[2]);
+    if (window.meowI18n && window.meowI18n.lang === 'en') return `${m}/${d}`;
+    return `${m}月${d}日`;
+};
+
 // 检查每月重复任务的指定日期是否已过本月
 const getLastDayOfMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 
@@ -1317,6 +1328,7 @@ const loadPreExpenses = async () => {
         if (item.recurring === undefined) item.recurring = false;
         if (item.recurDay === undefined) item.recurDay = 1;
         if (item.enabled === undefined) item.enabled = true; // 默认启用
+        if (item.completedDate === undefined) item.completedDate = null; // 完成日期
     });
     checkAndResetRecurring();
     await autoAddPlannedIncome();
@@ -1348,6 +1360,7 @@ const checkAndResetRecurring = () => {
         // 如果当前月尚未重置，且今天已到达或超过指定日
         if (item.lastResetMonth !== resetKey && currentDay >= effectiveDay) {
             item.completed = false;
+            item.completedDate = null;
             item.lastResetMonth = resetKey;
             changed = true;
         }
@@ -1391,6 +1404,7 @@ const autoAddPlannedIncome = async () => {
         });
 
         item.completed = true;
+        item.completedDate = targetKey;
         item.lastAutoAddMonth = thisMonth;
         changed = true;
     }
@@ -1488,7 +1502,7 @@ const renderPreExpensesView = () => {
                     <span class="material-icons edit-btn" title="编辑" style="cursor:pointer;font-size:18px;color:#64748b;margin-left:8px;">edit</span>
                     <span class="material-icons delete-btn" title="删除" style="cursor:pointer;font-size:18px;color:#64748b;margin-left:4px;">close</span>
                 </div>
-                <span class="pe-meta">${item.recurring ? '<span class="pe-recur-badge"><span class="material-icons">repeat</span>' + (item.recurDay || 1) + '号</span>' : ''}<span>${typeLabel}</span>${item.recurring && item.enabled === false ? '<span class="pe-recur-pending-badge"><span class="material-icons">schedule</span>本月待完成</span>' : item.recurring ? '<span class="pe-recur-done-badge"><span class="material-icons">check_circle</span>本月已完成</span>' : ''}</span>
+                <span class="pe-meta">${item.recurring ? '<span class="pe-recur-badge"><span class="material-icons">repeat</span>' + (item.recurDay || 1) + '号</span>' : ''}<span>${typeLabel}</span>${item.recurring && item.enabled === false ? '<span class="pe-recur-pending-badge"><span class="material-icons">schedule</span>本月待完成</span>' : item.recurring ? '<span class="pe-recur-done-badge"><span class="material-icons">check_circle</span>本月已完成</span>' : ''}${isCompleted && item.completedDate ? '<span class="pe-completed-date-badge" title="' + meowI18n.t('pe_completed_date') + '"><span class="material-icons">event_available</span>' + formatPeCompletedDate(item.completedDate) + '</span>' : ''}</span>
             `;
             
             // 复选框事件：勾选后标记完成（仅非重复项有复选框）
@@ -1498,7 +1512,10 @@ const renderPreExpensesView = () => {
                 if (e.target.checked && !item.completed) {
                     if (item.type === 'income' && item.recurring) {
                         // 重复收入项：由 autoAddPlannedIncome 在指定日期自动计入财务账本
+                        const today = new Date();
+                        const todayKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
                         preExpensesList[index].completed = true;
+                        preExpensesList[index].completedDate = todayKey;
                         savePreExpenses();
                     } else {
                         // 一次性收入或支出：立即计入当天财务账本
@@ -1522,6 +1539,7 @@ const renderPreExpensesView = () => {
                         });
                         
                         preExpensesList[index].completed = true;
+                        preExpensesList[index].completedDate = todayKey;
                         savePreExpenses();
                         
                         if (selectedDateKey === todayKey) {
@@ -1533,6 +1551,7 @@ const renderPreExpensesView = () => {
                 } else if (!e.target.checked && item.completed) {
                     // 取消完成：仅恢复状态
                     preExpensesList[index].completed = false;
+                    preExpensesList[index].completedDate = null;
                     savePreExpenses();
                 }
             });

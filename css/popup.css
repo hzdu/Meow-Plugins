@@ -3842,6 +3842,23 @@ kbd {
 .pe-recur-pending-badge .material-icons {
     font-size: 11px;
 }
+
+/* 财务规划完成日期徽标 */
+.pe-completed-date-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.65rem;
+    color: #6366f1;
+    background: #e0e7ff;
+    padding: 1px 6px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.pe-completed-date-badge .material-icons {
+    font-size: 11px;
+}
 /* === */ 澶╂皵闈㈡澘鏍峰紡 === */
 .weather-panel {
     display: flex;
