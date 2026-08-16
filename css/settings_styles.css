@@ -1,0 +1,69 @@
+/* =========================================
+   视图 D：设置
+   ========================================= */
+.settings-section {
+    padding: 10px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #f0f0f0;
+}
+
+.settings-section h3 {
+    font-size: 1rem;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.settings-desc {
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.settings-control {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#cleanup-range {
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.danger-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.danger-btn:hover {
+    background: #dc2626;
+}
+
+.danger-btn:disabled {
+    background: #fca5a5;
+    cursor: not-allowed;
+}
+
+.status-msg {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    min-height: 20px;
+}
+
+.status-msg.success {
+    color: var(--mark-green);
+}
+
+.status-msg.error {
+    color: var(--mark-red);
+}
