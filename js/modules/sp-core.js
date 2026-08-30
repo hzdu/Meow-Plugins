@@ -57,6 +57,7 @@ const viewHot = document.getElementById('view-hot');
 const viewClock = document.getElementById('view-clock');
 const viewTools = document.getElementById('view-tools');
 const viewServers = document.getElementById('view-servers');
+const viewRegCodes = document.getElementById('view-regcodes');
 const viewAiCollection = document.getElementById('view-aicollection');
 const view2fa = document.getElementById('view-2fa');
 const viewAiProvider = document.getElementById('view-ai-provider');
@@ -443,12 +444,39 @@ function restoreSpTabOrder() {
     chrome.storage.local.get(['meow_sp_tab_order'], (result) => {
         const order = result.meow_sp_tab_order;
         if (!order || !Array.isArray(order) || order.length === 0) return;
-        const currentTabs = tabGroup.querySelectorAll('.tab-btn');
-        const currentOrder = Array.from(currentTabs).map(t => t.dataset.target);
+        const currentTabs = Array.from(tabGroup.querySelectorAll('.tab-btn'));
+        const currentOrder = currentTabs.map(t => t.dataset.target);
         if (JSON.stringify(order) === JSON.stringify(currentOrder)) return;
         const tabMap = {};
         currentTabs.forEach(t => { tabMap[t.dataset.target] = t; });
-        order.forEach(tabKey => {
+
+        // 保存顺序中仍然存在的标签 key（去重）
+        const savedKeys = order.filter((k, i) => order.indexOf(k) === i && tabMap[k]);
+
+        // 将保存顺序中没有的新标签，按其默认 HTML 顺序中的相邻位置插入，
+        // 避免新增标签被推到最前面（如注册码管理等新 Tab）。
+        const merged = [...savedKeys];
+        currentOrder.forEach(key => {
+            if (savedKeys.includes(key)) return;
+            const idx = currentOrder.indexOf(key);
+            let leftKey = null;
+            for (let i = idx - 1; i >= 0; i--) {
+                if (savedKeys.includes(currentOrder[i])) { leftKey = currentOrder[i]; break; }
+            }
+            let rightKey = null;
+            for (let i = idx + 1; i < currentOrder.length; i++) {
+                if (savedKeys.includes(currentOrder[i])) { rightKey = currentOrder[i]; break; }
+            }
+            if (leftKey !== null) {
+                merged.splice(merged.indexOf(leftKey) + 1, 0, key);
+            } else if (rightKey !== null) {
+                merged.splice(merged.indexOf(rightKey), 0, key);
+            } else {
+                merged.push(key);
+            }
+        });
+
+        merged.forEach(tabKey => {
             if (tabMap[tabKey]) tabGroup.appendChild(tabMap[tabKey]);
         });
     });
@@ -662,6 +690,7 @@ async function initSidepanel() {
         setup2FALogic();
         setupAILogic();
         setupServerLogic();
+        setupRegCodeLogic();
     } catch (err) {
         console.error("Meow: module setup failed.", err);
     }
@@ -743,7 +772,7 @@ tabBtns.forEach(btn => {
         saveLastTab(target);
 
         // 1. 隐藏所有视图
-        [viewPrompts, viewScratchpad, viewReadLater, viewGallery, viewTools, viewHot, viewClock, viewAiCollection, view2fa, viewAiProvider, viewServers].forEach(el => {
+        [viewPrompts, viewScratchpad, viewReadLater, viewGallery, viewTools, viewHot, viewClock, viewAiCollection, view2fa, viewAiProvider, viewServers, viewRegCodes].forEach(el => {
             if(el) el.classList.add('hidden');
         });
         [filterSection.parentElement, toolsSection, readLaterTools].forEach(el => el.classList.add('hidden'));
@@ -803,6 +832,9 @@ tabBtns.forEach(btn => {
         } else if (target === 'servers') {
             viewServers.classList.remove('hidden');
             if (typeof renderServers === 'function') renderServers();
+        } else if (target === 'regcodes') {
+            viewRegCodes.classList.remove('hidden');
+            if (typeof renderRegCodes === 'function') renderRegCodes();
         } else if (target === 'aicollection') {
             viewAiCollection.classList.remove('hidden');
             renderAiTags();

@@ -67,23 +67,10 @@ body {
     transition: all 0.2s;
 }
 
-.tab-btn .material-icons {
-    font-size: 20px;
-}
-
-/* 工具箱 tab 图标 build 字形偏大，缩小以与其他图标协调 */
-.tab-btn[data-target="tools"] .material-icons {
-    font-size: 17px;
-}
-
-/* AI合集 tab 图标 hub 字形偏大，缩小以与其他图标协调 */
-.tab-btn[data-target="aicollection"] .material-icons {
-    font-size: 17px;
-}
-
-/* 服务器管理 tab 图标 cloud 字形偏大，缩小以与其他图标协调 */
-.tab-btn[data-target="servers"] .material-icons {
-    font-size: 17px;
+/* Tab 图标统一使用 FontAwesome（线性 fa-regular / 实心 fa-solid） */
+.tab-btn .fa-solid,
+.tab-btn .fa-regular {
+    font-size: 16px;
 }
 
 .tab-btn:hover {
@@ -166,7 +153,7 @@ pointer-events: none;
 left: 42px;
 }
 #search-group-prompts .search-input {
-padding-left: 64px;
+padding-left: 30px;
 }
 
 /* 筛选区 (隐藏滚动条) */
@@ -291,13 +278,24 @@ padding-left: 64px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    background: #f8fafc;
+    margin: -12px -12px 6px -12px;
+    padding: 6px 12px 5px;
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 9px 9px 0 0;
 }
 
 .p-title {
     font-weight: 600;
     color: #1e293b;
     font-size: 13px;
+}
+
+.p-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
 .p-tag {
@@ -358,6 +356,16 @@ box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1);
     color: #94a3b8;
     display: flex;
     justify-content: space-between;
+    align-items: center;
+}
+
+/* 暂存板标题行：淡灰背景通栏（仅暂存板，不影响稍后阅读） */
+#scratch-list .scratch-meta {
+    background: #f8fafc;
+    margin: -10px -10px 0 -10px;
+    padding: 6px 10px 5px;
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 7px 7px 0 0;
 }
 
 .scratch-content {
@@ -909,6 +917,10 @@ border-top: 1px dashed #f1f5f9;
 
 .icon-btn .material-icons {
     font-size: 16px;
+}
+
+.icon-btn .fa-folder-tree {
+    font-size: 12px;
 }
 
 .title-input {
@@ -2385,14 +2397,16 @@ display: block;
     gap: 6px;
 }
 
-.fa-card-actions .material-icons {
+.fa-card-actions .material-icons,
+.fa-card-actions .fa-xmark {
     font-size: 16px;
     color: #cbd5e1;
     cursor: pointer;
     transition: color 0.2s;
 }
 
-.fa-card-actions .material-icons:hover {
+.fa-card-actions .material-icons:hover,
+.fa-card-actions .fa-xmark:hover {
     color: #6366f1;
 }
 
@@ -2606,8 +2620,9 @@ display: block;
     position: relative;
     overflow: hidden;
 }
-.ai-card .material-icons {
-    font-size: 14px;
+.ai-card .material-icons,
+.ai-card .fa-regular {
+    font-size: 12px;
     vertical-align: middle;
 }
 
@@ -2669,6 +2684,7 @@ display: block;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 6px;
 }
 
 .ai-card-name {
@@ -2678,6 +2694,8 @@ display: block;
     display: flex;
     align-items: center;
     gap: 6px;
+    flex: 1;
+    min-width: 0;
 }
 
 .ai-card-name .badge {
@@ -2705,14 +2723,14 @@ display: block;
     gap: 6px;
 }
 
-.ai-card-actions .material-icons {
-    font-size: 16px;
+.ai-card-actions .fa-regular {
+    font-size: 13px;
     color: #cbd5e1;
     cursor: pointer;
     transition: color 0.2s;
 }
 
-.ai-card-actions .material-icons:hover {
+.ai-card-actions .fa-regular:hover {
     color: #6366f1;
 }
 
@@ -2743,6 +2761,10 @@ display: block;
     border: 1px solid #e2e8f0;
     border-radius: 4px;
     font-family: monospace;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
 }
 
 .ai-card-key-row {
@@ -2778,6 +2800,10 @@ display: block;
     font-family: monospace;
     white-space: pre-wrap;
     word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
 }
 .ai-card-type-row {
     display: flex;
@@ -2803,14 +2829,14 @@ display: block;
 }
 
 /* 展开切换图标 */
-.ai-card .toggle-icon {
-    font-size: 16px;
+.ai-card .ai-card-toggle {
+    font-size: 13px;
     color: #94a3b8;
     transition: transform 0.3s ease;
-    margin-left: auto;
+    flex-shrink: 0;
 }
 
-.ai-card.expanded .toggle-icon {
+.ai-card.expanded .ai-card-toggle {
     transform: rotate(180deg);
 }
 
@@ -3019,13 +3045,13 @@ display: block;
     color: #fde68a;
 }
 
-.dark .ai-card-actions .material-icons,
-.theme-dark .ai-card-actions .material-icons {
+.dark .ai-card-actions .fa-regular,
+.theme-dark .ai-card-actions .fa-regular {
     color: #475569;
 }
 
-.dark .ai-card-actions .material-icons:hover,
-.theme-dark .ai-card-actions .material-icons:hover {
+.dark .ai-card-actions .fa-regular:hover,
+.theme-dark .ai-card-actions .fa-regular:hover {
     color: #6366f1;
 }
 
@@ -3158,7 +3184,9 @@ display: block;
     flex-shrink: 0;
 }
 
-.srv-cat-tab .material-icons {
+.srv-cat-tab .material-icons,
+.srv-cat-tab .fa-folder,
+.srv-cat-tab .fa-folder-open {
     font-size: 15px;
 }
 
@@ -3184,7 +3212,9 @@ display: block;
     color: #6366f1;
 }
 
-.srv-cat-tab.active .material-icons {
+.srv-cat-tab.active .material-icons,
+.srv-cat-tab.active .fa-folder,
+.srv-cat-tab.active .fa-folder-open {
     color: #f59e0b;
 }
 
@@ -3205,12 +3235,22 @@ display: block;
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding-bottom: 10px;
+    gap: 0;
+    padding-bottom: 0;
     min-width: 0;
     padding-left: 8px;
-    overflow-y: auto;
+    overflow: hidden;
     min-height: 0;
+}
+
+/* 服务器列表滚动区（头部 + 列表，独立滚动） */
+#srv-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 6px;
 }
 
 /* 分类管理弹窗列表 */
@@ -3342,6 +3382,22 @@ display: block;
     line-height: 1.4;
 }
 
+/* 收费统计栏（固定于列表底部，独立于滚动区） */
+.srv-money-bar {
+    flex-shrink: 0;
+    background: #f8fafc;
+    padding: 6px 2px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.srv-money-bar .srv-money-paid {
+    color: #10b981;
+}
+
+.srv-money-bar .srv-money-unpaid {
+    color: #ef4444;
+}
+
 /* 搜索栏：默认收起为图标按钮，点击展开全宽搜索 */
 #srv-filter-row {
     display: none;
@@ -3455,14 +3511,16 @@ display: block;
     flex-shrink: 0;
 }
 
-.srv-card-actions .material-icons {
+.srv-card-actions .material-icons,
+.srv-card-actions .fa-xmark {
     font-size: 16px;
     color: #cbd5e1;
     cursor: pointer;
     transition: color 0.2s;
 }
 
-.srv-card-actions .material-icons:hover {
+.srv-card-actions .material-icons:hover,
+.srv-card-actions .fa-xmark:hover {
     color: #6366f1;
 }
 
@@ -3570,6 +3628,15 @@ display: block;
 
 .srv-wp-switch input:checked + .srv-wp-slider::after {
     transform: translateX(13px);
+}
+
+/* 禁用态（未开启收费时已收款开关置灰） */
+.srv-wp-switch input:disabled + .srv-wp-slider {
+    opacity: 0.55;
+}
+
+.srv-wp-switch:has(input:disabled) {
+    cursor: not-allowed;
 }
 
 /* 分区标题栏 */
@@ -4183,6 +4250,12 @@ display: block;
     color: #64748b;
 }
 
+.dark .srv-money-bar,
+.theme-dark .srv-money-bar {
+    background: #0f172a;
+    border-top-color: #334155;
+}
+
 .dark .srv-card,
 .theme-dark .srv-card {
     background: #1e293b;
@@ -4206,6 +4279,20 @@ display: block;
     color: #f1f5f9;
 }
 
+/* 收费但未收款的服务器标题红色提示 */
+.srv-card-name-unpaid,
+.dark .srv-card-name-unpaid,
+.theme-dark .srv-card-name-unpaid {
+    color: #ef4444 !important;
+}
+
+/* 收费且已收款的服务器标题绿色提示 */
+.srv-card-name-paid,
+.dark .srv-card-name-paid,
+.theme-dark .srv-card-name-paid {
+    color: #10b981 !important;
+}
+
 .dark .srv-card-badge,
 .theme-dark .srv-card-badge {
     background: #334155;
@@ -4214,12 +4301,16 @@ display: block;
 }
 
 .dark .srv-card-actions .material-icons,
-.theme-dark .srv-card-actions .material-icons {
+.dark .srv-card-actions .fa-xmark,
+.theme-dark .srv-card-actions .material-icons,
+.theme-dark .srv-card-actions .fa-xmark {
     color: #475569;
 }
 
 .dark .srv-card-actions .material-icons:hover,
-.theme-dark .srv-card-actions .material-icons:hover {
+.dark .srv-card-actions .fa-xmark:hover,
+.theme-dark .srv-card-actions .material-icons:hover,
+.theme-dark .srv-card-actions .fa-xmark:hover {
     color: #6366f1;
 }
 
@@ -4812,4 +4903,419 @@ border-color: #16a34a;
 .theme-dark .srv-history-dd .srv-history-item:hover {
     background: #334155;
     color: #a5b4fc;
+}
+
+/* === 注册码管理模块样式 === */
+#view-regcodes {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    padding: 0;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#view-regcodes.hidden {
+    display: none;
+}
+
+.dark #view-regcodes,
+.theme-dark #view-regcodes {
+    color: #e2e8f0;
+}
+
+/* 列表滚动区（头部 + 列表，独立滚动） */
+#reg-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 6px;
+}
+
+/* 头部固定 */
+#reg-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f8fafc;
+    padding: 4px 0 6px 0;
+}
+
+.dark #reg-header,
+.theme-dark #reg-header {
+    background: #0f172a;
+}
+
+#reg-controls {
+    margin-bottom: 4px;
+}
+
+/* 搜索栏：默认收起为图标按钮，点击展开全宽搜索 */
+#reg-filter-row {
+    display: none;
+    flex: 1;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    height: 24px;
+}
+
+#reg-filter-row input {
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+}
+
+#reg-controls.search-active #reg-cmd-group,
+#reg-controls.search-active #reg-search-toggle {
+    display: none;
+}
+
+#reg-controls.search-active #reg-filter-row {
+    display: flex;
+}
+
+.dark #reg-search-back,
+.theme-dark #reg-search-back {
+    color: #94a3b8;
+}
+
+/* 注册码卡片 */
+.reg-card .srv-card-name {
+    font-family: inherit;
+}
+
+/* 距到期 ≤ 5 天：卡片标题显示红色 */
+.reg-card-name-danger,
+.dark .reg-card-name-danger,
+.theme-dark .reg-card-name-danger {
+    color: #ef4444 !important;
+}
+
+/* 销售金额徽章（标题栏，剩余天数标签左侧） */
+.reg-price-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+    line-height: 1.4;
+}
+
+.dark .reg-price-badge,
+.theme-dark .reg-price-badge {
+    background: #451a03;
+    color: #fbbf24;
+    border-color: #92400e;
+}
+
+/* 联系人行 */
+.reg-contact-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 11px;
+    margin-top: 6px;
+}
+
+.reg-contact-ic {
+    flex-shrink: 0;
+}
+
+.reg-contact-text {
+    color: #64748b;
+    word-break: break-all;
+}
+
+/* 展开内容：硬件码/注册码等 */
+.reg-hw-val {
+    font-family: 'Roboto Mono', monospace;
+}
+
+.reg-code-val-inline {
+    font-family: 'Roboto Mono', monospace;
+    color: #6d28d9 !important;
+    font-weight: 600;
+}
+
+.reg-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+/* 到期状态徽章 */
+.reg-status-badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border: 1px solid transparent;
+    line-height: 1.4;
+}
+
+.reg-status-normal {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.reg-status-soon {
+    background: #fffbeb;
+    color: #b45309;
+    border-color: #fde68a;
+}
+
+.reg-status-expired {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+.reg-status-lifetime {
+    background: #eef2ff;
+    color: #4338ca;
+    border-color: #c7d2fe;
+}
+
+.dark .reg-status-normal,
+.theme-dark .reg-status-normal {
+    background: #052e16;
+    color: #6ee7b7;
+    border-color: #166534;
+}
+
+.dark .reg-status-soon,
+.theme-dark .reg-status-soon {
+    background: #451a03;
+    color: #fcd34d;
+    border-color: #92400e;
+}
+
+.dark .reg-status-expired,
+.theme-dark .reg-status-expired {
+    background: #450a0a;
+    color: #fca5a5;
+    border-color: #7f1d1d;
+}
+
+.dark .reg-status-lifetime,
+.theme-dark .reg-status-lifetime {
+    background: #312e81;
+    color: #c7d2fe;
+    border-color: #4338ca;
+}
+
+/* 底部到期状态统计栏 */
+.reg-status-bar {
+    flex-shrink: 0;
+    background: #f8fafc;
+    padding: 6px 2px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.reg-status-bar .reg-stat-soon {
+    color: #b45309;
+}
+
+.reg-status-bar .reg-stat-expired {
+    color: #ef4444;
+}
+
+.reg-status-bar .reg-stat-sales {
+    color: #d97706;
+    font-weight: 600;
+}
+
+.dark .reg-status-bar .reg-stat-sales,
+.theme-dark .reg-status-bar .reg-stat-sales {
+    color: #fbbf24;
+}
+
+.dark .reg-status-bar,
+.theme-dark .reg-status-bar {
+    background: #0f172a;
+    border-top-color: #334155;
+}
+
+/* 注册码编辑弹窗 */
+#reg-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+}
+
+#reg-modal .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    padding: 0 12px 10px;
+    overflow-y: auto;
+    min-height: 0;
+    max-height: 60vh;
+}
+
+#reg-modal .modal-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+#reg-modal .modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}
+
+#reg-modal .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#reg-modal .form-group label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #475569;
+}
+
+#reg-modal .form-group input,
+#reg-modal .form-group select,
+#reg-modal .form-group textarea {
+    padding: 6px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    background: #fff;
+    color: #334155;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+#reg-modal .form-group input:focus,
+#reg-modal .form-group select:focus,
+#reg-modal .form-group textarea:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+#reg-modal .form-group select {
+    cursor: pointer;
+    appearance: auto;
+}
+
+/* 付款周期按钮行（月付/季付/半年付/年付） */
+.reg-plan-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.reg-plan-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 0;
+    border: 1px solid #c7d2fe;
+    background: #eef2ff;
+    color: #4338ca;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.reg-plan-btn:hover {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: #fff;
+}
+
+.reg-plan-btn:active {
+    transform: scale(0.96);
+}
+
+.dark .reg-plan-btn,
+.theme-dark .reg-plan-btn {
+    background: #312e81;
+    border-color: #4338ca;
+    color: #c7d2fe;
+}
+
+.dark .reg-plan-btn:hover,
+.theme-dark .reg-plan-btn:hover {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: #fff;
+}
+
+/* 暗色：注册码弹窗 */
+.dark #reg-modal .modal-content,
+.theme-dark #reg-modal .modal-content {
+    background: #1e293b;
+}
+
+.dark #reg-modal .form-group label,
+.theme-dark #reg-modal .form-group label {
+    color: #94a3b8;
+}
+
+.dark #reg-modal .form-group input,
+.dark #reg-modal .form-group select,
+.dark #reg-modal .form-group textarea,
+.theme-dark #reg-modal .form-group input,
+.theme-dark #reg-modal .form-group select,
+.theme-dark #reg-modal .form-group textarea {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+.dark #reg-modal .form-group input:focus,
+.dark #reg-modal .form-group select:focus,
+.dark #reg-modal .form-group textarea:focus,
+.theme-dark #reg-modal .form-group input:focus,
+.theme-dark #reg-modal .form-group select:focus,
+.theme-dark #reg-modal .form-group textarea:focus {
+    border-color: #6366f1;
+}
+
+/* 暗色：软件分类管理弹窗 */
+.dark #reg-cat-modal .modal-content,
+.theme-dark #reg-cat-modal .modal-content {
+    background: #1e293b;
+}
+
+.dark #reg-cat-modal .srv-cat-list-item,
+.theme-dark #reg-cat-modal .srv-cat-list-item {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.dark #reg-cat-modal .srv-cat-list-item:hover,
+.theme-dark #reg-cat-modal .srv-cat-list-item:hover {
+    background: #0f172a;
+    border-color: #475569;
+}
+
+.dark #reg-cat-modal .srv-cat-list-name,
+.theme-dark #reg-cat-modal .srv-cat-list-name {
+    color: #e2e8f0;
 }

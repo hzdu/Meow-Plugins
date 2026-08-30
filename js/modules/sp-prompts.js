@@ -97,8 +97,8 @@ function renderPromptList() {
             li.className = 'prompt-card';
             let catOptionsHtml = '';
             promptCategories.forEach(cat => { catOptionsHtml += '<option value="' + cat.id + '"' + (cat.id === item.category ? ' selected' : '') + '>' + escapeHtml(cat.name) + '</option>'; });
-            li.innerHTML = '<div class="p-header"><span class="p-title">' + escapeHtml(item.title || meowI18n.t('ph_title')) + '</span><select class="p-cat-select">' + catOptionsHtml + '</select></div><div class="p-content">' + escapeHtml(item.content) + '</div><div class="p-actions"><div class="action-group"><span class="material-icons delete-btn">delete</span></div></div>';
-            li.addEventListener('click', function(e) { if (e.target.closest('.action-group') || e.target.closest('.p-cat-select')) return; openPromptViewModal(item); });
+            li.innerHTML = '<div class="p-header"><span class="p-title">' + escapeHtml(item.title || meowI18n.t('ph_title')) + '</span><span class="p-header-right"><select class="p-cat-select">' + catOptionsHtml + '</select><i class="fa-regular fa-xmark delete-btn" title="' + meowI18n.t('action_delete') + '"></i></span></div><div class="p-content">' + escapeHtml(item.content) + '</div>';
+            li.addEventListener('click', function(e) { if (e.target.closest('.delete-btn') || e.target.closest('.p-cat-select')) return; openPromptViewModal(item); });
             li.querySelector('.p-cat-select').addEventListener('change', function(e) {
                 e.stopPropagation();
                 const index = myPrompts.findIndex(p => p.id === item.id);

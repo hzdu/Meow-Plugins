@@ -46,6 +46,13 @@ function getDefaultUsername(os) {
     return (os === 'Windows') ? 'administrator' : 'root';
 }
 
+// 收费金额显示格式化（保留最多两位小数，去掉多余的 0）
+function formatSrvFee(fee) {
+    const n = parseFloat(fee);
+    if (isNaN(n)) return '18';
+    return (Math.round(n * 100) / 100).toString();
+}
+
 // 数据库默认用户名
 function getDefaultDbUsername(dbType) {
     return (dbType === 'mssql') ? 'sa' : 'root';
@@ -80,7 +87,11 @@ function renderSrvCatTabs() {
 
     // "全部" Tab 事件和激活状态
     if (allTab) {
-        allTab.classList.toggle('active', !srvActiveCategoryId);
+        const allActive = !srvActiveCategoryId;
+        allTab.classList.toggle('active', allActive);
+        // 线性图标随激活状态切换：默认 fa-folder，选中 fa-folder-open
+        const allIcon = allTab.querySelector('i');
+        if (allIcon) allIcon.className = allActive ? 'fa-regular fa-folder-open' : 'fa-regular fa-folder';
         allTab.addEventListener('click', function() {
             srvActiveCategoryId = '';
             renderSrvCatTabs();
@@ -95,7 +106,7 @@ function renderSrvCatTabs() {
         tab.dataset.catId = cat.id;
         tab.dataset.catName = cat.name;
         tab.dataset.index = index;
-        tab.innerHTML = `<span class="material-icons">${cat.id === srvActiveCategoryId ? 'folder_open' : 'folder'}</span><span class="srv-cat-label">${escapeHtml(cat.name)}</span>`;
+        tab.innerHTML = `<i class="fa-regular ${cat.id === srvActiveCategoryId ? 'fa-folder-open' : 'fa-folder'}"></i><span class="srv-cat-label">${escapeHtml(cat.name)}</span>`;
         tab.addEventListener('click', function() {
             srvActiveCategoryId = this.dataset.catId;
             renderSrvCatTabs();
@@ -151,6 +162,8 @@ function renderServers() {
     if (myServers.length === 0) {
         srvEmpty.classList.remove('hidden');
         if (srvCountBar) srvCountBar.textContent = '共 0 台服务器';
+        const moneyBarEmpty = document.getElementById('srv-money-bar');
+        if (moneyBarEmpty) { moneyBarEmpty.style.display = 'none'; moneyBarEmpty.innerHTML = ''; }
         return;
     }
     srvEmpty.classList.add('hidden');
@@ -208,7 +221,7 @@ function renderServers() {
                     <div class="srv-ws-item-actions">
                         <button class="srv-copy-btn" data-copy-type="website" data-widx="${wi}" title="一键复制网站信息"><span class="material-icons" style="font-size:13px;">content_copy</span>复制</button>
                         <span class="material-icons srv-ws-edit-btn" data-widx="${wi}" title="编辑网站" style="font-size:14px;color:#cbd5e1;cursor:pointer;">edit</span>
-                        <span class="material-icons srv-ws-del-btn" data-widx="${wi}" title="删除网站" style="font-size:14px;color:#cbd5e1;cursor:pointer;">delete</span>
+                        <i class="fa-regular fa-xmark srv-ws-del-btn" data-widx="${wi}" title="删除网站" style="font-size:14px;color:#cbd5e1;cursor:pointer;"></i>
                     </div>
                 </div>
                 ${wsRows.length > 0 ? `<div class="srv-ws-details" style="display:none">${wsRows.join('')}</div>` : ''}
@@ -219,12 +232,12 @@ function renderServers() {
             <div class="srv-card-header">
                 <span class="material-icons srv-card-toggle">expand_more</span>
                 <span class="material-icons" style="font-size:16px;color:#6366f1;">${osIcon}</span>
-                <span class="srv-card-name">${escapeHtml(displayName)}</span>
+                <span class="srv-card-name${srv.isCharged ? (srv.paid ? ' srv-card-name-paid' : ' srv-card-name-unpaid') : ''}"${srv.isCharged && !srv.paid ? ' title="已收费但未收款"' : ''}>${escapeHtml(displayName)}</span>
                 <span class="srv-card-badge">${escapeHtml(srv.os || '')}</span>
                 <div class="srv-card-actions">
                     ${srv.providerUrl ? `<a class="srv-provider-link" href="${escapeHtml(srv.providerUrl)}" target="_blank" onclick="event.stopPropagation()" title="打开供应商"><span class="material-icons" style="font-size:16px;color:#cbd5e1;">open_in_new</span></a>` : ''}
                     <span class="material-icons srv-edit-btn" data-id="${srv.id}" title="编辑">edit</span>
-                    <span class="material-icons srv-del-btn" data-id="${srv.id}" title="删除">delete</span>
+                    <i class="fa-regular fa-xmark srv-del-btn" data-id="${srv.id}" title="删除"></i>
                 </div>
             </div>
             <div class="srv-card-body" style="display:none">
@@ -237,6 +250,7 @@ function renderServers() {
                 <div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(srv.port || '')}" title="点击复制"><span class="srv-info-label">端口</span><span class="srv-info-val">${escapeHtml(srv.port || '--')}</span></div>
                 <div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(srv.username || '')}" title="点击复制"><span class="srv-info-label">用户名</span><span class="srv-info-val">${escapeHtml(srv.username || '--')}</span></div>
                 <div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(srv.password || '')}" title="点击复制"><span class="srv-info-label">密码</span><span class="srv-info-val srv-masked">${srv.password ? '••••••••' : '--'}</span></div>
+                ${srv.isCharged ? `<div class="srv-info-row"><span class="srv-info-label">收费金额</span><span class="srv-info-val" style="color:#d97706;font-weight:600;">¥ ${escapeHtml(formatSrvFee(srv.chargeFee))}</span></div>` : ''}
                 ${srv.panelType && srv.panelType !== 'none' ? `
                 <div class="srv-section-bar">
                     <span class="srv-section-title"><span class="material-icons" style="font-size:13px;color:#6366f1;">dashboard</span> ${SRV_PANEL_LABELS[srv.panelType] || '管理面板'}</span>
@@ -438,6 +452,27 @@ function renderServers() {
             srvCountBar.textContent = `共 ${totalCount} 台服务器`;
         }
     }
+
+    // 收费统计栏：共收费 / 已收 / 未收
+    const moneyBar = document.getElementById('srv-money-bar');
+    if (moneyBar) {
+        let totalCharge = 0, totalPaid = 0;
+        myServers.forEach(s => {
+            if (!s.isCharged) return;
+            const fee = parseFloat(s.chargeFee) || 0;
+            totalCharge += fee;
+            if (s.paid) totalPaid += fee;
+        });
+        if (totalCharge > 0) {
+            const totalUnpaid = totalCharge - totalPaid;
+            const fmtMoney = n => '¥' + (Math.round(n * 100) / 100).toString();
+            moneyBar.style.display = '';
+            moneyBar.innerHTML = `共收费 ${fmtMoney(totalCharge)} · <span class="srv-money-paid">已收 ${fmtMoney(totalPaid)}</span> · <span class="srv-money-unpaid">未收 ${fmtMoney(totalUnpaid)}</span>`;
+        } else {
+            moneyBar.style.display = 'none';
+            moneyBar.innerHTML = '';
+        }
+    }
 }
 
 // === 服务器编辑弹窗 ===
@@ -460,6 +495,10 @@ function openSrvModal(srv) {
     const deleteBtn = document.getElementById('srv-delete-btn');
     const modalTitle = document.getElementById('srv-modal-title');
     const categoryInput = document.getElementById('srv-category-input');
+    const chargeToggle = document.getElementById('srv-charge-toggle');
+    const chargeFeeInput = document.getElementById('srv-charge-fee-input');
+    const chargeFeeGroup = document.getElementById('srv-charge-fee-group');
+    const paidToggle = document.getElementById('srv-paid-toggle');
 
     // 填充分类下拉
     if (categoryInput) {
@@ -486,6 +525,10 @@ function openSrvModal(srv) {
     panelUrlInput.value = '';
     panelUserInput.value = '';
     panelPassInput.value = '';
+    if (chargeToggle) chargeToggle.checked = false;
+    if (chargeFeeInput) chargeFeeInput.value = '18';
+    if (chargeFeeGroup) chargeFeeGroup.style.display = 'none';
+    if (paidToggle) { paidToggle.checked = false; paidToggle.disabled = true; }
     deleteBtn.classList.add('hidden');
 
     // 临时网站列表（编辑期间的副本）
@@ -510,6 +553,13 @@ function openSrvModal(srv) {
         srvEditWebsites = (srv.websites || []).map(w => ({ ...w }));
         deleteBtn.classList.remove('hidden');
         if (categoryInput) categoryInput.value = srv.categoryId || '';
+        if (chargeToggle) chargeToggle.checked = !!srv.isCharged;
+        if (chargeFeeInput) chargeFeeInput.value = (srv.chargeFee !== undefined && srv.chargeFee !== null && srv.chargeFee !== '') ? srv.chargeFee : '18';
+        if (chargeFeeGroup) chargeFeeGroup.style.display = (chargeToggle && chargeToggle.checked) ? 'inline-flex' : 'none';
+        if (paidToggle) {
+            paidToggle.disabled = !chargeToggle || !chargeToggle.checked;
+            paidToggle.checked = !!(chargeToggle && chargeToggle.checked && srv.paid);
+        }
     } else {
         modalTitle.textContent = '添加服务器';
     }
@@ -564,7 +614,7 @@ function renderSrvEditWebsites() {
             <div class="srv-ws-edit-actions">
                 ${ws.adminUrl ? `<a class="srv-ws-link" href="${escapeHtml(ws.adminUrl)}" target="_blank" title="打开后台" style="display:inline-flex;font-size:16px;color:#cbd5e1;text-decoration:none;"><span class="material-icons" style="font-size:16px;">open_in_new</span></a>` : ''}
                 <span class="material-icons srv-ws-edit-btn" data-idx="${idx}" title="编辑" style="font-size:16px;color:#cbd5e1;cursor:pointer;">edit</span>
-                <span class="material-icons srv-ws-edit-del" data-idx="${idx}" title="删除" style="font-size:16px;color:#cbd5e1;cursor:pointer;">delete</span>
+                <i class="fa-regular fa-xmark srv-ws-edit-del" data-idx="${idx}" title="删除" style="font-size:16px;color:#cbd5e1;cursor:pointer;"></i>
             </div>
         `;
         item.querySelector('.srv-ws-edit-btn').addEventListener('click', function() {
@@ -748,6 +798,9 @@ function exportServers() {
         panelUrl: s.panelUrl,
         panelUser: s.panelUser,
         panelPass: s.panelPass,
+        isCharged: s.isCharged,
+        chargeFee: s.chargeFee,
+        paid: s.paid,
         websites: (s.websites || []).map(w => ({
             domain: w.domain,
             dbType: w.dbType,
@@ -802,6 +855,9 @@ function importServers() {
                         panelUrl: s.panelUrl || '',
                         panelUser: s.panelUser || '',
                         panelPass: s.panelPass || '',
+                        isCharged: !!s.isCharged,
+                        chargeFee: (s.chargeFee !== undefined && s.chargeFee !== null && s.chargeFee !== '') ? s.chargeFee : 18,
+                        paid: !!s.paid,
                         websites: Array.isArray(s.websites) ? s.websites.map(w => ({
                             id: Date.now() + Math.random(),
                             domain: w.domain || '',
@@ -869,6 +925,23 @@ function setupServerLogic() {
             switchSrvTab(this.dataset.srvTab);
         });
     });
+
+    // 是否收费开关：控制收费金额输入框显隐 + 已收款开关可用性
+    const chargeToggleEl = document.getElementById('srv-charge-toggle');
+    const chargeFeeGroupEl = document.getElementById('srv-charge-fee-group');
+    const paidToggleEl = document.getElementById('srv-paid-toggle');
+    if (chargeToggleEl && paidToggleEl) {
+        chargeToggleEl.addEventListener('change', function() {
+            const on = this.checked;
+            if (chargeFeeGroupEl) chargeFeeGroupEl.style.display = on ? 'inline-flex' : 'none';
+            paidToggleEl.disabled = !on;
+            if (!on) paidToggleEl.checked = false;
+            if (on) {
+                const feeInput = document.getElementById('srv-charge-fee-input');
+                if (feeInput && !feeInput.value) feeInput.value = '18';
+            }
+        });
+    }
 
     // 在服务器弹窗中粘贴服务器信息时自动解析填写
     srvModal.addEventListener('paste', function(e) {
@@ -951,6 +1024,14 @@ function setupServerLogic() {
         const panelUrl = document.getElementById('srv-panel-url-input').value.trim();
         const panelUser = document.getElementById('srv-panel-user-input').value.trim();
         const panelPass = document.getElementById('srv-panel-pass-input').value;
+        const chargeToggleSave = document.getElementById('srv-charge-toggle');
+        const chargeFeeSave = document.getElementById('srv-charge-fee-input');
+        const isCharged = !!(chargeToggleSave && chargeToggleSave.checked);
+        const chargeFee = isCharged
+            ? (parseFloat(chargeFeeSave ? chargeFeeSave.value : '') || 18)
+            : 0;
+        const paidToggleSave = document.getElementById('srv-paid-toggle');
+        const paid = isCharged && !!(paidToggleSave && paidToggleSave.checked);
 
         if (!ip) { showToast('IP 地址不能为空'); document.getElementById('srv-ip-input').focus(); return; }
 
@@ -958,6 +1039,7 @@ function setupServerLogic() {
             title, os, protocol, ip, port, username, password,
             providerUrl, note,
             panelType, panelUrl, panelUser, panelPass,
+            isCharged, chargeFee, paid,
             categoryId: document.getElementById('srv-category-input').value,
             websites: srvEditWebsites
         };

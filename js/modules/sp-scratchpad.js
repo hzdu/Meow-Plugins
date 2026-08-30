@@ -34,8 +34,8 @@ function renderScratchList() {
         sorted.forEach(item => {
             const li = document.createElement('li');
             li.className = 'scratch-card';
-            li.innerHTML = '<div class="scratch-meta"><span>' + formatTime(item.time) + '</span></div><div class="scratch-content">' + item.content + '</div><div class="scratch-actions"><div class="action-group"><span class="material-icons delete-btn" style="color:#cbd5e1;cursor:pointer;font-size:16px;">delete</span></div></div>';
-            li.addEventListener('click', function(e) { if (e.target.closest('.action-group')) return; openScratchEditModal(item); });
+            li.innerHTML = '<div class="scratch-meta"><span>' + formatTime(item.time) + '</span><i class="fa-regular fa-xmark delete-btn" title="' + meowI18n.t('action_delete') + '"></i></div><div class="scratch-content">' + item.content + '</div>';
+            li.addEventListener('click', function(e) { if (e.target.closest('.delete-btn')) return; openScratchEditModal(item); });
             li.querySelector('.delete-btn').addEventListener('click', async function(e) { e.stopPropagation(); if(await showConfirmDialog({ message: meowI18n.t('msg_confirm_del'), type: 'danger' })) { myScratchList = myScratchList.filter(s => s.id !== item.id); saveData(); renderScratchList(); } });
             scratchList.appendChild(li);
         });

@@ -9,6 +9,7 @@
 //   sp-readlater.js     - 稍后阅读模块
 //   sp-gallery.js       - 图集模块（多选、灯箱预览、拖拽上传）
 //   sp-tools.js         - 工具箱模块（单位换算、编码解码、IP查询、油价、汇率、UUID、Pip等）
+//   sp-regcode.js       - 注册码管理模块（软件注册码客户信息管理：软件分类、联系方式、硬件码、注册码、购买/到期时间）
 //   sp-2fa.js           - 2FA 验证码模块（获取、渲染、定时刷新、导入导出、弹窗管理）
 //   sp-ai-provider.js   - AI Provider 模块（CRUD、导入导出、过滤、拖拽排序）
 //   sp-ai-collection.js - AI 合集模块（标签管理、iframe加载、全部服务弹窗、拖拽排序）

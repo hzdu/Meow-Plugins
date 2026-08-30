@@ -42,39 +42,39 @@ function renderAIProviders() {
         const maskedKey = safeKey.length > 8 ? safeKey.slice(0, 4) + '••••' + safeKey.slice(-4) : '••••••••';
 
         const urlsHtml = urls.map((url, i) =>
-            `<div class="ai-card-url" data-idx="${i}" title="点击复制 Base URL"><span class="material-icons">link</span>${escapeHtml(url)}</div>`
+            `<div class="ai-card-url" data-idx="${i}" title="点击复制 Base URL"><i class="fa-regular fa-link"></i>${escapeHtml(url)}</div>`
         ).join('');
 
         const modelsHtml = models.map((m, i) =>
-            `<div class="ai-card-model" data-idx="${i}" title="点击复制 Model"><span class="material-icons">smart_toy</span><span class="badge">${escapeHtml(m)}</span></div>`
+            `<div class="ai-card-model" data-idx="${i}" title="点击复制 Model"><i class="fa-regular fa-robot"></i><span class="badge">${escapeHtml(m)}</span></div>`
         ).join('');
 
         const apiType = provider.apiType || 'openai';
         const typeLabel = apiType === 'anthropic' ? 'Anthropic' : 'OpenAI';
-        const typeIcon = apiType === 'anthropic' ? 'history' : 'api';
+        const typeIcon = apiType === 'anthropic' ? 'fa-clock-rotate-left' : 'fa-microchip';
         const officialLink = provider.officialUrl ? escapeHtml(provider.officialUrl) : '';
         const hasNote = provider.note && provider.note.trim();
 
         card.innerHTML = `
             <div class="ai-card-header">
-                <span class="material-icons ai-card-toggle">expand_more</span>
+                <i class="fa-regular fa-chevron-down ai-card-toggle"></i>
                 <span class="ai-card-name">${nameDisplay}</span>
                 <div class="ai-card-actions">
-                    <span class="material-icons ai-apply-btn" title="应用到 AI Setting" style="font-size:16px;color:#8b5cf6;">play_arrow</span>
-                    ${hasNote ? `<span class="material-icons ai-note-btn" title="查看备注">description</span>` : ''}
-                    ${officialLink ? `<a class="ai-official-link" href="${officialLink}" target="_blank" title="打开官网" onclick="event.stopPropagation()"><span class="material-icons">open_in_new</span></a>` : ''}
-                    <span class="material-icons ai-edit-btn" data-id="${provider.id}">edit</span>
-                    <span class="material-icons ai-del-btn" data-id="${provider.id}">delete</span>
+                    <i class="fa-regular fa-play ai-apply-btn" title="应用到 AI Setting" style="font-size:13px;color:#8b5cf6;"></i>
+                    ${hasNote ? `<i class="fa-regular fa-file-lines ai-note-btn" title="查看备注"></i>` : ''}
+                    ${officialLink ? `<a class="ai-official-link" href="${officialLink}" target="_blank" title="打开官网" onclick="event.stopPropagation()"><i class="fa-regular fa-window-restore"></i></a>` : ''}
+                    <i class="fa-regular fa-pen-to-square ai-edit-btn" data-id="${provider.id}"></i>
+                    <i class="fa-regular fa-xmark ai-del-btn" data-id="${provider.id}"></i>
                 </div>
             </div>
             <div class="ai-card-body" style="display:none">
                 <div class="ai-card-type-row" title="${typeLabel}">
-                    <span class="material-icons">${typeIcon}</span>
+                    <i class="fa-regular ${typeIcon}"></i>
                     <span class="badge type-badge">${typeLabel}</span>
                 </div>
                 ${urlsHtml}
                 <div class="ai-card-key-row" title="点击复制 API Key">
-                    <span class="material-icons">key</span>
+                    <i class="fa-regular fa-key"></i>
                     <span class="ai-card-key-masked">${maskedKey}</span>
                 </div>
                 ${modelsHtml}
@@ -84,10 +84,8 @@ function renderAIProviders() {
         card.querySelector('.ai-card-header').addEventListener('click', function(e) {
             if (e.target.closest('.ai-card-actions, .ai-official-link')) return;
             const body = card.querySelector('.ai-card-body');
-            const toggle = card.querySelector('.ai-card-toggle');
             const isExpanded = card.classList.toggle('expanded');
             body.style.display = isExpanded ? '' : 'none';
-            toggle.textContent = isExpanded ? 'expand_less' : 'expand_more';
         });
 
         card.querySelectorAll('.ai-card-url').forEach(el => {

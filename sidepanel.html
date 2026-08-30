@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="css/sidepanel.css">
     <link rel="stylesheet" href="css/meow-confirm.css">
     <link href="https://fonts.loli.net/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Font Awesome Pro 7.3.0 (github.com/rizmyabdulla/fontawesome-pro) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rizmyabdulla/fontawesome-pro@main/releases/v7.3.0/css/fontawesome.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rizmyabdulla/fontawesome-pro@main/releases/v7.3.0/css/regular.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rizmyabdulla/fontawesome-pro@main/releases/v7.3.0/css/solid.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rizmyabdulla/fontawesome-pro@main/releases/v7.3.0/css/brands.css">
 </head>
 <body tabindex="-1">
     <div class="container">
@@ -14,43 +19,46 @@
         <div class="top-section">
             <div class="tab-group">
                 <button class="tab-btn" data-target="hot" data-i18n-title="sp_tab_hot" title="热门榜单">
-                    <span class="material-icons">local_fire_department</span>
+                    <i class="fa-regular fa-fire"></i>
                 </button>
                 <button class="tab-btn" data-target="prompts" data-i18n-title="sp_tab_prompts" title="AI提示词">
-                    <span class="material-icons">lightbulb</span>
+                    <i class="fa-regular fa-lightbulb"></i>
                 </button>
                 <button class="tab-btn" data-target="aicollection" title="AI合集">
-                    <span class="material-icons">hub</span>
+                    <i class="fa-regular fa-robot"></i>
                 </button>
                 <button class="tab-btn" data-target="scratchpad" data-i18n-title="sp_tab_scratch" title="暂存板">
-                    <span class="material-icons">sticky_note_2</span>
+                    <i class="fa-regular fa-note-sticky"></i>
                 </button>
                 <button class="tab-btn" data-target="readlater" data-i18n-title="sp_tab_readlater" title="稍后阅读">
-                    <span class="material-icons">bookmark_border</span>
+                    <i class="fa-regular fa-bookmark"></i>
                 </button>
                 <button class="tab-btn" data-target="gallery" data-i18n-title="sp_tab_gallery" title="图集">
-                    <span class="material-icons">collections</span>
+                    <i class="fa-regular fa-images"></i>
                 </button>
                 <button class="tab-btn" data-target="clock" data-i18n-title="sp_tab_clock" title="国际时钟">
-                    <span class="material-icons">schedule</span>
+                    <i class="fa-regular fa-clock"></i>
                 </button>
                 <button class="tab-btn" data-target="2fa" data-i18n-title="sp_tab_2fa" title="2FA验证">
-                    <span class="material-icons">vpn_key</span>
+                    <i class="fa-regular fa-key"></i>
                 </button>
                 <button class="tab-btn" data-target="ai-provider" title="AI Provider">
-                    <span class="material-icons">psychology</span>
+                    <i class="fa-regular fa-brain"></i>
+                </button>
+                <button class="tab-btn" data-target="regcodes" title="注册码管理">
+                    <i class="fa-regular fa-id-card"></i>
                 </button>
                 <button class="tab-btn active" data-target="tools" data-i18n-title="sp_tab_tools" title="工具箱">
-                    <span class="material-icons">build</span>
+                    <i class="fa-regular fa-wrench"></i>
                 </button>
                 <button class="tab-btn" data-target="servers" title="服务器管理">
-                    <span class="material-icons">cloud</span>
+                    <i class="fa-regular fa-cloud"></i>
                 </button>
             </div>
 
             <!-- === 搜索区域 === -->
             <div id="search-group-prompts" class="search-wrapper hidden">
-                <button id="manage-cat-btn" class="icon-btn" data-i18n-title="lbl_category_manage" title="管理分类" style="flex-shrink:0;"><span class="material-icons">category</span></button>
+                <button id="manage-cat-btn" class="icon-btn" data-i18n-title="lbl_category_manage" title="管理分类" style="flex-shrink:0;"><i class="fa-regular fa-folder-tree"></i></button>
                 <span class="material-icons search-icon-overlay">search</span>
                 <input type="text" id="search-prompts-input" class="search-input" data-i18n-ph="sp_search_p_placeholder" placeholder="搜索提示词...">
             </div>
@@ -454,32 +462,33 @@
             <div id="view-servers" class="view-content hidden">
             <div class="srv-sidebar" id="srv-sidebar">
                 <div class="srv-cat-tab active" data-cat-id="">
-                    <span class="material-icons">folder</span>
+                    <i class="fa-regular fa-folder-open"></i>
                     <span class="srv-cat-label">全部</span>
                 </div>
             </div>
             <div class="srv-main">
+            <div id="srv-scroll">
             <div id="srv-header">
             <div class="gallery-controls" id="srv-controls">
                 <div style="display:flex;gap:4px;flex-shrink:0;" id="srv-cmd-group">
                     <div class="ctrl-btn" id="srv-cat-manage-btn" title="分类管理">
-                        <span class="material-icons" style="font-size:16px">category</span>
+                        <i class="fa-regular fa-folder-tree" style="font-size:10px;"></i>
                     </div>
                     <div class="ctrl-btn" id="srv-add-btn" title="添加服务器">
-                        <span class="material-icons" style="font-size:16px">add</span>
+                        <i class="fa-regular fa-plus" style="font-size:10px;"></i>
                     </div>
                     <div class="ctrl-btn" id="srv-commands-btn" title="常用命令">
-                        <span class="material-icons" style="font-size:16px">computer</span>
+                        <i class="fa-regular fa-terminal" style="font-size:10px;"></i>
                     </div>
                     <div class="ctrl-btn" id="srv-export-btn" title="导出备份">
-                        <span class="material-icons" style="font-size:16px">file_upload</span>
+                        <i class="fa-regular fa-arrow-up-from-bracket" style="font-size:10px;"></i>
                     </div>
                     <div class="ctrl-btn" id="srv-import-btn" title="导入备份">
-                        <span class="material-icons" style="font-size:16px">file_download</span>
+                        <i class="fa-regular fa-arrow-down-to-bracket" style="font-size:10px;"></i>
                     </div>
                 </div>
                 <div class="ctrl-btn" id="srv-search-toggle" title="搜索" style="flex-shrink:0;">
-                    <span class="material-icons" style="font-size:16px">search</span>
+                    <i class="fa-regular fa-magnifying-glass" style="font-size:10px;"></i>
                 </div>
                 <div class="ai-filter-row" id="srv-filter-row">
                     <div style="position:relative;flex:1;">
@@ -497,6 +506,158 @@
                     <p>暂无服务器记录<br>点击上方 + 添加</p>
                 </div>
             </div>
+                <div id="srv-money-bar" class="srv-count-bar srv-money-bar" style="display:none;"></div>
+            </div>
+            </div>
+
+            <!-- 注册码管理视图 -->
+            <div id="view-regcodes" class="view-content hidden">
+            <div class="srv-sidebar" id="reg-sidebar">
+                <div class="srv-cat-tab active" data-cat-id="">
+                    <i class="fa-regular fa-folder-open"></i>
+                    <span class="srv-cat-label">全部</span>
+                </div>
+            </div>
+            <div class="srv-main">
+            <div id="reg-scroll">
+            <div id="reg-header">
+            <div class="gallery-controls" id="reg-controls">
+                <div style="display:flex;gap:4px;flex-shrink:0;" id="reg-cmd-group">
+                    <div class="ctrl-btn" id="reg-cat-manage-btn" title="软件分类管理">
+                        <i class="fa-regular fa-folder-tree" style="font-size:10px;"></i>
+                    </div>
+                    <div class="ctrl-btn" id="reg-add-btn" title="添加注册码">
+                        <i class="fa-regular fa-plus" style="font-size:10px;"></i>
+                    </div>
+                    <div class="ctrl-btn" id="reg-export-btn" title="导出备份">
+                        <i class="fa-regular fa-arrow-up-from-bracket" style="font-size:10px;"></i>
+                    </div>
+                    <div class="ctrl-btn" id="reg-import-btn" title="导入备份">
+                        <i class="fa-regular fa-arrow-down-to-bracket" style="font-size:10px;"></i>
+                    </div>
+                </div>
+                <div class="ctrl-btn" id="reg-search-toggle" title="搜索" style="flex-shrink:0;">
+                    <i class="fa-regular fa-magnifying-glass" style="font-size:10px;"></i>
+                </div>
+                <div class="ai-filter-row" id="reg-filter-row">
+                    <div style="position:relative;flex:1;">
+                        <span class="material-icons" id="reg-search-back" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:18px;color:#64748b;cursor:pointer;z-index:1;">close</span>
+                        <input type="text" id="reg-filter-input" class="ai-filter-input" placeholder="搜索昵称 / 微信 / 电话 / 硬件码 / 注册码..." style="width:100%;padding:2px 28px 2px 30px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">
+                        <span class="material-icons ai-filter-clear" id="reg-filter-clear" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:#9ca3af;">close</span>
+                    </div>
+                </div>
+                </div>
+                <div id="reg-count-bar" class="srv-count-bar">共 0 条注册码</div>
+            </div>
+                <div id="reg-list" class="srv-list"></div>
+                <div id="reg-empty" class="empty-state">
+                    <span class="material-icons">vpn_key_off</span>
+                    <p>暂无注册码记录<br>点击上方 + 添加</p>
+                </div>
+            </div>
+                <div id="reg-status-bar" class="reg-status-bar" style="display:none;"></div>
+            </div>
+            </div>
+
+            <!-- 注册码编辑弹窗 -->
+            <div id="reg-modal" class="modal hidden">
+                <div class="modal-content" style="width: 90%; max-height: 92vh;">
+                    <div class="modal-header">
+                        <h3 id="reg-modal-title">添加注册码</h3>
+                        <span class="material-icons close-modal" id="close-reg-modal">close</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="srv-form-grid">
+                            <div class="form-group">
+                                <label>软件名称</label>
+                                <select id="reg-software-input" class="converter-input full-border">
+                                    <option value="">未选择软件</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>购买人昵称</label>
+                                <input type="text" id="reg-nickname-input" class="converter-input full-border" placeholder="例如：张三">
+                            </div>
+                            <div class="form-group">
+                                <label>微信号</label>
+                                <div class="srv-input-wrap">
+                                    <input type="text" id="reg-wechat-input" class="converter-input full-border" placeholder="微信号">
+                                    <button class="srv-icopy-btn" data-copy-target="reg-wechat-input" title="复制微信号"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>电话号码</label>
+                                <div class="srv-input-wrap">
+                                    <input type="text" id="reg-phone-input" class="converter-input full-border" placeholder="电话号码">
+                                    <button class="srv-icopy-btn" data-copy-target="reg-phone-input" title="复制电话"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>硬件码</label>
+                                <div class="srv-input-wrap">
+                                    <input type="text" id="reg-hwid-input" class="converter-input full-border" placeholder="硬件码" style="font-family:monospace;">
+                                    <button class="srv-icopy-btn" data-copy-target="reg-hwid-input" title="复制硬件码"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>注册码</label>
+                                <div class="srv-input-wrap">
+                                    <input type="text" id="reg-code-input" class="converter-input full-border" placeholder="注册码" style="font-family:monospace;">
+                                    <button class="srv-icopy-btn" data-copy-target="reg-code-input" title="复制注册码"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                </div>
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>付款周期（自动计算到期时间）</label>
+                                <div class="reg-plan-row">
+                                    <button type="button" class="reg-plan-btn" data-months="1">月付</button>
+                                    <button type="button" class="reg-plan-btn" data-months="3">季付</button>
+                                    <button type="button" class="reg-plan-btn" data-months="6">半年付</button>
+                                    <button type="button" class="reg-plan-btn" data-months="12">年付</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>购买时间</label>
+                                <input type="date" id="reg-purchase-input" class="converter-input full-border">
+                            </div>
+                            <div class="form-group">
+                                <label>到期时间</label>
+                                <input type="date" id="reg-expiry-input" class="converter-input full-border">
+                            </div>
+                            <div class="form-group">
+                                <label>销售金额（元）</label>
+                                <input type="number" id="reg-price-input" class="converter-input full-border" placeholder="0.00" min="0" step="0.01">
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>备注</label>
+                                <textarea id="reg-note-input" class="converter-input full-border" rows="2" placeholder="可选备注信息"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px; margin-top:4px;">
+                        <button id="reg-delete-btn" class="cancel-btn hidden" style="color:#ef4444;">删除</button>
+                        <button id="reg-save-btn" class="add-btn">保存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 软件分类管理弹窗 -->
+            <div id="reg-cat-modal" class="modal hidden">
+                <div class="modal-content" style="width: 85%; max-height: 80vh;">
+                    <div class="modal-header">
+                        <h3>软件分类管理</h3>
+                        <span class="material-icons close-modal" id="close-reg-cat-modal">close</span>
+                    </div>
+                    <div class="modal-body" style="padding-bottom:8px;">
+                        <div style="display:flex;gap:6px;margin-bottom:10px;">
+                            <input type="text" id="reg-cat-input" class="converter-input full-border" placeholder="输入软件名称..." style="flex:1;">
+                            <button id="reg-cat-add-btn" class="add-btn" style="flex:none;padding:6px 14px;font-size:12px;">添加</button>
+                        </div>
+                        <div id="reg-cat-list" class="srv-cat-list"></div>
+                        <div style="margin-top:8px;font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:4px;">
+                            <span class="material-icons" style="font-size:13px;">info</span> 拖拽左侧手柄可排序
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- 服务器编辑弹窗 -->
@@ -581,6 +742,18 @@
                                 <div class="form-group" style="grid-column: 1 / -1;">
                                     <label>备注</label>
                                     <textarea id="srv-note-input" class="converter-input full-border" rows="2" placeholder="可选备注信息"></textarea>
+                                </div>
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    <div class="srv-form-label-bar" style="justify-content:flex-start; flex-wrap:nowrap; gap:5px;">
+                                        <label style="margin:0; white-space:nowrap;">是否收费</label>
+                                        <label class="srv-wp-switch" style="font-size:12px;"><input type="checkbox" id="srv-charge-toggle"><span class="srv-wp-slider"></span></label>
+                                        <label style="margin:0; white-space:nowrap;">已收款</label>
+                                        <label class="srv-wp-switch" style="font-size:12px;"><input type="checkbox" id="srv-paid-toggle" disabled><span class="srv-wp-slider"></span></label>
+                                        <span id="srv-charge-fee-group" style="display:none; align-items:center; gap:3px; flex:1; min-width:0;">
+                                            <label style="margin:0; white-space:nowrap; font-size:11px;">收费金额（元）</label>
+                                            <input type="number" id="srv-charge-fee-input" class="converter-input full-border" value="18" min="0" step="0.01" placeholder="18" style="flex:1; min-width:48px; width:100%; padding:3px 6px;">
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -772,14 +945,14 @@
             <div id="view-2fa" class="view-content hidden">
                 <div class="gallery-controls" id="fa-controls">
                     <div class="ctrl-btn" id="fa-add-btn" title="添加密钥">
-                        <span class="material-icons" style="font-size:16px">add</span>
+                        <i class="fa-regular fa-plus" style="font-size:10px;"></i>
                     </div>
                     <div style="display:flex;gap:4px">
                         <div class="ctrl-btn" id="fa-export-btn" title="导出备份密钥">
-                            <span class="material-icons" style="font-size:16px">file_upload</span>
+                            <i class="fa-regular fa-arrow-up-from-bracket" style="font-size:10px;"></i>
                         </div>
                         <div class="ctrl-btn" id="fa-import-btn" title="导入备份密钥">
-                            <span class="material-icons" style="font-size:16px">file_download</span>
+                            <i class="fa-regular fa-arrow-down-to-bracket" style="font-size:10px;"></i>
                         </div>
                     </div>
                 </div>
@@ -794,14 +967,14 @@
             <div id="view-ai-provider" class="view-content hidden">
                 <div class="gallery-controls" id="ai-provider-controls">
                     <div class="ctrl-btn" id="ai-provider-add-btn" title="添加">
-                        <span class="material-icons" style="font-size:16px">add</span>
+                        <i class="fa-regular fa-plus" style="font-size:10px;"></i>
                     </div>
                     <div style="display:flex;gap:4px">
                         <div class="ctrl-btn" id="ai-provider-export-btn" title="导出备份">
-                            <span class="material-icons" style="font-size:16px">file_upload</span>
+                            <i class="fa-regular fa-arrow-up-from-bracket" style="font-size:10px;"></i>
                         </div>
                         <div class="ctrl-btn" id="ai-provider-import-btn" title="导入备份">
-                            <span class="material-icons" style="font-size:16px">file_download</span>
+                            <i class="fa-regular fa-arrow-down-to-bracket" style="font-size:10px;"></i>
                         </div>
                     </div>
                     <div class="ai-filter-row" style="position:relative;flex:1;min-width:120px;">
@@ -1026,6 +1199,7 @@
     <script src="js/modules/sp-gallery.js"></script>
     <script src="js/modules/sp-tools.js"></script>
     <script src="js/modules/sp-servers.js"></script>
+    <script src="js/modules/sp-regcode.js"></script>
     <script src="js/modules/sp-2fa.js"></script>
     <script src="js/modules/sp-ai-provider.js"></script>
     <script src="js/modules/sp-ai-collection.js"></script>
