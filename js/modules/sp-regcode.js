@@ -113,6 +113,7 @@ function renderRegCatTabs() {
         tab.dataset.catId = cat.id;
         tab.dataset.catName = cat.name;
         tab.dataset.index = index;
+        tab.title = cat.name;
         tab.innerHTML = `<i class="fa-regular ${cat.id === regActiveCategoryId ? 'fa-folder-open' : 'fa-folder'}"></i><span class="srv-cat-label">${escapeHtml(cat.name)}</span>`;
         tab.addEventListener('click', function() {
             regActiveCategoryId = this.dataset.catId;
