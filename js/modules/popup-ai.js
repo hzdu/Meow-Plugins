@@ -315,6 +315,290 @@ function importAIProviders() {
     setTimeout(() => fileInput.remove(), 1000);
 }
 
+// ================== 获取模型列表（AI Provider） ==================
+// 模型选择弹窗状态：[{ id, source, existing, checked }]
+let aiModelSelectEntries = [];
+let aiModelSelectSearch = '';
+
+function setAiModelFetchStatus(text, type) {
+    if (!aiProviderModelFetchStatus) return;
+    if (!text) {
+        aiProviderModelFetchStatus.textContent = '';
+        aiProviderModelFetchStatus.style.display = 'none';
+        return;
+    }
+    aiProviderModelFetchStatus.textContent = text;
+    aiProviderModelFetchStatus.className = 'ai-provider-fetch-status' + (type === 'error' ? ' error' : type === 'ok' ? ' ok' : '');
+    aiProviderModelFetchStatus.style.display = 'block';
+}
+
+// 由 Base URL 推导 models 端点候选（依次尝试，取第一个成功返回的）
+function buildModelsEndpointCandidates(rawUrl, apiType) {
+    let b = (rawUrl || '').trim().replace(/\/+$/, '');
+    if (!b) return [];
+    // 用户已直接粘贴了 models 端点
+    if (/\/models?$/i.test(b)) return [b];
+    // 去掉可能粘贴的完整请求端点
+    b = b.replace(/\/(chat\/completions|messages)$/i, '');
+    // 去掉末尾 /v1，统一按 /v1/models 补全，避免重复
+    const root = b.replace(/\/v1$/i, '');
+    const list = [root + '/v1/models'];
+    if (apiType !== 'anthropic') list.push(root + '/models');
+    return [...new Set(list)];
+}
+
+function buildModelsRequestHeaders(apiType, key) {
+    if (apiType === 'anthropic') {
+        return { 'x-api-key': key || '', 'anthropic-version': '2023-06-01' };
+    }
+    return { 'Authorization': 'Bearer ' + (key || '') };
+}
+
+function extractModelIdsFromJson(json) {
+    if (!json || typeof json !== 'object') return [];
+    let arr = null;
+    if (Array.isArray(json)) {
+        arr = json;
+    } else {
+        arr = Array.isArray(json.data) ? json.data
+            : (Array.isArray(json.models) ? json.models
+                : (Array.isArray(json.model) ? json.model
+                    : (Array.isArray(json.list) ? json.list : null)));
+    }
+    const ids = [];
+    if (arr) {
+        arr.forEach(function(it) {
+            if (it == null) return;
+            if (typeof it === 'string') { if (it) ids.push(it); return; }
+            if (typeof it === 'object') {
+                let val = it.id || it.name || it.model || it.key || it.slug;
+                if (typeof val === 'string' && val) ids.push(val);
+                else if (typeof val === 'number') ids.push(String(val));
+            }
+        });
+    } else if (json.id) {
+        ids.push(String(json.id));
+    }
+    return ids;
+}
+
+// 针对单个 Base URL 获取模型（多候选地址，认证失败立即终止）
+async function fetchModelsFromBase(baseUrl, apiType, key) {
+    const candidates = buildModelsEndpointCandidates(baseUrl, apiType);
+    if (candidates.length === 0) throw new Error('Base URL 无效');
+    const headers = buildModelsRequestHeaders(apiType, key);
+    let lastErr = new Error('获取失败');
+    for (const endpoint of candidates) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(function() { ctrl.abort(); }, 20000);
+        try {
+            const res = await fetch(endpoint, { method: 'GET', headers: headers, signal: ctrl.signal, credentials: 'omit' });
+            if (res.status === 401 || res.status === 403) {
+                throw new Error('认证失败 (' + res.status + ')');
+            }
+            if (!res.ok) {
+                const detail = (await res.text().catch(() => '')).replace(/\s+/g, ' ').trim().slice(0, 160);
+                lastErr = new Error('HTTP ' + res.status + (detail ? ' ' + detail : ''));
+                continue;
+            }
+            const text = await res.text();
+            let json = null;
+            try { json = text ? JSON.parse(text) : null; } catch (e) { json = null; }
+            const ids = extractModelIdsFromJson(json);
+            if (ids.length) return ids;
+            lastErr = new Error('返回数据中没有模型');
+        } catch (e) {
+            if (e && e.name === 'AbortError') { lastErr = new Error('请求超时'); break; }
+            if (e && /认证失败/.test(e.message)) throw e;
+            lastErr = e || lastErr;
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+    throw lastErr;
+}
+
+// 点击“获取模型”：对每个 Base URL 并行获取，汇总后弹出选择框
+async function handleFetchProviderModels() {
+    if (!aiProviderFetchModelsBtn || !aiUrlInput || !aiKeyInput || !aiTypeInput) return;
+    const apiType = aiTypeInput.value || 'openai';
+    const urls = (aiUrlInput.value || '').split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+    const key = (aiKeyInput.value || '').trim();
+
+    if (urls.length === 0) { setAiModelFetchStatus('请先填写 Base URL', 'error'); aiUrlInput.focus(); return; }
+    if (!key) { setAiModelFetchStatus('请先填写 API Key', 'error'); aiKeyInput.focus(); return; }
+
+    const origHtml = aiProviderFetchModelsBtn.innerHTML;
+    aiProviderFetchModelsBtn.disabled = true;
+    aiProviderFetchModelsBtn.innerHTML = '<span class="material-icons" style="font-size:16px;vertical-align:middle;animation:spin 0.8s linear infinite;">autorenew</span> 获取中…';
+    setAiModelFetchStatus(urls.length > 1 ? '正在获取模型…（共 ' + urls.length + ' 个 Base URL）' : '正在获取模型…');
+
+    const foundMap = new Map();   // model id -> 来源 host（跨地址去重）
+    const errors = [];
+    await Promise.all(urls.map(function(u) {
+        return fetchModelsFromBase(u, apiType, key).then(function(ids) {
+            (ids || []).forEach(function(id) {
+                if (id && !foundMap.has(id)) {
+                    let host = u;
+                    try { host = new URL(u).host; } catch (e) { host = u; }
+                    foundMap.set(id, host);
+                }
+            });
+        }).catch(function(e) {
+            errors.push({ url: u, msg: (e && e.message) || '未知错误' });
+        });
+    }));
+
+    aiProviderFetchModelsBtn.disabled = false;
+    aiProviderFetchModelsBtn.innerHTML = origHtml;
+
+    const ids = Array.from(foundMap.keys());
+    if (ids.length === 0) {
+        let text = '未获取到模型';
+        if (errors.length) text += '：' + errors[0].msg + (errors.length > 1 ? '（另有 ' + (errors.length - 1) + ' 个地址失败）' : '');
+        setAiModelFetchStatus(text, 'error');
+        return;
+    }
+    const partial = errors.length ? '（' + errors.length + ' 个地址失败）' : '';
+    setAiModelFetchStatus('成功获取 ' + ids.length + ' 个模型' + partial, 'ok');
+    openAiProviderModelSelect(ids.map(function(id) { return { id: id, source: foundMap.get(id) }; }));
+}
+
+// ================== 模型多选弹窗（全量编辑 Model 字段） ==================
+function openAiProviderModelSelect(found) {
+    const existingSet = new Set((aiModelInput.value || '').split('\n').map(function(s) { return s.trim(); }).filter(Boolean));
+    aiModelSelectEntries = found.map(function(f) {
+        // 默认只勾选已在 Model 字段中的（=保留）；新获取默认不勾选，需手动勾选才添加
+        return { id: f.id, source: f.source, existing: existingSet.has(f.id), checked: existingSet.has(f.id) };
+    });
+    // 每次打开重置过滤关键字
+    aiModelSelectSearch = '';
+    if (aiProviderModelSelectSearchInput) aiProviderModelSelectSearchInput.value = '';
+    if (aiProviderModelSelectSource) {
+        const existingCount = aiModelSelectEntries.filter(function(en) { return en.existing; }).length;
+        const tip = '已在 Model 的默认勾选（保留）；新获取的默认不勾选，勾选后才添加；取消勾选已有项会从 Model 中移除';
+        aiProviderModelSelectSource.title = tip;
+        aiProviderModelSelectSource.textContent = existingCount > 0
+            ? '共 ' + found.length + ' 个，其中 ' + existingCount + ' 个已在 Model'
+            : '共 ' + found.length + ' 个模型';
+    }
+    renderAiProviderModelSelectList();
+    if (aiProviderModelSelectModal) {
+        aiProviderModelSelectModal.classList.remove('hidden');
+        aiProviderModelSelectModal.classList.add('visible');
+    }
+}
+
+function renderAiProviderModelSelectList() {
+    if (!aiProviderModelSelectList) return;
+    aiProviderModelSelectList.innerHTML = '';
+    const q = aiModelSelectSearch.trim().toLowerCase();
+    // 过滤只影响可见列表；勾选状态保存在 entries 里，不受过滤影响
+    const visible = q
+        ? aiModelSelectEntries.filter(function(en) {
+            return en.id.toLowerCase().includes(q) || (en.source || '').toLowerCase().includes(q);
+        })
+        : aiModelSelectEntries;
+
+    if (visible.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'ai-model-select-empty';
+        empty.textContent = q ? '没有匹配的模型' : '无可用模型';
+        aiProviderModelSelectList.appendChild(empty);
+        updateAiProviderModelSelectCount();
+        return;
+    }
+
+    visible.forEach(function(en) {
+        const idx = aiModelSelectEntries.indexOf(en);
+        const label = document.createElement('label');
+        label.className = 'ai-model-select-item';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.dataset.idx = String(idx);
+        cb.checked = !!en.checked;
+        cb.addEventListener('change', function() {
+            if (aiModelSelectEntries[idx]) aiModelSelectEntries[idx].checked = cb.checked;
+            updateAiProviderModelSelectCount();
+        });
+        label.appendChild(cb);
+
+        const idSpan = document.createElement('span');
+        idSpan.className = 'model-id';
+        idSpan.textContent = en.id;
+        label.appendChild(idSpan);
+
+        if (en.source) {
+            const srcSpan = document.createElement('span');
+            srcSpan.className = 'model-src';
+            srcSpan.textContent = en.source;
+            label.appendChild(srcSpan);
+        }
+        if (en.existing) {
+            const st = document.createElement('span');
+            st.className = 'model-state';
+            st.textContent = '已有';
+            st.title = '已在 Model 字段中，取消勾选后将移除';
+            label.appendChild(st);
+        }
+        aiProviderModelSelectList.appendChild(label);
+    });
+    updateAiProviderModelSelectCount();
+}
+
+function updateAiProviderModelSelectCount() {
+    const n = aiModelSelectEntries.filter(function(en) { return en.checked; }).length;
+    if (aiProviderModelSelectCount) aiProviderModelSelectCount.textContent = '已选 ' + n + ' 项';
+    if (aiProviderModelSelectAddBtn) aiProviderModelSelectAddBtn.textContent = '保存 (' + n + ')';
+}
+
+function setAiProviderModelSelectAll(checked) {
+    aiModelSelectEntries.forEach(function(en) { en.checked = checked; });
+    renderAiProviderModelSelectList();
+}
+
+function closeAiProviderModelSelect() {
+    if (aiProviderModelSelectModal) {
+        aiProviderModelSelectModal.classList.add('hidden');
+        aiProviderModelSelectModal.classList.remove('visible');
+    }
+    aiModelSelectEntries = [];
+    aiModelSelectSearch = '';
+}
+
+// 应用勾选：取消勾选的已有模型从字段移除，勾选的新模型追加
+function confirmAiProviderModelSelectAdd() {
+    if (!aiModelInput) return;
+    // 从数据读取勾选状态（含被过滤隐藏的项）
+    const checkedSet = new Set(aiModelSelectEntries.filter(function(en) { return en.checked; }).map(function(en) { return en.id; }));
+
+    // 原始 Model 行（保留未在获取结果里的手写项）
+    const original = (aiModelInput.value || '').split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+    const result = [];
+    let removedCount = 0;
+    original.forEach(function(m) {
+        const entry = aiModelSelectEntries.find(function(en) { return en.existing && en.id === m; });
+        if (entry && !checkedSet.has(entry.id)) { removedCount++; return; }
+        result.push(m);
+    });
+
+    // 追加勾选的新模型
+    let addedCount = 0;
+    aiModelSelectEntries.forEach(function(en) {
+        if (en.existing) return;
+        if (checkedSet.has(en.id) && result.indexOf(en.id) === -1) { result.push(en.id); addedCount++; }
+    });
+
+    aiModelInput.value = result.join('\n');
+    closeAiProviderModelSelect();
+    if (addedCount && removedCount) showToast('新增 ' + addedCount + ' 个 · 移除 ' + removedCount + ' 个');
+    else if (addedCount) showToast('已添加 ' + addedCount + ' 个模型');
+    else if (removedCount) showToast('已移除 ' + removedCount + ' 个模型');
+    else showToast('Model 无变化');
+    aiModelInput.focus();
+}
+
 // === AI Setting 模块 ===
 function saveAISetting() {
     chrome.storage.local.set({ 'meow_ai_setting': myAiSetting });
@@ -447,4 +731,38 @@ function applyProviderToAISetting(provider) {
         showNext(0);
     }
 }
+
+// ================== 获取模型 UI 事件绑定 ==================
+(function bindAIFetchModelsUI() {
+    if (aiProviderFetchModelsBtn) {
+        aiProviderFetchModelsBtn.addEventListener('click', handleFetchProviderModels);
+    }
+    if (aiProviderModelSelectModal) {
+        // 与其它 popup 弹窗一致：禁止点击外部遮罩关闭，避免底层输入框失焦
+        aiProviderModelSelectModal.addEventListener('mousedown', function(e) {
+            if (e.target === aiProviderModelSelectModal) e.preventDefault();
+        });
+    }
+    if (closeAiProviderModelSelectModal) {
+        closeAiProviderModelSelectModal.addEventListener('click', closeAiProviderModelSelect);
+    }
+    if (aiProviderModelSelectCancelBtn) {
+        aiProviderModelSelectCancelBtn.addEventListener('click', closeAiProviderModelSelect);
+    }
+    if (aiProviderModelSelectAllBtn) {
+        aiProviderModelSelectAllBtn.addEventListener('click', function() { setAiProviderModelSelectAll(true); });
+    }
+    if (aiProviderModelSelectNoneBtn) {
+        aiProviderModelSelectNoneBtn.addEventListener('click', function() { setAiProviderModelSelectAll(false); });
+    }
+    if (aiProviderModelSelectSearchInput) {
+        aiProviderModelSelectSearchInput.addEventListener('input', function() {
+            aiModelSelectSearch = this.value;
+            renderAiProviderModelSelectList();
+        });
+    }
+    if (aiProviderModelSelectAddBtn) {
+        aiProviderModelSelectAddBtn.addEventListener('click', confirmAiProviderModelSelectAdd);
+    }
+})();
 

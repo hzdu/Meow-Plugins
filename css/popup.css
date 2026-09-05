@@ -6794,6 +6794,199 @@ border-bottom: 1px solid #e2e8f0;
     background: #f1f5f9;
 }
 
+/* === AI Provider：获取模型 === */
+.ai-provider-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.ai-provider-label-row .sub-label {
+    margin: 0;
+}
+.ai-fetch-models-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid #ddd6fe;
+    background: #f5f3ff;
+    color: #6d28d9;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    line-height: 1.5;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.ai-fetch-models-btn .material-icons {
+    font-size: 15px;
+}
+.ai-fetch-models-btn:hover:not(:disabled) {
+    background: #ede9fe;
+    border-color: #c4b5fd;
+}
+.ai-fetch-models-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.ai-provider-fetch-status {
+    display: none;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #475569;
+    word-break: break-all;
+    margin-top: 2px;
+}
+.ai-provider-fetch-status.error {
+    color: #ef4444;
+}
+.ai-provider-fetch-status.ok {
+    color: #16a34a;
+}
+
+/* AI Provider：模型选择弹窗 */
+#ai-provider-model-select-modal .modal-content {
+    max-width: 400px;
+}
+.ai-model-select-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.ai-model-select-source {
+    flex: 1;
+    min-width: 0;
+    font-size: 11px;
+    color: #94a3b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ai-model-select-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 11px;
+    color: #8b5cf6;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-family: inherit;
+}
+.ai-model-select-link:hover {
+    text-decoration: underline;
+}
+.ai-model-select-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    padding: 5px 8px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    transition: border-color 0.2s;
+}
+.ai-model-select-search:focus-within {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.12);
+}
+.ai-model-select-search .material-icons {
+    font-size: 16px;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+.ai-model-select-search-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #1e293b;
+    font-size: 12px;
+    padding: 0;
+    font-family: inherit;
+}
+.ai-model-select-search-input::placeholder {
+    color: #94a3b8;
+}
+.ai-model-select-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+.ai-model-select-list::-webkit-scrollbar {
+    width: 4px;
+}
+.ai-model-select-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}
+.ai-model-select-empty {
+    padding: 14px 8px;
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+}
+.ai-model-select-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+.ai-model-select-item:hover {
+    border-color: #ddd6fe;
+}
+.ai-model-select-item input {
+    accent-color: #8b5cf6;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.ai-model-select-item .model-id {
+    flex: 1;
+    min-width: 0;
+    font-family: monospace;
+    font-size: 12px;
+    color: #1e293b;
+    word-break: break-all;
+}
+.ai-model-select-item .model-src {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #94a3b8;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ai-model-select-item .model-state {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #10b981;
+    white-space: nowrap;
+}
+.ai-model-select-count {
+    margin-top: 6px;
+    text-align: right;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
 /* === AI Provider 模块样式 === */
 .ai-provider-panel {
     display: flex;

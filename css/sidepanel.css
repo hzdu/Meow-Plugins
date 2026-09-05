@@ -2964,6 +2964,235 @@ display: block;
     background: #4f46e5;
 }
 
+/* === AI Provider：获取模型 === */
+.ai-provider-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.ai-provider-label-row label {
+    margin: 0;
+}
+
+.ai-fetch-models-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid #c7d2fe;
+    background: #eef2ff;
+    color: #4f46e5;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: inherit;
+    line-height: 1.5;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.ai-fetch-models-btn:hover:not(:disabled) {
+    background: #e0e7ff;
+    border-color: #a5b4fc;
+}
+
+.ai-fetch-models-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ai-provider-fetch-status {
+    display: none;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #475569;
+    word-break: break-all;
+}
+
+.ai-provider-fetch-status.error {
+    color: #ef4444;
+}
+
+.ai-provider-fetch-status.ok {
+    color: #16a34a;
+}
+
+/* AI Provider：模型选择弹窗 */
+#ai-provider-model-select-modal .modal-content {
+    max-width: 440px;
+}
+
+#ai-provider-model-select-modal .modal-footer {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
+}
+
+#ai-provider-model-select-modal .add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ai-model-select-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.ai-model-select-source {
+    flex: 1;
+    min-width: 0;
+    font-size: 11px;
+    color: #94a3b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ai-model-select-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 11px;
+    color: #6366f1;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-family: inherit;
+}
+
+.ai-model-select-link:hover {
+    text-decoration: underline;
+}
+
+.ai-model-select-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    padding: 4px 8px;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    transition: border-color 0.2s;
+}
+
+.ai-model-select-search:focus-within {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.ai-model-select-search .material-icons {
+    font-size: 16px;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.ai-model-select-search-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #334155;
+    font-size: 12px;
+    padding: 0;
+    font-family: inherit;
+}
+
+.ai-model-select-search-input::placeholder {
+    color: #94a3b8;
+}
+
+.ai-model-select-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.ai-model-select-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.ai-model-select-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}
+
+.ai-model-select-empty {
+    padding: 14px 8px;
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.ai-model-select-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.ai-model-select-item:hover {
+    border-color: #c7d2fe;
+}
+
+.ai-model-select-item input {
+    accent-color: #6366f1;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.ai-model-select-item .model-id {
+    flex: 1;
+    min-width: 0;
+    font-family: monospace;
+    font-size: 12px;
+    color: #334155;
+    word-break: break-all;
+}
+
+.ai-model-select-item .model-src {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #94a3b8;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ai-model-select-item .model-state {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #10b981;
+    white-space: nowrap;
+}
+
+.ai-model-select-count {
+    margin-top: 6px;
+    text-align: right;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
 /* === 暗色主题 === */
 .dark #view-ai-provider,
 .theme-dark #view-ai-provider {
@@ -3133,6 +3362,110 @@ display: block;
 .dark #ai-provider-modal .ai-delete-btn:hover,
 .theme-dark #ai-provider-modal .ai-delete-btn:hover {
     background: #7f1d1d;
+}
+
+/* 暗色：获取模型 */
+.dark .ai-fetch-models-btn,
+.theme-dark .ai-fetch-models-btn {
+    background: #312e81;
+    border-color: #4338ca;
+    color: #c7d2fe;
+}
+
+.dark .ai-fetch-models-btn:hover:not(:disabled),
+.theme-dark .ai-fetch-models-btn:hover:not(:disabled) {
+    background: #4338ca;
+    border-color: #6366f1;
+    color: #e0e7ff;
+}
+
+.dark .ai-provider-fetch-status,
+.theme-dark .ai-provider-fetch-status {
+    color: #cbd5e1;
+}
+
+.dark .ai-provider-fetch-status.error,
+.theme-dark .ai-provider-fetch-status.error {
+    color: #f87171;
+}
+
+.dark .ai-provider-fetch-status.ok,
+.theme-dark .ai-provider-fetch-status.ok {
+    color: #4ade80;
+}
+
+/* 暗色：模型选择弹窗 */
+.dark #ai-provider-model-select-modal .modal-content,
+.theme-dark #ai-provider-model-select-modal .modal-content {
+    background: #1e293b;
+}
+
+.dark #ai-provider-model-select-modal .modal-footer,
+.theme-dark #ai-provider-model-select-modal .modal-footer {
+    border-top-color: #334155;
+}
+
+.dark .ai-model-select-source,
+.theme-dark .ai-model-select-source {
+    color: #64748b;
+}
+
+.dark .ai-model-select-search,
+.theme-dark .ai-model-select-search {
+    background: #0f172a;
+    border-color: #334155;
+}
+
+.dark .ai-model-select-search:focus-within,
+.theme-dark .ai-model-select-search:focus-within {
+    border-color: #6366f1;
+}
+
+.dark .ai-model-select-search-input,
+.theme-dark .ai-model-select-search-input {
+    color: #e2e8f0;
+}
+
+.dark .ai-model-select-search-input::placeholder,
+.theme-dark .ai-model-select-search-input::placeholder {
+    color: #475569;
+}
+
+.dark .ai-model-select-list,
+.theme-dark .ai-model-select-list {
+    background: #0f172a;
+    border-color: #334155;
+}
+
+.dark .ai-model-select-item,
+.theme-dark .ai-model-select-item {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.dark .ai-model-select-item:hover,
+.theme-dark .ai-model-select-item:hover {
+    border-color: #6366f1;
+}
+
+.dark .ai-model-select-item .model-id,
+.theme-dark .ai-model-select-item .model-id {
+    color: #e2e8f0;
+}
+
+.dark .ai-model-select-item .model-src,
+.theme-dark .ai-model-select-item .model-src {
+    color: #64748b;
+}
+
+.dark .ai-model-select-count,
+.theme-dark .ai-model-select-count {
+    color: #64748b;
+}
+
+.dark .ai-model-select-empty,
+.theme-dark .ai-model-select-empty {
+    color: #64748b;
 }
 
 /* === 服务器管理模块样式 === */

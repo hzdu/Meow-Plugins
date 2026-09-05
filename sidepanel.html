@@ -6,12 +6,12 @@
     <title>Meow Sidepanel</title>
     <link rel="stylesheet" href="css/sidepanel.css">
     <link rel="stylesheet" href="css/meow-confirm.css">
-    <link href="https://fonts.loli.net/icon?family=Material+Icons" rel="stylesheet">
-    <!-- Font Awesome Pro 7.3.0 (github.com/rizmyabdulla/fontawesome-pro) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rizmyabdulla/fontawesome-pro@main/releases/v7.3.0/css/fontawesome.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rizmyabdulla/fontawesome-pro@main/releases/v7.3.0/css/regular.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rizmyabdulla/fontawesome-pro@main/releases/v7.3.0/css/solid.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rizmyabdulla/fontawesome-pro@main/releases/v7.3.0/css/brands.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Font Awesome Pro 7.3.0 (github.com/hzdu/fontawesome-pro) -->
+    <link rel="stylesheet" href="https://cdn.jsdmirror.com/cnb/ifoyar/fontawesome-pro@main/releases/v7.3.0/css/fontawesome.css">
+    <link rel="stylesheet" href="https://cdn.jsdmirror.com/cnb/ifoyar/fontawesome-pro@main/releases/v7.3.0/css/regular.css">
+    <link rel="stylesheet" href="https://cdn.jsdmirror.com/cnb/ifoyar/fontawesome-pro@main/releases/v7.3.0/css/solid.css">
+    <link rel="stylesheet" href="https://cdn.jsdmirror.com/cnb/ifoyar/fontawesome-pro@main/releases/v7.3.0/css/brands.css">
 </head>
 <body tabindex="-1">
     <div class="container">
@@ -43,10 +43,10 @@
                     <i class="fa-regular fa-key"></i>
                 </button>
                 <button class="tab-btn" data-target="ai-provider" title="AI Provider">
-                    <i class="fa-regular fa-brain"></i>
+                    <i class="fa-regular fa-sparkles"></i>
                 </button>
                 <button class="tab-btn" data-target="regcodes" title="注册码管理">
-                    <i class="fa-regular fa-id-card"></i>
+                    <i class="fa-regular fa-ticket"></i>
                 </button>
                 <button class="tab-btn active" data-target="tools" data-i18n-title="sp_tab_tools" title="工具箱">
                     <i class="fa-regular fa-wrench"></i>
@@ -1022,8 +1022,12 @@
                             <input type="text" id="ai-provider-key-input" class="converter-input full-border" placeholder="sk-..." style="font-family:monospace">
                         </div>
                         <div class="form-group">
-                            <label>Model（一行一个）</label>
+                            <div class="ai-provider-label-row">
+                                <label>Model（一行一个）</label>
+                                <button type="button" id="ai-provider-fetch-models-btn" class="ai-fetch-models-btn" title="根据 Base URL 获取可用模型列表"><span class="material-icons" style="font-size:14px;vertical-align:middle;">cloud_download</span> 获取模型</button>
+                            </div>
                             <textarea id="ai-provider-model-input" class="converter-input full-border" rows="2" placeholder="gpt-4o"></textarea>
+                            <div id="ai-provider-model-fetch-status" class="ai-provider-fetch-status"></div>
                         </div>
                         <div class="form-group">
                             <label>备注</label>
@@ -1045,6 +1049,33 @@
                         <span class="material-icons close-modal" id="close-ai-provider-note-viewer">close</span>
                     </div>
                     <div id="ai-provider-note-viewer-content" style="padding:10px;font-size:13px;color:#374151;white-space:pre-wrap;word-break:break-word;"></div>
+                </div>
+            </div>
+
+            <!-- AI Provider 模型选择弹窗 -->
+            <div id="ai-provider-model-select-modal" class="modal hidden">
+                <div class="modal-content" style="width: 90%; max-width: 440px;">
+                    <div class="modal-header">
+                        <h3>选择要保存的模型</h3>
+                        <span class="material-icons close-modal" id="close-ai-provider-model-select-modal">close</span>
+                    </div>
+                    <div style="padding: 0 0 10px;">
+                        <div class="ai-model-select-toolbar">
+                            <span class="ai-model-select-source" id="ai-provider-model-select-source">--</span>
+                            <button type="button" id="ai-provider-model-select-all" class="ai-model-select-link">全选</button>
+                            <button type="button" id="ai-provider-model-select-none" class="ai-model-select-link">清空</button>
+                        </div>
+                        <div class="ai-model-select-search">
+                            <span class="material-icons">search</span>
+                            <input type="text" id="ai-provider-model-select-search" class="ai-model-select-search-input" placeholder="过滤模型（名称或来源）...">
+                        </div>
+                        <div id="ai-provider-model-select-list" class="ai-model-select-list"></div>
+                        <div class="ai-model-select-count" id="ai-provider-model-select-count">已选 0 项</div>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px;">
+                        <button id="ai-provider-model-select-cancel" class="cancel-btn" style="flex:none;">取消</button>
+                        <button id="ai-provider-model-select-add" class="add-btn">保存 (0)</button>
+                    </div>
                 </div>
             </div>
 

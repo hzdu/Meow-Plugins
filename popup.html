@@ -841,8 +841,12 @@
                                 <input type="text" id="ai-key-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px; font-family: monospace;" placeholder="sk-...">
                             </div>
                             <div class="ai-modal-col ai-modal-full">
-                                <label class="sub-label" data-i18n="ai_ph_model">Model（一行一个）</label>
+                                <div class="ai-provider-label-row">
+                                    <label class="sub-label" data-i18n="ai_ph_model">Model（一行一个）</label>
+                                    <button type="button" id="ai-provider-fetch-models-btn" class="ai-fetch-models-btn" title="根据 Base URL 获取可用模型列表"><span class="material-icons">cloud_download</span> 获取模型</button>
+                                </div>
                                 <textarea id="ai-model-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px; min-height: 50px; resize: vertical; font-family: monospace;" placeholder="gpt-4o"></textarea>
+                                <div id="ai-provider-model-fetch-status" class="ai-provider-fetch-status"></div>
                             </div>
                             <div class="ai-modal-col ai-modal-full">
                                 <label class="sub-label" data-i18n="ai_ph_note">备注</label>
@@ -894,6 +898,33 @@
                     </div>
                     <div style="padding: 0 0 10px;">
                         <div id="ai-setting-select-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Provider 模型选择弹窗 -->
+            <div id="ai-provider-model-select-modal" class="modal hidden">
+                <div class="modal-content" style="width: 90%; max-width: 400px;">
+                    <div class="modal-header">
+                        <h3>选择要保存的模型</h3>
+                        <span class="material-icons close-modal" id="close-ai-provider-model-select-modal">close</span>
+                    </div>
+                    <div style="padding: 0 0 10px;">
+                        <div class="ai-model-select-toolbar">
+                            <span class="ai-model-select-source" id="ai-provider-model-select-source">--</span>
+                            <button type="button" id="ai-provider-model-select-all" class="ai-model-select-link">全选</button>
+                            <button type="button" id="ai-provider-model-select-none" class="ai-model-select-link">清空</button>
+                        </div>
+                        <div class="ai-model-select-search">
+                            <span class="material-icons">search</span>
+                            <input type="text" id="ai-provider-model-select-search" class="ai-model-select-search-input" placeholder="过滤模型（名称或来源）...">
+                        </div>
+                        <div id="ai-provider-model-select-list" class="ai-model-select-list"></div>
+                        <div class="ai-model-select-count" id="ai-provider-model-select-count">已选 0 项</div>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px; justify-content:flex-end;">
+                        <button id="ai-provider-model-select-cancel" class="cancel-btn">取消</button>
+                        <button id="ai-provider-model-select-add" class="add-btn">保存 (0)</button>
                     </div>
                 </div>
             </div>

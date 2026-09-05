@@ -231,6 +231,20 @@ const aiNoteViewer = document.getElementById('ai-note-viewer');
 const aiNoteViewerContent = document.getElementById('ai-note-viewer-content');
 const closeAiNoteViewer = document.getElementById('close-ai-note-viewer');
 
+// AI Provider 获取模型 元素
+const aiProviderFetchModelsBtn = document.getElementById('ai-provider-fetch-models-btn');
+const aiProviderModelFetchStatus = document.getElementById('ai-provider-model-fetch-status');
+const aiProviderModelSelectModal = document.getElementById('ai-provider-model-select-modal');
+const closeAiProviderModelSelectModal = document.getElementById('close-ai-provider-model-select-modal');
+const aiProviderModelSelectSource = document.getElementById('ai-provider-model-select-source');
+const aiProviderModelSelectSearchInput = document.getElementById('ai-provider-model-select-search');
+const aiProviderModelSelectList = document.getElementById('ai-provider-model-select-list');
+const aiProviderModelSelectCount = document.getElementById('ai-provider-model-select-count');
+const aiProviderModelSelectAllBtn = document.getElementById('ai-provider-model-select-all');
+const aiProviderModelSelectNoneBtn = document.getElementById('ai-provider-model-select-none');
+const aiProviderModelSelectCancelBtn = document.getElementById('ai-provider-model-select-cancel');
+const aiProviderModelSelectAddBtn = document.getElementById('ai-provider-model-select-add');
+
 // AI Setting 元素
 const aiSettingBaseUrl = document.getElementById('ai-setting-base-url');
 const aiSettingModelId = document.getElementById('ai-setting-model-id');
