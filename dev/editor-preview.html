@@ -1,0 +1,34 @@
+<!-- dev/editor-preview.html
+     编辑器模块（js/modules/sp-editor.js）独立预览页
+     用法：直接用 Chrome 打开本文件，即可在没有扩展环境的情况下调试编辑器 UI。
+     注意：本文件仅用于开发调试，不参与扩展打包逻辑。 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Meow 编辑器预览</title>
+    <link rel="stylesheet" href="../css/sidepanel.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdmirror.com/cnb/ifoyar/fontawesome-pro@main/releases/v7.3.0/css/fontawesome.css">
+</head>
+<body tabindex="-1">
+    <div class="container" style="height:100vh; max-width:420px; margin:0 auto; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">
+        <div class="top-section">
+            <div class="tab-group">
+                <button class="tab-btn" data-target="tools"><i class="fa-regular fa-wrench"></i></button>
+                <button class="tab-btn active" data-target="editor" title="编辑器">
+                    <span class="material-icons" style="font-size:16px;">data_object</span>
+                </button>
+                <button class="tab-btn" data-target="servers"><i class="fa-regular fa-cloud"></i></button>
+            </div>
+        </div>
+        <div class="list-section">
+            <div id="view-editor" class="view-content"></div>
+        </div>
+    </div>
+    <script src="../js/modules/sp-editor.js"></script>
+    <script>
+        window.initEditor();
+    </script>
+</body>
+</html>

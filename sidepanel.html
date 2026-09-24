@@ -51,6 +51,9 @@
                 <button class="tab-btn active" data-target="tools" data-i18n-title="sp_tab_tools" title="工具箱">
                     <i class="fa-regular fa-wrench"></i>
                 </button>
+                <button class="tab-btn" data-target="editor" title="编辑器">
+                    <span class="material-icons" style="font-size:16px;">data_object</span>
+                </button>
                 <button class="tab-btn" data-target="servers" title="服务器管理">
                     <i class="fa-regular fa-cloud"></i>
                 </button>
@@ -412,10 +415,10 @@
                 <div class="tool-card collapsed" data-tool-id="tool-num">
                     <h3><span class="material-icons" style="font-size: 16px; color: #f59e0b;">calculate</span> <span data-i18n="tool_num_title">数字工具</span> <span class="material-icons toggle-icon">expand_more</span></h3>
                     <div class="tool-body">
-                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_shorthand">缩写还原 (k,w,m)</label><div class="converter-row compact"><input type="text" id="num-shorthand-input" class="converter-input full-border" style="flex:1;"><span class="material-icons swap-icon">arrow_right_alt</span><input type="text" id="num-shorthand-output" class="converter-input full-border" style="flex:1;background:#fff" readonly></div></div>
-                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_format">千分位格式化</label><div class="converter-row compact"><input type="text" id="num-format-input" class="converter-input full-border" style="flex:1;"><span class="material-icons swap-icon">arrow_right_alt</span><input type="text" id="num-format-output" class="converter-input full-border" style="flex:1;background:#fff" readonly></div></div>
-                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_capital">金额大写</label><input type="number" id="num-capital-input" class="converter-input full-border" style="width:100%;"><div id="num-capital-output" class="result-box"><span style="color:#cbd5e1;" data-i18n="tool_num_result_hint">结果显示于此</span></div></div>
-                        <div id="num-shorthand-spoken" class="result-box" style="font-size:13px;min-height:32px;"><span style="color:#cbd5e1;">口语金额</span></div>
+                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_shorthand">缩写还原 (k,w,m)</label><div class="converter-row compact"><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-shorthand-input" class="converter-input full-border" style="width:100%;"><button type="button" class="tool-icopy-btn" data-copy-target="num-shorthand-input" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div><span class="material-icons swap-icon" style="flex-shrink:0;">arrow_right_alt</span><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-shorthand-output" class="converter-input full-border" style="width:100%;background:#fff" readonly><button type="button" class="tool-icopy-btn" data-copy-target="num-shorthand-output" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div></div></div>
+                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_format">千分位格式化</label><div class="converter-row compact"><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-format-input" class="converter-input full-border" style="width:100%;"><button type="button" class="tool-icopy-btn" data-copy-target="num-format-input" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div><span class="material-icons swap-icon" style="flex-shrink:0;">arrow_right_alt</span><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-format-output" class="converter-input full-border" style="width:100%;background:#fff" readonly><button type="button" class="tool-icopy-btn" data-copy-target="num-format-output" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div></div></div>
+                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_capital">金额大写</label><div class="srv-input-wrap"><input type="number" id="num-capital-input" class="converter-input full-border" style="width:100%;"><button type="button" class="tool-icopy-btn" data-copy-target="num-capital-input" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div><div class="srv-input-wrap" style="margin-top:6px;"><div id="num-capital-output" class="result-box" style="margin-top:0;"><span style="color:#cbd5e1;" data-copy-skip="1" data-i18n="tool_num_result_hint">结果显示于此</span></div><button type="button" class="tool-icopy-btn" data-copy-target="num-capital-output" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div></div>
+                        <div class="srv-input-wrap"><div id="num-shorthand-spoken" class="result-box" style="font-size:13px;min-height:32px;"><span style="color:#cbd5e1;" data-copy-skip="1">口语金额</span></div><button type="button" class="tool-icopy-btn" data-copy-target="num-shorthand-spoken" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div>
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-enc">
@@ -457,6 +460,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 编辑器视图：左侧竖向 Tab（JSON编辑器 / Markdown编辑器），由 js/modules/sp-editor.js 动态构建 -->
+            <div id="view-editor" class="view-content hidden"></div>
 
             <!-- 服务器管理视图 -->
             <div id="view-servers" class="view-content hidden">
@@ -1235,6 +1241,7 @@
     <script src="js/modules/sp-ai-provider.js"></script>
     <script src="js/modules/sp-ai-collection.js"></script>
     <script src="js/modules/sp-hot.js"></script>
+    <script src="js/modules/sp-editor.js"></script>
     <script src="js/modules/sp-clock.js"></script>
 </body>
 </html>

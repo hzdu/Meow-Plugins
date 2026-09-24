@@ -61,6 +61,7 @@ const viewRegCodes = document.getElementById('view-regcodes');
 const viewAiCollection = document.getElementById('view-aicollection');
 const view2fa = document.getElementById('view-2fa');
 const viewAiProvider = document.getElementById('view-ai-provider');
+const viewEditor = document.getElementById('view-editor');
 
 const filterSection = document.getElementById('sp-filters');
 const toolsSection = document.getElementById('sp-tools');
@@ -681,6 +682,7 @@ async function initSidepanel() {
         setupConverterLogic();
         setupToolCardToggle();
         setupToolCardDrag();
+        setupToolCopyButtons();
         applySavedToolOrder();
     } catch (err) {
         console.error("Meow: tools setup failed.", err);
@@ -728,6 +730,13 @@ async function initSidepanel() {
         console.error("Meow: search listener setup failed.", err);
     }
 
+    // === 初始化编辑器（JSON / Markdown）===
+    try {
+        if (typeof initEditor === 'function') initEditor();
+    } catch (err) {
+        console.error("Meow: initEditor failed.", err);
+    }
+
     // === 恢复顶部 Tab 排序 ===
     try {
         restoreSpTabOrder();
@@ -772,7 +781,7 @@ tabBtns.forEach(btn => {
         saveLastTab(target);
 
         // 1. 隐藏所有视图
-        [viewPrompts, viewScratchpad, viewReadLater, viewGallery, viewTools, viewHot, viewClock, viewAiCollection, view2fa, viewAiProvider, viewServers, viewRegCodes].forEach(el => {
+        [viewPrompts, viewScratchpad, viewReadLater, viewGallery, viewTools, viewHot, viewClock, viewAiCollection, view2fa, viewAiProvider, viewServers, viewRegCodes, viewEditor].forEach(el => {
             if(el) el.classList.add('hidden');
         });
         [filterSection.parentElement, toolsSection, readLaterTools].forEach(el => el.classList.add('hidden'));
@@ -829,6 +838,9 @@ tabBtns.forEach(btn => {
         } else if (target === 'tools') {
             viewTools.classList.remove('hidden');
             checkAndInitIpTools();
+        } else if (target === 'editor') {
+            if (typeof onEditorTabShown === 'function') onEditorTabShown();
+            viewEditor.classList.remove('hidden');
         } else if (target === 'servers') {
             viewServers.classList.remove('hidden');
             if (typeof renderServers === 'function') renderServers();

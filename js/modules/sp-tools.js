@@ -181,7 +181,7 @@ function setupConverterLogic() {
         });
     }
     if (numFormatInput && numFormatOutput) { numFormatInput.addEventListener('input', function() { let val = numFormatInput.value.trim().replace(/,/g, ''); if (!val || isNaN(val)) { numFormatOutput.value = ''; return; } const parts = val.split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); numFormatOutput.value = parts.join('.'); }); }
-    if (numCapitalInput && numCapitalOutput) { numCapitalInput.addEventListener('input', function() { const val = parseFloat(numCapitalInput.value.replace(/,/g, '')); if (isNaN(val)) { numCapitalOutput.innerHTML = '...'; if (numShorthandSpoken) numShorthandSpoken.innerHTML = '<span style="color:#cbd5e1;">口语金额</span>'; } else { const digitUppercase = function(n) { const fraction = ['角', '分'], digit = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'], unit = [['元', '万', '亿'], ['', '拾', '佰', '仟']]; let num = Math.abs(n), s = ''; for (let i = 0; i < fraction.length; i++) s += (digit[Math.floor(num * 10 * Math.pow(10, i)) % 10] + fraction[i]).replace(/零./, ''); s = s || '整'; num = Math.floor(num); for (let i = 0; i < unit[0].length && num > 0; i++) { let p = ''; for (let j = 0; j < unit[1].length && num > 0; j++) { p = digit[num % 10] + unit[1][j] + p; num = Math.floor(num / 10); } s = p.replace(/(零.)*零$/, '').replace(/^$/, '零') + unit[0][i] + s; } return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^整$/, '零元整'); }; numCapitalOutput.textContent = digitUppercase(val); if (numShorthandSpoken) numShorthandSpoken.textContent = numberToSpokenChinese(val); } }); }
+    if (numCapitalInput && numCapitalOutput) { numCapitalInput.addEventListener('input', function() { const val = parseFloat(numCapitalInput.value.replace(/,/g, '')); if (isNaN(val)) { numCapitalOutput.innerHTML = '...'; if (numShorthandSpoken) numShorthandSpoken.innerHTML = '<span style="color:#cbd5e1;" data-copy-skip="1">口语金额</span>'; } else { const digitUppercase = function(n) { const fraction = ['角', '分'], digit = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'], unit = [['元', '万', '亿'], ['', '拾', '佰', '仟']]; let num = Math.abs(n), s = ''; for (let i = 0; i < fraction.length; i++) s += (digit[Math.floor(num * 10 * Math.pow(10, i)) % 10] + fraction[i]).replace(/零./, ''); s = s || '整'; num = Math.floor(num); for (let i = 0; i < unit[0].length && num > 0; i++) { let p = ''; for (let j = 0; j < unit[1].length && num > 0; j++) { p = digit[num % 10] + unit[1][j] + p; num = Math.floor(num / 10); } s = p.replace(/(零.)*零$/, '').replace(/^$/, '零') + unit[0][i] + s; } return s.replace(/(零.)*零元/, '元').replace(/(零.)+/g, '零').replace(/^整$/, '零元整'); }; numCapitalOutput.textContent = digitUppercase(val); if (numShorthandSpoken) numShorthandSpoken.textContent = numberToSpokenChinese(val); } }); }
     if (urlInput && btnUrlEncode && btnUrlDecode) { btnUrlEncode.onclick = () => { if (urlInput.value) try { urlInput.value = encodeURIComponent(urlInput.value); } catch(e) {} }; btnUrlDecode.onclick = () => { if (urlInput.value) try { urlInput.value = decodeURIComponent(urlInput.value); } catch(e) {} }; }
     if (uniInput && btnUniEncode && btnUniDecode) { btnUniEncode.onclick = () => { if (uniInput.value) uniInput.value = uniInput.value.split('').map(c => '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4)).join(''); }; btnUniDecode.onclick = () => { if (uniInput.value) try { uniInput.value = uniInput.value.replace(/\\u[\dA-F]{4}/gi, match => String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16))); } catch(e) {} }; }
     if (headerInput && btnHeaderFmt && headerOutput) { btnHeaderFmt.onclick = () => { const raw = headerInput.value.trim(); if (!raw) return; const result = {}; raw.split('\n').forEach(line => { line = line.trim(); const idx = line.indexOf(':'); if (idx > -1) { const key = line.substring(0, idx).trim(), val = line.substring(idx + 1).trim(); if (key) result[key] = val; } }); headerOutput.value = JSON.stringify(result, null, 4); }; }
@@ -857,6 +857,41 @@ function setupToolCardToggle() {
     });
 }
 
+// ================== 工具箱输入框 / 结果框一键复制 ==================
+function setupToolCopyButtons() {
+    const root = document.getElementById('view-tools');
+    if (!root || root.dataset.toolCopyBound === '1') return;
+    root.dataset.toolCopyBound = '1';
+
+    // 按住复制按钮时不要抢走输入框的焦点和已选中的内容
+    root.addEventListener('mousedown', function(e) {
+        const btn = e.target && typeof e.target.closest === 'function' ? e.target.closest('.tool-icopy-btn') : null;
+        if (btn) e.preventDefault();
+    });
+
+    // 事件委托：以后新增 [data-copy-target] 按钮无需再改这里
+    root.addEventListener('click', function(e) {
+        const btn = e.target && typeof e.target.closest === 'function' ? e.target.closest('.tool-icopy-btn') : null;
+        if (!btn) return;
+        const targetId = btn.dataset.copyTarget;
+        const el = targetId ? document.getElementById(targetId) : null;
+        if (!el) return;
+
+        let text;
+        if (typeof el.value === 'string') {
+            text = el.value;                    // input / textarea
+        } else {
+            // 结果框这类容器：跳过占位提示，只复制真正的结果文本
+            const clone = el.cloneNode(true);
+            clone.querySelectorAll('[data-copy-skip]').forEach(node => node.remove());
+            text = clone.textContent || '';
+        }
+        text = (text || '').trim();
+        if (!text) { showToast('内容为空'); return; }
+        copyToClipboard(text, btn);
+    });
+}
+
 // ================== 工具卡片拖拽排序 ==================
 function applySavedToolOrder() {
     chrome.storage.sync.get(['meow_tool_order'], (result) => {
@@ -888,6 +923,9 @@ function setupToolCardDrag() {
 
     // 为每个 tool-card 的 h3 添加拖拽手柄
     container.querySelectorAll('.tool-card h3').forEach(h3 => {
+        // 标题栏里的链接自带原生拖拽（拖动会变成拖链接而不是拖卡片），
+        // 统一关掉，让整个标题栏行为一致：按住标题即拖拽排序
+        h3.querySelectorAll('a[href]').forEach(a => a.setAttribute('draggable', 'false'));
         if (h3.querySelector('.tool-drag-handle')) return;
         const handle = document.createElement('span');
         handle.className = 'material-icons tool-drag-handle';
@@ -901,53 +939,83 @@ function setupToolCardDrag() {
     });
 
     // 统一添加拖放事件（每次重新获取当前 index）
+    // 注意：只有标题栏(h3)是拖拽手柄，卡片本体绝不设置 draggable。
+    // 否则卡片展开后，在内容区按住鼠标也会被浏览器当成拖拽，
+    // 导致输入框/文本域里无法用鼠标拖选文字。
     function refreshIndices() {
         container.querySelectorAll('.tool-card').forEach((c, i) => {
             c.dataset.index = i;
-            c.setAttribute('draggable', 'true');
+            c.removeAttribute('draggable');
+            const header = c.querySelector('h3');
+            if (header) header.setAttribute('draggable', 'true');
         });
     }
 
     refreshIndices();
 
+    // 事件委托只需绑定一次（initSidepanel 可能被重复调用）
+    if (container.dataset.toolDragBound === '1') return;
+    container.dataset.toolDragBound = '1';
+
+    // 只有拖拽源是标题栏(h3)时才视为卡片排序；
+    // 内容区里选中文字、拖图片等原生拖拽一律忽略。
+    function getDragCard(e) {
+        const target = e.target;
+        if (!target || typeof target.closest !== 'function') return null;
+        const header = target.closest('.tool-card h3');
+        if (!header || !container.contains(header)) return null;
+        return header.closest('.tool-card');
+    }
+
     // 使用事件委托避免每次重新绑定
     container.addEventListener('dragstart', function(e) {
-        const card = e.target.closest('.tool-card');
+        const card = getDragCard(e);
         if (!card) return;
         card.classList.add('dragging');
-        toolDragSrcIndex = parseInt(card.dataset.index);
+        toolDragSrcIndex = parseInt(card.dataset.index, 10);
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', card.dataset.index);
+        try { e.dataTransfer.setData('text/plain', card.dataset.index); } catch (_) {}
     });
 
     container.addEventListener('dragend', function(e) {
-        const card = e.target.closest('.tool-card');
+        const card = getDragCard(e) || (e.target && typeof e.target.closest === 'function' ? e.target.closest('.tool-card') : null);
         if (card) card.classList.remove('dragging');
         container.querySelectorAll('.tool-card').forEach(el => el.classList.remove('drag-over'));
         toolDragSrcIndex = null;
     });
 
     container.addEventListener('dragover', function(e) {
-        const card = e.target.closest('.tool-card');
-        if (!card || toolDragSrcIndex === null) return;
+        if (toolDragSrcIndex === null) return;
+        const target = e.target;
+        const card = target && typeof target.closest === 'function' ? target.closest('.tool-card') : null;
+        if (!card) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
+        // 只保留当前悬停卡片的指示样式，避免多张卡片同时高亮
+        container.querySelectorAll('.tool-card.drag-over').forEach(el => {
+            if (el !== card) el.classList.remove('drag-over');
+        });
         card.classList.add('drag-over');
     });
 
     container.addEventListener('dragleave', function(e) {
-        const card = e.target.closest('.tool-card');
-        if (card) card.classList.remove('drag-over');
+        const target = e.target;
+        const card = target && typeof target.closest === 'function' ? target.closest('.tool-card') : null;
+        if (!card) return;
+        // 鼠标只是在卡片内部子元素之间移动时不取消高亮
+        if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+        card.classList.remove('drag-over');
     });
 
     container.addEventListener('drop', function(e) {
-        const destCard = e.target.closest('.tool-card');
+        const target = e.target;
+        const destCard = target && typeof target.closest === 'function' ? target.closest('.tool-card') : null;
         if (!destCard || toolDragSrcIndex === null) return;
         e.stopPropagation();
         e.preventDefault();
         destCard.classList.remove('drag-over');
 
-        const destIndex = parseInt(destCard.dataset.index);
+        const destIndex = parseInt(destCard.dataset.index, 10);
         if (toolDragSrcIndex !== destIndex) {
             const allCards = Array.from(container.querySelectorAll('.tool-card'));
             const srcCard = allCards[toolDragSrcIndex];

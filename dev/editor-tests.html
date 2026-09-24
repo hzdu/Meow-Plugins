@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>feat</title><link rel="stylesheet" href="../css/sidepanel.css"></head>
+<body tabindex="-1">
+<div class="container" style="height:100vh;max-width:420px;">
+  <div class="top-section"><div class="tab-group"><button class="tab-btn active" data-target="editor">E</button></div></div>
+  <div class="list-section"><div id="view-editor" class="view-content"></div></div>
+</div>
+<pre id="OUT">RUNNING</pre>
+<script>
+window.__errs = [];
+window.addEventListener('error', e => window.__errs.push('error: ' + e.message));
+window.addEventListener('unhandledrejection', e => window.__errs.push('rej: ' + (e.reason && e.reason.message || e.reason)));
+window.__saved = {};
+window.chrome = window.chrome || {};
+window.chrome.tabs = { create: function (o, cb) { if (cb) cb(); } };
+window.chrome.storage = {
+  local: {
+    get: function (keys, cb) { if (cb) cb({}); },
+    set: function (o, cb) { Object.assign(window.__saved, o); if (cb) cb(); }
+  }
+};
+</script>
+<script src="../js/modules/sp-editor.js"></script>
+<script>
+(async function () {
+  const lines = []; let pass = 0, fail = 0;
+  const ok = (n, c, e) => { lines.push((c ? 'PASS' : 'FAIL') + ' :: ' + n + (e === undefined ? '' : ' :: ' + e)); c ? pass++ : fail++; };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const q = (s, r) => (r || document).querySelector(s);
+  const qa = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const paneOf = (p) => q('.ed-pane[data-pane="' + p + '"]');
+  const taOf = (p) => paneOf(p).querySelector('.code-textarea');
+  const bdOf = (p) => paneOf(p).querySelector('.code-backdrop');
+
+  async function setSrc(pane, text, caret) {
+    const ta = taOf(pane);
+    ta.value = text;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    await sleep(140);
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = (caret == null ? text.length : caret);
+    ta.dispatchEvent(new KeyboardEvent('keyup', { key: 'End', bubbles: true }));
+    await sleep(60);
+    return ta;
+  }
+  async function pressTab(ta) {
+    ta.focus();
+    ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    await sleep(70);
+  }
+  function backdropLineTop(bd, offset) {
+    const walker = document.createTreeWalker(bd, NodeFilter.SHOW_TEXT, null);
+    let acc = 0, node;
+    while ((node = walker.nextNode())) {
+      const len = node.nodeValue.length;
+      if (acc + len >= offset) {
+        const r = document.createRange();
+        const off = Math.max(0, Math.min(len, offset - acc));
+        r.setStart(node, off); r.setEnd(node, off);
+        return r.getBoundingClientRect().top - bd.getBoundingClientRect().top + bd.scrollTop;
+      }
+      acc += len;
+    }
+    return null;
+  }
+
+  try {
+    window.initEditor();
+    await sleep(400);
+    qa('.ed-rail-tab')[2].click();
+    await sleep(400);
+    const ta = taOf('html');
+    const bd = bdOf('html');
+    const gutter = paneOf('html').querySelector('.code-gutter');
+
+    // ================= A. 语法高亮 =================
+    const srcA = '<!DOCTYPE html>\n<!-- 注释 -->\n<div id="app" class="box" data-x=\'1\'>\n  <p>文本 &amp; 实体</p>\n  <img src="a.png" alt="">\n  <script>var a = 1 < 2;<\/script>\n</div>\n';
+    await setSrc('html', srcA, 0);
+    ok('高亮：标签名着色', qa('.hx-tag', bd).length >= 5, 'n=' + qa('.hx-tag', bd).length);
+    ok('高亮：属性名着色', qa('.hx-attr', bd).some(e => e.textContent === 'class'), qa('.hx-attr', bd).map(e => e.textContent).join(','));
+    ok('高亮：属性值着色', qa('.hx-str', bd).some(e => e.textContent === '"app"'));
+    ok('高亮：尖括号着色', qa('.hx-punc', bd).length > 5);
+    ok('高亮：注释着色', qa('.hx-comment', bd).length === 1 && qa('.hx-comment', bd)[0].textContent === '<!-- 注释 -->');
+    ok('高亮：doctype 着色', qa('.hx-doctype', bd).length === 1 && qa('.hx-doctype', bd)[0].textContent === '<!DOCTYPE html>');
+    ok('高亮：实体着色', qa('.hx-ent', bd).length === 1 && qa('.hx-ent', bd)[0].textContent === '&amp;');
+    ok('高亮：script 内容单独着色', qa('.hx-raw', bd).length === 1 && qa('.hx-raw', bd)[0].textContent === 'var a = 1 < 2;',
+      qa('.hx-raw', bd).map(e => e.textContent).join('|'));
+    ok('高亮：背板文本与源码完全一致（含末尾换行）', bd.textContent === srcA + '\n',
+      JSON.stringify(bd.textContent.slice(0, 40)));
+    ok('高亮：背板与 textarea 排版一致', bd.scrollHeight === ta.scrollHeight,
+      'bd=' + bd.scrollHeight + ' ta=' + ta.scrollHeight);
+
+    // 长行换行后仍然一致
+    const longSrc = '<div>' + 'a'.repeat(300) + '</div>\n<!-- ' + 'b'.repeat(200) + ' -->\n<p>尾</p>';
+    await setSrc('html', longSrc, 0);
+    ok('高亮：长行换行后排版仍一致', bd.scrollHeight === ta.scrollHeight,
+      'bd=' + bd.scrollHeight + ' ta=' + ta.scrollHeight);
+
+    // 镜像层必须和 textarea 度量完全一致，否则"看到的字"和光标/鼠标位置会错位
+    {
+      const csTa = getComputedStyle(ta);
+      const bad = qa('span', bd).filter(s => {
+        const c = getComputedStyle(s);
+        return c.fontFamily !== csTa.fontFamily || c.fontSize !== csTa.fontSize || c.lineHeight !== csTa.lineHeight;
+      });
+      ok('度量：高亮 span 与 textarea 字体一致', bad.length === 0,
+        bad.length + ' 个不一致，例如 ' + (bad[0] ? getComputedStyle(bad[0]).fontFamily : '-'));
+    }
+    {
+      // 一整行超长等宽文本：两层的换行结果必须完全相同
+      await setSrc('html', 'H'.repeat(3000), 0);
+      await sleep(260);
+      ok('度量：超长单行两层换行行数一致', bd.scrollHeight === ta.scrollHeight,
+        'bd=' + bd.scrollHeight + ' ta=' + ta.scrollHeight);
+      // 用浏览器的命中测试校验：镜像上第 k 个字符的位置，命中必须就是第 k 个字符
+      const nodeAt = (off) => {
+        const w = document.createTreeWalker(bd, NodeFilter.SHOW_TEXT);
+        let n, acc = 0;
+        while ((n = w.nextNode())) {
+          const len = n.data.length;
+          if (off <= acc + len) return { node: n, local: off - acc };
+          acc += len;
+        }
+        return null;
+      };
+      const caretAt = (k) => {
+        const t = nodeAt(k);
+        if (!t) return -1;
+        const r = document.createRange();
+        r.setStart(t.node, t.local);
+        r.setEnd(t.node, t.local);
+        const rc = r.getBoundingClientRect();
+        const cp = document.caretPositionFromPoint(rc.left + 1, rc.top + rc.height / 2);
+        return cp ? cp.offset : -1;
+      };
+      const probes = [3, 11, 27, 52].map(k => ({ k: k, got: caretAt(k) }));
+      ok('度量：鼠标命中位置与可见字符一致', probes.every(p => Math.abs(p.got - p.k) <= 1),
+        probes.map(p => p.k + '→' + p.got).join(' '));
+    }
+
+    // ================= B. 标签配对高亮 =================
+    const srcB = '<div id="outer">\n  <div>inner</div>\n</div>\n<br>\n<span>x</span>\n';
+    const markText = () => qa('.hx-match', bd).map(e => e.textContent).join('');
+    await setSrc('html', srcB, 6);                 // 光标在 <div id="outer" 内
+    let marks = qa('.hx-match', bd);
+    ok('配对：开始标签与结束标签同时高亮', markText() === '<div id="outer"></div>', JSON.stringify(markText()));
+    ok('配对：只高亮一对（外层不误配内层）', marks.length === 10, 'n=' + marks.length);
+
+    await setSrc('html', srcB, srcB.indexOf('</div>\n<br>') + 3);   // 光标在第二个 </div> 内
+    ok('配对：在结束标签上也能高亮开始标签', markText() === '<div id="outer"></div>', JSON.stringify(markText()));
+
+    await setSrc('html', srcB, srcB.indexOf('<div>inner') + 2);     // 光标在内层 div
+    ok('配对：内层同名标签配对正确', markText() === '<div></div>', JSON.stringify(markText()));
+
+    await setSrc('html', srcB, srcB.indexOf('<br>') + 2);           // 空元素
+    marks = qa('.hx-match', bd);
+    ok('配对：空元素只高亮自身', marks.length === 3 && markText() === '<br>', JSON.stringify(markText()));
+
+    await setSrc('html', srcB, srcB.indexOf('<span>') + 3);
+    ok('配对：span 与 </span> 配对', markText() === '<span></span>', JSON.stringify(markText()));
+
+    await setSrc('html', srcB, srcB.length);                        // 光标不在标签上
+    ok('配对：光标不在标签上时不高亮', qa('.hx-match', bd).length === 0);
+
+    // ================= C. 行号 =================
+    ok('行号：HTML 编辑器有行号槽', !!gutter && gutter.getBoundingClientRect().width > 0);
+    ok('行号：JSON 编辑器没有行号槽', !paneOf('json').querySelector('.code-gutter'));
+    ok('行号：Markdown 编辑器没有行号槽', !paneOf('markdown').querySelector('.code-gutter'));
+    const gap = ta.getBoundingClientRect().left - paneOf('html').querySelector('.code-area').getBoundingClientRect().left;
+    ok('行号：代码区右移避开行号槽', Math.abs(gap - gutter.getBoundingClientRect().width) < 0.6,
+      'gap=' + gap.toFixed(2) + ' gutter=' + gutter.getBoundingClientRect().width);
+
+    const srcC = 'line1\nline2\n\nline4\n' + 'x'.repeat(260) + '\nline6\n';
+    await setSrc('html', srcC, 0);
+    await sleep(250);
+    let nums = qa('.code-ln', gutter);
+    ok('行号：数量与行数一致（含末尾空行）', nums.length === 7, 'n=' + nums.length + ' expect=7');
+    ok('行号：文案为 1..7', nums.map(e => e.textContent).join(',') === '1,2,3,4,5,6,7', nums.map(e => e.textContent).join(','));
+    let offsets = [0], pos = 0;
+    for (let i = 0; i < srcC.length; i++) if (srcC.charCodeAt(i) === 10) offsets.push(i + 1);
+    let maxDiff = 0;
+    for (let i = 0; i < 7; i++) {
+      const expect = offsets[i];
+      const want = i + 1 < offsets.length ? offsets[i + 1] - 1 : srcC.length;
+      const actual = parseFloat(nums[i].style.top);
+      const ref = want > expect ? backdropLineTop(bd, expect) : null;
+      const expected = ref === null ? null : ref;
+      if (expected !== null) maxDiff = Math.max(maxDiff, Math.abs(expected - actual));
+    }
+    ok('行号：与代码行严格对齐', maxDiff < 1.6, 'maxDiff=' + maxDiff.toFixed(2));
+    const wrappedGap = parseFloat(nums[5].style.top) - parseFloat(nums[4].style.top);
+    ok('行号：长行换行后行号被推开', wrappedGap > 30, 'gap=' + wrappedGap);
+    const emptyGap = parseFloat(nums[2].style.top) - parseFloat(nums[1].style.top);
+    ok('行号：空行占位 18px', Math.abs(emptyGap - 18) < 0.6, 'gap=' + emptyGap);
+
+    // 滚动后行号跟随
+    for (let i = 0; i < 40; i++) ta.value += '\n填充' + i;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    await sleep(200);
+    ta.scrollTop = ta.scrollHeight;
+    ta.dispatchEvent(new Event('scroll', { bubbles: true }));
+    await sleep(120);
+    nums = qa('.code-ln', gutter);
+    ok('行号：滚动后只渲染可视窗口内的行号', nums.length >= 15 && nums.length <= 40, 'n=' + nums.length);
+    ok('行号：滚动后从靠后的行号开始', parseInt(nums[0].textContent, 10) > 10, 'first=' + nums[0].textContent);
+    const lastNum = nums[nums.length - 1];
+    const lastText = lastNum.textContent;
+    const lastY = parseFloat(lastNum.style.top) - ta.scrollTop;
+    const gutterH = gutter.getBoundingClientRect().height;
+    ok('行号：滚动后可见行号落在可视区内', lastY > -20 && lastY < gutterH, 'y=' + lastY.toFixed(0) + ' h=' + gutterH);
+    ok('行号：滚动后编号连续递增', parseInt(lastNum.textContent, 10) > parseInt(nums[0].textContent, 10),
+      nums[0].textContent + '..' + lastText);
+
+    // 光标在末尾但滚到中部/顶部（滚轮向上滚）：行号窗口必须重新定位
+    ta.scrollTop = Math.round((ta.scrollHeight - ta.clientHeight) * 0.5);
+    ta.dispatchEvent(new Event('scroll', { bubbles: true }));
+    await sleep(220);
+    nums = qa('.code-ln', gutter);
+    const visMid = nums.filter(n => {
+      const y = parseFloat(n.style.top) - ta.scrollTop;
+      return y > -20 && y < gutterH;
+    }).length;
+    ok('行号：滚到中部后可视区内有行号', nums.length >= 10 && visMid >= 8,
+      'n=' + nums.length + ' vis=' + visMid + ' first=' + (nums[0] && nums[0].textContent));
+
+    ta.scrollTop = 0;
+    ta.dispatchEvent(new Event('scroll', { bubbles: true }));
+    await sleep(220);
+    nums = qa('.code-ln', gutter);
+    ok('行号：滚回顶部后从第 1 行开始', nums.length > 0 && nums[0].textContent === '1',
+      'first=' + (nums[0] && nums[0].textContent) + ' n=' + nums.length);
+    const firstY = nums.length ? parseFloat(nums[0].style.top) - ta.scrollTop : -999;
+    ok('行号：滚回顶部后第 1 行落在可视区', firstY > -20 && firstY < 40, 'y=' + firstY.toFixed(0));
+
+    // ================= D. 片段展开 =================
+    let t = await setSrc('html', '<div>', 5 + 0);
+    await setSrc('html', '', 0);
+    t = await setSrc('html', 'div', 3);
+    await pressTab(t);
+    ok('片段：div + Tab 展开', t.value === '<div></div>' && t.selectionStart === 5,
+      JSON.stringify(t.value) + ' caret=' + t.selectionStart);
+
+    t = await setSrc('html', 'div.card', 8);
+    await pressTab(t);
+    ok('片段：div.card 展开带 class', t.value === '<div class="card"></div>', t.value);
+
+    t = await setSrc('html', 'ul>li*3', 7);
+    await pressTab(t);
+    ok('片段：ul>li*3 展开为嵌套列表',
+      t.value === '<ul>\n  <li></li>\n  <li></li>\n  <li></li>\n</ul>', JSON.stringify(t.value));
+
+    t = await setSrc('html', 'img.photo', 9);
+    await pressTab(t);
+    ok('片段：空元素不带闭合标签', t.value === '<img class="photo">', t.value);
+
+    t = await setSrc('html', '!', 1);
+    await pressTab(t);
+    ok('片段：! 展开 HTML5 骨架', t.value.indexOf('<!DOCTYPE html>') === 0 && t.value.indexOf('<html lang="zh-CN">') > 0,
+      t.value.slice(0, 40).replace(/\n/g, '\\n'));
+    ok('片段：! 展开后光标落在第一个占位符上', t.selectionStart !== t.selectionEnd, t.selectionStart + '-' + t.selectionEnd);
+
+    t = await setSrc('html', 'table', 5);
+    await pressTab(t);
+    ok('片段：内置 table 用片段内容展开', t.value.indexOf('<thead>') > 0 && t.value.indexOf('<tbody>') > 0, JSON.stringify(t.value.slice(0, 30)));
+
+    t = await setSrc('html', 'hello', 5);
+    await pressTab(t);
+    ok('片段：普通单词不展开（插入两个空格）', t.value === 'hello  ', JSON.stringify(t.value));
+
+    t = await setSrc('html', 'a', 1);
+    await pressTab(t);
+    ok('片段：a 展开并选中第一个占位符',
+      t.value === '<a href="#">链接文字</a>' && t.value.slice(t.selectionStart, t.selectionEnd) === '#',
+      JSON.stringify(t.value) + ' sel=' + JSON.stringify(t.value.slice(t.selectionStart, t.selectionEnd)));
+    await pressTab(t);
+    ok('片段：Tab 跳到第二个占位符', t.value.slice(t.selectionStart, t.selectionEnd) === '链接文字',
+      JSON.stringify(t.value.slice(t.selectionStart, t.selectionEnd)));
+    await pressTab(t);
+    ok('片段：占位符用尽后 Tab 插入两个空格', t.value === '<a href="#">链接文字  </a>', JSON.stringify(t.value));
+    // 光标离开占位符后再按 Tab 不应误跳
+    t = await setSrc('html', '<a href="#">链接文字</a>', 0);
+    await pressTab(t);
+    ok('片段：光标移出后 Tab 不误跳占位符', t.value === '  <a href="#">链接文字</a>', JSON.stringify(t.value));
+
+    // ================= E. 片段管理 =================
+    paneOf('html').querySelector('[data-act="snippets"]').click();
+    await sleep(80);
+    ok('片段管理：弹窗打开', !q('.ed-snip-dialog').classList.contains('hidden'));
+    const builtinCount = qa('.ed-snip-item').length;
+    ok('片段管理：内置片段已列出', builtinCount >= 15, 'n=' + builtinCount);
+    ok('片段管理：内置片段带标记', qa('.ed-snip-badge').length >= 15);
+
+    q('.ed-snip-add').click();
+    await sleep(60);
+    ok('片段管理：新增表单显示', !q('.ed-snip-form').classList.contains('hidden'));
+    q('.ed-snip-fkey').value = '';
+    q('.ed-snip-ftext').value = '<b>x</b>';
+    q('.ed-snip-save').click();
+    await sleep(40);
+    ok('片段管理：空触发词被拦截', !q('.ed-snip-error').classList.contains('hidden') && q('.ed-snip-error').textContent.indexOf('不能为空') >= 0,
+      q('.ed-snip-error').textContent);
+    q('.ed-snip-fkey').value = 'card';
+    q('.ed-snip-save').click();
+    await sleep(40);
+    ok('片段管理：重复触发词被拦截', q('.ed-snip-error').textContent.indexOf('已存在') >= 0, q('.ed-snip-error').textContent);
+    ok('片段管理：重复触发词未被写入', qa('.ed-snip-key').map(e => e.textContent).filter(k => k === 'card').length === 1,
+      qa('.ed-snip-key').map(e => e.textContent).filter(k => k === 'card').length + '');
+    q('.ed-snip-fkey').value = 'mycard';
+    q('.ed-snip-fdesc').value = '我的卡片';
+    q('.ed-snip-ftext').value = '<div class="my-card">${1:内容}</div>';
+    q('.ed-snip-save').click();
+    await sleep(60);
+    ok('片段管理：保存后回到列表', q('.ed-snip-form').classList.contains('hidden'));
+    ok('片段管理：新片段出现在列表', qa('.ed-snip-key').map(e => e.textContent).indexOf('mycard') >= 0,
+      qa('.ed-snip-key').map(e => e.textContent).join(','));
+    ok('片段管理：新片段无内置标记',
+      qa('.ed-snip-item').filter(r => q('.ed-snip-key', r).textContent === 'mycard')[0].querySelector('.ed-snip-badge') === null);
+
+    // 用自定义片段
+    q('.ed-snip-close').click();
+    await sleep(60);
+    t = await setSrc('html', 'mycard', 6);
+    await pressTab(t);
+    ok('片段管理：自定义片段按 Tab 展开', t.value === '<div class="my-card">内容</div>', t.value);
+    ok('片段管理：自定义片段占位符被选中', t.value.slice(t.selectionStart, t.selectionEnd) === '内容');
+    ok('片段管理：片段已持久化',
+      Array.isArray(window.__saved.meow_editor_snippets) &&
+      window.__saved.meow_editor_snippets.some(s => s.key === 'mycard'),
+      JSON.stringify((window.__saved.meow_editor_snippets || []).length));
+
+    // 编辑
+    paneOf('html').querySelector('[data-act="snippets"]').click();
+    await sleep(60);
+    let row = qa('.ed-snip-item').filter(r => q('.ed-snip-key', r).textContent === 'mycard')[0];
+    q('[data-op="edit"]', row).click();
+    await sleep(60);
+    ok('片段管理：编辑表单带出原值', q('.ed-snip-fkey').value === 'mycard' && q('.ed-snip-ftext').value.indexOf('my-card') > 0);
+    q('.ed-snip-fkey').value = 'mycard2';
+    q('.ed-snip-ftext').value = '<section>${1:改过的}</section>';
+    q('.ed-snip-save').click();
+    await sleep(60);
+    ok('片段管理：重命名后旧触发词消失、新触发词存在',
+      qa('.ed-snip-key').map(e => e.textContent).indexOf('mycard2') >= 0 &&
+      qa('.ed-snip-key').map(e => e.textContent).indexOf('mycard') < 0,
+      qa('.ed-snip-key').map(e => e.textContent).join(','));
+
+    // 删除
+    window.showConfirmDialog = function () { return Promise.resolve(true); };
+    row = qa('.ed-snip-item').filter(r => q('.ed-snip-key', r).textContent === 'mycard2')[0];
+    q('[data-op="del"]', row).click();
+    await sleep(80);
+    ok('片段管理：删除生效', qa('.ed-snip-key').map(e => e.textContent).indexOf('mycard2') < 0);
+
+    // 恢复内置
+    q('.ed-snip-add').click();
+    await sleep(40);
+    q('.ed-snip-fkey').value = 'temp1';
+    q('.ed-snip-ftext').value = '<i>t</i>';
+    q('.ed-snip-save').click();
+    await sleep(60);
+    ok('片段管理：新增临时片段', qa('.ed-snip-key').map(e => e.textContent).indexOf('temp1') >= 0);
+    q('.ed-snip-reset').click();
+    await sleep(80);
+    ok('片段管理：恢复内置后自定义片段被清空',
+      qa('.ed-snip-key').map(e => e.textContent).indexOf('temp1') < 0 && qa('.ed-snip-item').length === builtinCount,
+      'n=' + qa('.ed-snip-item').length);
+    q('.ed-snip-close').click();
+    await sleep(50);
+
+    // ================= F. 自动闭合与片段共存 =================
+    t = await setSrc('html', '<p class="x"', 12);
+    t.focus();
+    t.dispatchEvent(new KeyboardEvent('keydown', { key: '>', bubbles: true, cancelable: true }));
+    await sleep(80);
+    ok('共存：自动闭合在片段功能之后仍然工作', t.value === '<p class="x"></p>', JSON.stringify(t.value));
+    ok('共存：自动闭合后光标在标签中间', t.selectionStart === 13 && t.value.slice(12, 13) === '>', 'caret=' + t.selectionStart);
+    // 标签内外的 Tab 都不应误展开
+    t = await setSrc('html', '<p>正文</p>', 3);
+    await pressTab(t);
+    ok('共存：标签后按 Tab 只缩进不展开', t.value === '<p>  正文</p>', JSON.stringify(t.value));
+    t = await setSrc('html', '<div class="a">', 15);
+    await pressTab(t);
+    ok('共存：标签末尾按 Tab 不误展开', t.value === '<div class="a">  ', JSON.stringify(t.value));
+
+    // ================= G. 搜索与配对共存 =================
+    t = await setSrc('html', '<div>\n  <span>命中词</span>\n</div>', 3);
+    const si = paneOf('html').querySelector('.ed-search-input');
+    si.value = '命中词';
+    si.dispatchEvent(new Event('input', { bubbles: true }));
+    await sleep(150);
+    ok('共存：搜索高亮与语法高亮同时存在',
+      qa('mark.ed-hit', bd).length === 1 && qa('.hx-tag', bd).length >= 3,
+      'hits=' + qa('mark.ed-hit', bd).length + ' tags=' + qa('.hx-tag', bd).length);
+    ok('共存：配对高亮与搜索高亮同时存在', qa('.hx-match', bd).length > 0);
+    ok('共存：背板文本仍与源码一致', bd.textContent === t.value + '\n');
+    si.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await sleep(80);
+
+    // ================= J. 输入提示下拉框 =================
+    const acBox = () => q('.ed-ac');
+    const acOpen = () => { const e = acBox(); return !!e && !e.classList.contains('hidden'); };
+    const acKeys = () => qa('.ed-ac-item').map(e => e.querySelector('code').textContent);
+    const acSel = () => { const e = q('.ed-ac-item.on'); return e ? e.querySelector('code').textContent : ''; };
+    const acTitle = () => { const e = acBox() && acBox().querySelector('.ed-ac-title'); return e ? e.textContent : ''; };
+    async function typeIn(ta, text, caret) {
+      ta.focus();
+      ta.value = text;
+      ta.selectionStart = ta.selectionEnd = (caret == null ? text.length : caret);
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+      await sleep(160);
+    }
+    async function pressKey(ta, key, init) {
+      ta.focus();
+      ta.dispatchEvent(new KeyboardEvent('keydown', Object.assign({ key: key, bubbles: true, cancelable: true }, init || {})));
+      await sleep(90);
+    }
+
+    // HTML 语境：输入 <di 弹出标签候选
+    let acTa = taOf('html');
+    await setSrc('html', '', 0);
+    await typeIn(acTa, '<di');
+    ok('提示：输入 <di 弹出 HTML 标签候选', acOpen() && acKeys().join(',') === 'div,dialog',
+      'open=' + acOpen() + ' keys=' + acKeys().join(','));
+    ok('提示：标题显示当前语境', acTitle() === 'HTML 标签', acTitle());
+    ok('提示：默认选中第一项', acSel() === 'div', acSel());
+
+    // 方向键选择 + Tab 确认
+    await pressKey(acTa, 'ArrowDown');
+    const secondKey = acKeys()[1];
+    ok('提示：方向键切换选中项', acSel() === secondKey, acSel() + ' vs ' + secondKey);
+    await pressKey(acTa, 'Tab');
+    ok('提示：Tab 插入选中项并关闭下拉框', acTa.value.indexOf('<' + secondKey) === 0 && !acOpen(),
+      JSON.stringify(acTa.value));
+
+    // 空格确认（CSS3 语境）
+    await setSrc('html', '<style>\n', 0);
+    await typeIn(acTa, '<style>\nbackgr');
+    ok('提示：style 块内识别为 CSS3 语境', acOpen() && acTitle() === 'CSS3 属性' && acKeys()[0] === 'background', acTitle() + ' key=' + acKeys()[0]);
+    ok('提示：长前缀会补充包含匹配', acKeys().indexOf('background-color') >= 0, acKeys().join(','));
+    await pressKey(acTa, ' ');
+    ok('提示：空格确认插入 CSS 属性', acTa.value.indexOf('background: ') >= 0 && !acOpen(), JSON.stringify(acTa.value));
+
+    // 回车确认（JS 语境）
+    await typeIn(acTa, '<script>\ncons');
+    ok('提示：script 块内识别为 JS 语境', acOpen() && acTitle() === 'JavaScript' && acKeys()[0] === 'const', acTitle() + ' key=' + acKeys()[0]);
+    await pressKey(acTa, 'Enter');
+    ok('提示：回车确认插入 JS 片段', acTa.value.indexOf('const ') >= 0 && acTa.value.indexOf('<script>') === 0 && !acOpen(), JSON.stringify(acTa.value));
+
+    // Esc 关闭且不插入（属性语境）
+    await typeIn(acTa, '<div cla');
+    ok('提示：标签内识别为属性语境', acOpen() && acTitle() === 'HTML 属性' && acKeys()[0] === 'class',
+      acTitle() + ' key=' + acKeys()[0]);
+    const beforeEsc = acTa.value;
+    await pressKey(acTa, 'Escape');
+    ok('提示：Esc 关闭且不插入', !acOpen() && acTa.value === beforeEsc, JSON.stringify(acTa.value));
+
+    // 与片段展开共存：正文里的普通单词不弹提示，Tab 仍是片段展开键
+    await typeIn(acTa, 'div');
+    ok('提示：正文里没有 < 时不弹下拉框（避免误触）', !acOpen(), 'open=' + acOpen());
+    await pressKey(acTa, 'Tab');
+    ok('提示：未选择时 Tab 仍走片段展开', acTa.value === '<div></div>' && !acOpen(), JSON.stringify(acTa.value));
+
+    // 英文单词 + 空格不能被吞掉
+    await typeIn(acTa, '<p>the ');
+    ok('提示：正文输入英文单词加空格不插入任何东西', acTa.value === '<p>the ' && !acOpen(), JSON.stringify(acTa.value));
+
+    // 打 < 之后才提示标签
+    await typeIn(acTa, '<thead');
+    ok('提示：打了 < 之后提示标签', acOpen() && acKeys()[0] === 'thead' && acTitle() === 'HTML 标签',
+      acTitle() + ' key=' + acKeys()[0] + ' n=' + acKeys().length);
+    await pressKey(acTa, 'Escape');
+
+    // 点击候选项插入
+    await setSrc('html', '', 0);
+    await typeIn(acTa, '<inp');
+    const firstItem = q('.ed-ac-item');
+    ok('提示：出现候选可点击', !!firstItem && acOpen());
+    if (firstItem) {
+      firstItem.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      await sleep(120);
+      ok('提示：鼠标点击插入候选', acTa.value.indexOf('<input') === 0 && !acOpen(), JSON.stringify(acTa.value));
+    }
+
+    // 无关词不弹
+    await setSrc('html', '', 0);
+    await typeIn(acTa, 'zzzqq');
+    ok('提示：无匹配时不弹下拉框', !acOpen());
+
+    // Ctrl+空格 手动唤起
+    await setSrc('html', '', 0);
+    await typeIn(acTa, '<div>');
+    await pressKey(acTa, ' ', { ctrlKey: true });
+    ok('提示：Ctrl+空格 手动列出候选', acOpen() && acKeys().length > 10, 'n=' + acKeys().length);
+    await pressKey(acTa, 'Escape');
+
+    // 光标位置校验：下拉框贴在光标附近
+    await setSrc('html', '', 0);
+    await typeIn(acTa, '<di');
+    await sleep(120);
+    const acRect = acBox().getBoundingClientRect();
+    const taRect = acTa.getBoundingClientRect();
+    ok('提示：下拉框出现在编辑区内', acRect.width > 100 && acRect.top >= taRect.top - 30 && acRect.top <= taRect.bottom,
+      'ac=' + Math.round(acRect.left) + ',' + Math.round(acRect.top) + ' ta=' + Math.round(taRect.left) + ',' + Math.round(taRect.top));
+    await pressKey(acTa, 'Escape');
+
+    // ================= H. 预览联动 =================
+    t = await setSrc('html', '<h3>标题</h3>', 0);
+    await sleep(500);
+    const doc = paneOf('html').querySelector('.html-frame').contentDocument;
+    ok('预览：语法高亮不影响预览渲染', !!doc.querySelector('h3') && doc.querySelector('h3').textContent === '标题');
+
+    // ================= I. 其余面板回归 =================
+    qa('.ed-rail-tab')[0].click();            // JSON
+    await sleep(220);
+    const jta = taOf('json'), jbd = bdOf('json');
+    const jArea = paneOf('json').querySelector('.code-area');
+    ok('回归：JSON 面板代码区无行号占位', Math.abs(jta.getBoundingClientRect().left - jArea.getBoundingClientRect().left) < 0.6,
+      (jta.getBoundingClientRect().left - jArea.getBoundingClientRect().left) + '');
+    await setSrc('json', JSON.stringify({ a: 1, b: [1, 2], c: { d: '一个比较长的字符串用来验证换行'.repeat(6) } }, null, 2), 0);
+    ok('回归：JSON 面板背板与输入框对齐', jbd.scrollHeight === jta.scrollHeight, 'bd=' + jbd.scrollHeight + ' ta=' + jta.scrollHeight);
+    ok('回归：JSON 树节点仍然渲染', qa('.jnode', paneOf('json')).length > 3, 'n=' + qa('.jnode', paneOf('json')).length);
+    ok('回归：JSON 面板没有语法高亮段（仍用纯文本背板）', qa('.hx-tag', jbd).length === 0);
+    // JSON 面板 Tab 仍然插入两个空格
+    let jt = await setSrc('json', 'a', 1);
+    await pressTab(jt);
+    ok('回归：JSON 面板 Tab 插入两个空格', jt.value === 'a  ', JSON.stringify(jt.value));
+    // JSON 面板自动闭合仍然工作
+    jt = await setSrc('json', '{"a":"<div"}', 10);
+    jt.focus();
+    jt.dispatchEvent(new KeyboardEvent('keydown', { key: '>', bubbles: true, cancelable: true }));
+    await sleep(80);
+    ok('回归：JSON 面板自动闭合仍然工作', jt.value === '{"a":"<div></div>"}', JSON.stringify(jt.value));
+
+    qa('.ed-rail-tab')[1].click();            // Markdown
+    await sleep(220);
+    const mta = taOf('markdown');
+    await setSrc('markdown', '# 标题\n\n- 甲\n- 乙\n\n**粗体**', 0);
+    await sleep(150);
+    ok('回归：Markdown 预览仍然渲染', qa('.md-body h1', paneOf('markdown')).length === 1 && qa('.md-body strong', paneOf('markdown')).length === 1);
+    let mt = await setSrc('markdown', 'md', 2);
+    await pressTab(mt);
+    ok('回归：Markdown 面板 Tab 插入两个空格', mt.value === 'md  ', JSON.stringify(mt.value));
+    ok('回归：Markdown 面板没有行号与高亮背板', !paneOf('markdown').querySelector('.code-gutter') && qa('.hx-tag', bdOf('markdown')).length === 0);
+
+    qa('.ed-rail-tab')[2].click();            // 回到 HTML
+    await sleep(220);
+    ok('回归：可以切回 HTML 面板', !paneOf('html').classList.contains('hidden') && paneOf('html').querySelector('.code-gutter').getBoundingClientRect().width > 0);
+    ok('回归：切回后行号重新渲染', qa('.code-ln', paneOf('html').querySelector('.code-gutter')).length > 0);
+
+    // ================= K. 左侧 Tab：只显示图标 + 按住拖动排序 =================
+    const railTabs = () => qa('.ed-rail-tab');
+    const railIds = () => railTabs().map(t => t.dataset.editor || '');
+    ok('侧栏：Tab 只显示图标，文字标签不占位置',
+      railTabs().length === 3 &&
+      railTabs().every(t => t.querySelector('.ed-rail-label') && t.querySelector('.ed-rail-label').getBoundingClientRect().width === 0) &&
+      railTabs().every(t => t.querySelector('.ed-rail-icon').getBoundingClientRect().width > 0),
+      railTabs().map(t => Math.round(t.querySelector('.ed-rail-label').getBoundingClientRect().width)).join(','));
+    ok('侧栏：Tab 是正方形图标按钮',
+      railTabs().every(t => {
+        const r = t.getBoundingClientRect();
+        return Math.abs(r.width - r.height) < 1 && r.width >= 28;
+      }),
+      railTabs().map(t => Math.round(t.getBoundingClientRect().width) + 'x' + Math.round(t.getBoundingClientRect().height)).join(','));
+    ok('侧栏：每个 Tab 都有悬停提示', railTabs().every(t => !!t.getAttribute('title')));
+    ok('侧栏：默认顺序为 JSON / Markdown / HTML', railIds().join(',') === 'json,markdown,html', railIds().join(','));
+
+    async function railDrag(fromIndex, dy, clickAfter) {
+      const tab = railTabs()[fromIndex];
+      const r = tab.getBoundingClientRect();
+      const x = r.left + r.width / 2;
+      const y = r.top + r.height / 2;
+      const opt = cy => ({ bubbles: true, cancelable: true, pointerId: 7, pointerType: 'mouse', button: 0, buttons: 1, clientX: x, clientY: cy });
+      tab.dispatchEvent(new PointerEvent('pointerdown', opt(y)));
+      await sleep(30);
+      tab.dispatchEvent(new PointerEvent('pointermove', opt(y + dy)));
+      await sleep(60);
+      const lifted = qa('.ed-rail-tab.dragging').length;          // 拖动中应处于"抬起"状态
+      tab.dispatchEvent(new PointerEvent('pointerup', opt(y + dy)));
+      if (clickAfter) tab.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await sleep(140);
+      return lifted;
+    }
+
+    const lifted = await railDrag(0, 100);
+    ok('侧栏：拖动时被拖的 Tab 抬起', lifted === 1, 'n=' + lifted);
+    ok('侧栏：拖到末尾后顺序更新', railIds().join(',') === 'markdown,html,json', railIds().join(','));
+    ok('侧栏：拖动后顺序已持久化',
+      JSON.stringify(window.__saved && window.__saved['meow_editor_rail_order']) === '["markdown","html","json"]',
+      JSON.stringify(window.__saved && window.__saved['meow_editor_rail_order']));
+    ok('侧栏：拖动后没有残留位移样式', railTabs().every(t => !t.style.transform && !t.classList.contains('dragging')));
+    ok('侧栏：拖动不会切换当前编辑器', !paneOf('html').classList.contains('hidden'), paneOf('html').className);
+
+    // 拖动结束后紧跟的那次 click 必须被吞掉（真实浏览器会补发 click）
+    await railDrag(0, 100, true);
+    ok('侧栏：拖动后补发的 click 不会切换编辑器', !paneOf('html').classList.contains('hidden'), railIds().join(','));
+
+    // 普通点击仍然切换面板
+    qa('.ed-rail-tab').filter(t => t.dataset.editor === 'json')[0].click();
+    await sleep(180);
+    ok('侧栏：重排后点击仍能切换面板',
+      !paneOf('json').classList.contains('hidden') && paneOf('html').classList.contains('hidden'), railIds().join(','));
+
+    // 轻微移动（小于阈值）视为点击，不触发重排
+    const orderBefore = railIds().join(',');
+    const lifted2 = await railDrag(1, 3);
+    ok('侧栏：轻微移动不触发重排', railIds().join(',') === orderBefore, railIds().join(',') + ' lifted=' + lifted2);
+
+    // 拖回默认顺序（按槽位间距换算位移，保证落点确定）
+    const railStep = () => {
+      const t = railTabs();
+      return t.length > 1 ? (t[1].getBoundingClientRect().top - t[0].getBoundingClientRect().top) : 42;
+    };
+    async function dragRailTo(id, target) {
+      const cur = railIds().indexOf(id);
+      if (cur < 0 || cur === target) return;
+      await railDrag(cur, (target - cur) * railStep());
+    }
+    await dragRailTo('json', 0);
+    await dragRailTo('markdown', 1);
+    ok('侧栏：可以拖回默认顺序', railIds().join(',') === 'json,markdown,html',
+      'before=' + orderBefore + ' after=' + railIds().join(','));
+
+    // 拖动后各面板映射仍然正确
+    qa('.ed-rail-tab').filter(t => t.dataset.editor === 'html')[0].click();
+    await sleep(200);
+    ok('侧栏：拖动后点击 HTML 仍显示 HTML 面板',
+      !paneOf('html').classList.contains('hidden') && paneOf('json').classList.contains('hidden') &&
+      paneOf('html').querySelector('.code-gutter').getBoundingClientRect().width > 0);
+
+    // ================= L. JavaScript 成员提示 =================
+    await setSrc('html', '', 0);
+    await typeIn(acTa, '<script>\ndocument.que');
+    ok('JS：document. 之后提示成员', acOpen() && acTitle() === 'JS 成员' && acKeys()[0] === 'querySelector',
+      acTitle() + ' keys=' + acKeys().slice(0, 4).join(','));
+    await pressKey(acTa, 'Enter');
+    ok('JS：成员提示替换点后面的部分，不重复对象名',
+      acTa.value === '<script>\ndocument.querySelector("")' && acTa.value.indexOf('document.document') < 0,
+      JSON.stringify(acTa.value));
+
+    await typeIn(acTa, '<script>\nconsole.');
+    ok('JS：console. 优先提示 log/error 等', acOpen() && acKeys()[0] === 'log' && acTitle() === 'JS 成员',
+      acKeys().slice(0, 5).join(','));
+
+    await typeIn(acTa, '<script>\narr.ma');
+    ok('JS：普通变量也能提示成员', acOpen() && acKeys()[0] === 'map', acKeys().slice(0, 3).join(','));
+    await pressKey(acTa, ' ');
+    ok('JS：空格确认成员提示', acTa.value.indexOf('arr.map((item) => )') >= 0 && acTa.value.indexOf('arr.arr') < 0,
+      JSON.stringify(acTa.value));
+
+    await typeIn(acTa, '<script>\nJSON.st');
+    ok('JS：JSON. 提示 stringify', acOpen() && acKeys()[0] === 'stringify', acKeys().slice(0, 3).join(','));
+
+    await typeIn(acTa, '<script>\ngetEl');
+    ok('JS：脚本里普通单词仍然提示 DOM API', acOpen() && acKeys()[0] === 'getElementById', acKeys().slice(0, 3).join(','));
+
+    // 按字母就要有提示（不是只有输入点才提示）
+    await typeIn(acTa, '<script>\ndoc');
+    ok('JS：打字母就提示 document.*', acOpen() && acKeys()[0] === 'document.querySelector',
+      acTitle() + ' keys=' + acKeys().slice(0, 3).join(','));
+    await typeIn(acTa, '<script>\ncon');
+    ok('JS：con 提示 const / console 等', acOpen() && acKeys()[0] === 'const', acKeys().slice(0, 4).join(','));
+    await typeIn(acTa, '<script>\ngebi');
+    ok('JS：首字母缩写 gebi 命中 getElementById', acOpen() && acKeys()[0] === 'getElementById', acKeys().slice(0, 3).join(','));
+    await typeIn(acTa, '<script>\nqsa');
+    ok('JS：首字母缩写 qsa 命中 querySelectorAll', acOpen() && acKeys()[0] === 'querySelectorAll', acKeys().slice(0, 3).join(','));
+    await typeIn(acTa, '<script>\nvar');
+    ok('JS：var 等关键字可提示', acOpen() && acKeys()[0] === 'var', acKeys().slice(0, 3).join(','));
+    await pressKey(acTa, 'Escape');
+
+    // 链式调用 / 下标结尾的对象后面接 . 也要能提示
+    await typeIn(acTa, '<script>\ndocument.getElementById("dd").');
+    ok('JS：调用结果后面接 . 弹成员', acOpen() && acTitle() === 'JS 成员' && acKeys()[0] === 'classList',
+      acTitle() + ' keys=' + acKeys().slice(0, 3).join(','));
+    await typeIn(acTa, '<script>\ndocument.getElementById("dd").cl');
+    await pressKey(acTa, 'Enter');
+    ok('JS：链式成员提示替换点后面的部分',
+      acTa.value === '<script>\ndocument.getElementById("dd").classList.add("")',
+      JSON.stringify(acTa.value));
+
+    await typeIn(acTa, '<script>\nfetch("/api").th');
+    ok('JS：fetch 结果提示 then/catch', acOpen() && acKeys()[0] === 'then', acKeys().slice(0, 3).join(','));
+    await typeIn(acTa, '<script>\ndocument.querySelector(".box").st');
+    ok('JS：querySelector 结果提示元素成员', acOpen() && acKeys()[0] === 'style', acKeys().slice(0, 3).join(','));
+    await typeIn(acTa, '<script>\narr.map((x) => x).fi');
+    ok('JS：链式数组方法可继续提示', acOpen() && acKeys()[0] === 'filter', acKeys().slice(0, 3).join(','));
+    await typeIn(acTa, '<script>\n[1, 2].ma');
+    ok('JS：数组字面量后面接 . 也能提示', acOpen() && acKeys()[0] === 'map', acKeys().slice(0, 3).join(','));
+    await pressKey(acTa, 'Escape');
+
+    // on* 事件属性里写的是 JS
+    await typeIn(acTa, '<button onclick="ale');
+    ok('JS：onclick 属性值里按 JS 提示', acOpen() && acTitle() === 'JavaScript' && acKeys()[0] === 'alert',
+      acTitle() + ' key=' + acKeys()[0]);
+    await typeIn(acTa, '<a href="ale');
+    ok('JS：普通属性值里不提示（避免误触）', !acOpen());
+
+    // 大段内联脚本：脚本开头离光标很远也要能识别成 JS
+    await setSrc('html', '<script>\n' + 'var a = 1;\n'.repeat(3000) + 'getEl', 0);
+    ok('JS：大脚本里仍能识别 JS 语境', acOpen() && acTitle() === 'JavaScript' && acKeys()[0] === 'getElementById',
+      acTitle() + ' key=' + (acKeys()[0] || '-'));
+    await pressKey(acTa, 'Escape');
+
+    // ================= M. Ctrl+/ 注释 =================
+    async function ctrlSlash(ta) {
+      ta.focus();
+      ta.dispatchEvent(new KeyboardEvent('keydown', { key: '/', code: 'Slash', keyCode: 191, ctrlKey: true, bubbles: true, cancelable: true }));
+      await sleep(140);
+    }
+    async function selectRange(ta, from, to) {
+      ta.focus();
+      ta.selectionStart = from;
+      ta.selectionEnd = to;
+      ta.dispatchEvent(new Event('select', { bubbles: true }));
+      await sleep(40);
+    }
+
+    // JS：多行选区 → 每行 //
+    const jsSrc = '<script>\nconst a = 1;\nconst b = 2;\n<\/script>';
+    let cTa = taOf('html');
+    await setSrc('html', jsSrc, 0);
+    await selectRange(cTa, 9, 30);
+    await ctrlSlash(cTa);
+    ok('注释：JS 多行选区逐行加 //',
+      cTa.value === '<script>\n// const a = 1;\n// const b = 2;\n<\/script>', JSON.stringify(cTa.value));
+    await ctrlSlash(cTa);
+    ok('注释：再按一次取消 JS 注释', cTa.value === jsSrc, JSON.stringify(cTa.value));
+
+    // JS：无选区 → 注释当前行，且保留缩进
+    await setSrc('html', '<script>\n  foo();\n<\/script>', 12);
+    await ctrlSlash(cTa);
+    ok('注释：无选区注释光标所在行并保留缩进',
+      cTa.value === '<script>\n  // foo();\n<\/script>', JSON.stringify(cTa.value));
+    await ctrlSlash(cTa);
+    ok('注释：无选区可再次取消', cTa.value === '<script>\n  foo();\n<\/script>', JSON.stringify(cTa.value));
+
+    // CSS：/* */
+    const cssSrc = '<style>\n.box { color: red; }\n</style>';
+    await setSrc('html', cssSrc, 12);
+    await ctrlSlash(cTa);
+    ok('注释：<style> 里用 /* */', cTa.value === '<style>\n/* .box { color: red; } */\n</style>', JSON.stringify(cTa.value));
+    await ctrlSlash(cTa);
+    ok('注释：CSS 注释可再次取消', cTa.value === cssSrc, JSON.stringify(cTa.value));
+
+    // HTML 正文：<!-- -->
+    await setSrc('html', '<p>x</p>', 5);
+    await ctrlSlash(cTa);
+    ok('注释：HTML 正文用 <!-- -->', cTa.value === '<!-- <p>x</p> -->', JSON.stringify(cTa.value));
+    await ctrlSlash(cTa);
+    ok('注释：HTML 注释可再次取消', cTa.value === '<p>x</p>', JSON.stringify(cTa.value));
+
+    // HTML 多行选区整块注释
+    await setSrc('html', '<ul>\n  <li>a</li>\n  <li>b</li>\n</ul>', 0);
+    await selectRange(cTa, 5, 30);
+    await ctrlSlash(cTa);
+    ok('注释：HTML 多行选区整块注释',
+      cTa.value === '<ul>\n  <!-- <li>a</li>\n  <li>b</li> -->\n</ul>', JSON.stringify(cTa.value));
+
+    // 注释后语法高亮同步刷新（背板重新着色）
+    await sleep(220);
+    const bdM = taOf('html').parentNode.querySelector('.code-backdrop');
+    ok('注释：高亮背板同步更新', bdM.innerHTML.indexOf('hx-comment') >= 0, 'hasComment=' + (bdM.innerHTML.indexOf('hx-comment') >= 0));
+
+    // Markdown 编辑器同样支持
+    const mTa = taOf('markdown');
+    await setSrc('markdown', '# 标题', 4);
+    mTa.selectionStart = mTa.selectionEnd = 4;
+    await ctrlSlash(mTa);
+    ok('注释：Markdown 用 <!-- -->', mTa.value === '<!-- # 标题 -->', JSON.stringify(mTa.value));
+    await ctrlSlash(mTa);
+    ok('注释：Markdown 注释可再次取消', mTa.value === '# 标题', JSON.stringify(mTa.value));
+
+    // 截图模式：只负责把下拉框摆出来，方便人工看效果（#shot 看 CSS 语境，#shot-html 看标签候选）
+    if (location.hash === '#shot-rail') {
+      // 按住第一个 Tab 并下移一格，保持拖动状态供截图
+      const t = railTabs()[0];
+      const r = t.getBoundingClientRect();
+      const x = r.left + r.width / 2;
+      const y = r.top + r.height / 2;
+      const opt = cy => ({ bubbles: true, cancelable: true, pointerId: 9, pointerType: 'mouse', button: 0, buttons: 1, clientX: x, clientY: cy });
+      t.dispatchEvent(new PointerEvent('pointerdown', opt(y)));
+      await sleep(40);
+      t.dispatchEvent(new PointerEvent('pointermove', opt(y + 45)));
+      await sleep(400);
+    }
+    if (location.hash.indexOf('#shot') === 0 && location.hash !== '#shot-rail') {
+      const shotSrc = location.hash === '#shot-html'
+        ? '<di'
+        : (location.hash === '#shot-js'
+          ? '<script>\n  doc'
+          : (location.hash === '#shot-chain'
+            ? '<script>\n  document.getElementById("dd").'
+            : '<div class="box">\n  <p>标题</p>\n</div>\n<style>\n  .box { colo'));
+      await setSrc('html', shotSrc, 0);
+      await sleep(300);
+    }
+  } catch (e) {
+    lines.push('FAIL :: 未捕获异常 :: ' + (e && e.stack ? e.stack : e)); fail++;
+  }
+  lines.push('SUMMARY :: pass=' + pass + ' fail=' + fail);
+  document.getElementById('OUT').textContent = lines.join('\n');
+  document.title = 'DONE pass=' + pass + ' fail=' + fail;
+})();
+</script>
+</body>
+</html>

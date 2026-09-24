@@ -579,10 +579,20 @@ border-top: 1px dashed #f1f5f9;
     position: relative;
 }
 
+/* 标题栏(h3)是唯一的拖拽手柄，卡片内容区不参与拖拽，
+   这样在输入框/文本域里仍可正常用鼠标拖选文字 */
+.tool-card h3[draggable="true"] {
+    cursor: grab;
+}
+
 .tool-card.dragging {
     opacity: 0.4;
     border-style: dashed;
     transform: scale(0.97);
+}
+
+.tool-card.dragging h3 {
+    cursor: grabbing;
 }
 
 .tool-card.drag-over {
@@ -4001,6 +4011,16 @@ display: block;
 .srv-input-wrap:has(.srv-input-actions) input {
     padding-right: 56px;
 }
+/* 结果框(div)也需要给右侧按钮让位 */
+.srv-input-wrap > .result-box {
+    padding-right: 32px;
+}
+/* 带内嵌复制按钮的数字输入框：隐藏会与按钮重叠的原生微调箭头（Chrome 中箭头绘制在最右侧 padding 区） */
+.srv-input-wrap input[type="number"]::-webkit-inner-spin-button,
+.srv-input-wrap input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
 .srv-input-actions {
     position: absolute;
     right: 4px;
@@ -4010,7 +4030,8 @@ display: block;
     align-items: center;
     gap: 2px;
 }
-.srv-icopy-btn {
+.srv-icopy-btn,
+.tool-icopy-btn {
     position: absolute;
     right: 4px;
     top: 50%;
@@ -4033,19 +4054,33 @@ display: block;
     position: static;
     transform: none;
 }
-.srv-icopy-btn:hover {
+.srv-icopy-btn:hover,
+.tool-icopy-btn:hover {
     color: #6366f1;
     background: rgba(99, 102, 241, 0.08);
 }
-.srv-icopy-btn:active {
+.srv-icopy-btn:active,
+.tool-icopy-btn:active {
+    transform: translateY(-50%) scale(0.9);
+}
+.srv-input-actions .srv-icopy-btn:active {
     transform: scale(0.9);
 }
+/* 复制成功后的短暂反馈 */
+.tool-icopy-btn.copied {
+    color: #16a34a;
+    background: rgba(22, 163, 74, 0.12);
+}
 .dark .srv-icopy-btn,
-.theme-dark .srv-icopy-btn {
+.theme-dark .srv-icopy-btn,
+.dark .tool-icopy-btn,
+.theme-dark .tool-icopy-btn {
     color: #64748b;
 }
 .dark .srv-icopy-btn:hover,
-.theme-dark .srv-icopy-btn:hover {
+.theme-dark .srv-icopy-btn:hover,
+.dark .tool-icopy-btn:hover,
+.theme-dark .tool-icopy-btn:hover {
     color: #818cf8;
     background: rgba(129, 140, 248, 0.12);
 }
@@ -5651,4 +5686,1142 @@ border-color: #16a34a;
 .dark #reg-cat-modal .srv-cat-list-name,
 .theme-dark #reg-cat-modal .srv-cat-list-name {
     color: #e2e8f0;
+}
+/* ==================================================================
+   编辑器面板（JSON 编辑器 / Markdown 编辑器）
+   ================================================================== */
+#view-editor {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    overflow: hidden;
+    padding: 0;
+    background: #f8fafc;
+}
+
+#view-editor.hidden {
+    display: none !important;
+}
+
+.ed-wrap {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ---------- 左侧竖向 Tab ---------- */
+.ed-rail {
+    width: 46px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    margin: 8px 0 8px 10px;
+    background: #f1f5f9;
+    border-radius: 12px;
+    height: fit-content;
+    max-height: calc(100% - 16px);
+    overflow: hidden;
+}
+
+.ed-rail-tab {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    color: #94a3b8;
+    transition: background .2s, color .2s, box-shadow .2s, transform .14s ease;
+    user-select: none;
+    touch-action: none;
+    position: relative;
+}
+
+.ed-rail-tab:hover {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.ed-rail-tab.active {
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .05);
+    color: #6366f1;
+}
+
+/* 拖动排序中：被拖的 Tab 抬起来，其余 Tab 让位时带过渡 */
+.ed-rail.reordering .ed-rail-tab {
+    transition: transform .14s ease, background .2s, color .2s, box-shadow .2s;
+}
+
+.ed-rail-tab.dragging {
+    cursor: grabbing;
+    background: #fff;
+    color: #6366f1;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, .2);
+    z-index: 3;
+}
+
+.ed-rail-icon {
+    font-size: 18px !important;
+    line-height: 1;
+}
+
+/* 只显示图标：文字标签保留在 DOM 里（无障碍/兜底），但不占位置 */
+.ed-rail-label {
+    display: none;
+}
+
+/* ---------- 右侧主区域 ---------- */
+.ed-main {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 10px 8px 8px;
+}
+
+.ed-pane {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ed-pane.hidden {
+    display: none !important;
+}
+
+/* ---------- 工具栏 / 搜索栏 ---------- */
+.ed-toolbar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.ed-search {
+    flex: 1 1 120px;
+    min-width: 96px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 3px 0 6px;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.ed-search:focus-within {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, .1);
+}
+
+.ed-search-icon {
+    font-size: 15px !important;
+    color: #94a3b8;
+}
+
+.ed-search-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 12px;
+    color: #334155;
+    padding: 0 2px;
+}
+
+.ed-search-count {
+    font-size: 10px;
+    color: #94a3b8;
+    font-family: 'Roboto Mono', monospace;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ed-search-count.no-hit {
+    color: #ef4444;
+}
+
+.ed-mini-btn {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+}
+
+.ed-mini-btn:hover {
+    background: #e0e7ff;
+    color: #4f46e5;
+}
+
+/* 开关型按钮（如自动闭合 HTML 标签）的开启态 */
+.ed-mini-btn.active {
+    background: #e0e7ff;
+    color: #4f46e5;
+}
+
+.ed-mini-btn.active:hover {
+    background: #c7d2fe;
+}
+
+.ed-mini-btn .material-icons {
+    font-size: 16px !important;
+}
+
+.ed-actions {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    flex-shrink: 0;
+}
+
+/* ---------- 分屏 ---------- */
+.ed-split {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.ed-cell {
+    position: relative;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.ed-cell-top {
+    flex: 0 0 50%;
+}
+
+.ed-cell-bottom {
+    flex: 1 1 auto;
+}
+
+.ed-splitter {
+    flex: 0 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: row-resize;
+}
+
+.ed-splitter span {
+    display: block;
+    width: 36px;
+    height: 3px;
+    border-radius: 2px;
+    background: #cbd5e1;
+    transition: background .15s;
+}
+
+.ed-splitter:hover span,
+.ed-splitter.dragging span {
+    background: #6366f1;
+}
+
+.ed-error {
+    flex-shrink: 0;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: #b91c1c;
+    background: #fef2f2;
+    border-bottom: 1px solid #fecaca;
+    word-break: break-all;
+}
+
+.ed-pane-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 8px 10px;
+    outline: none;
+}
+
+.ed-pane-body::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.ed-pane-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.ed-pane-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ed-empty-hint {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: center;
+    font-size: 11px;
+    color: #cbd5e1;
+    pointer-events: none;
+    padding: 0 12px;
+    line-height: 1.6;
+}
+
+.ed-empty-hint.hidden {
+    display: none !important;
+}
+
+/* ---------- 上下同步编辑区（textarea + 高亮背板） ---------- */
+.code-area {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    background: #fcfdff;
+    --code-gutter: 0px;
+}
+
+.code-area.has-gutter {
+    --code-gutter: 36px;
+}
+
+/* 行号槽（仅 HTML 编辑器） */
+.code-gutter {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--code-gutter);
+    overflow: hidden;
+    background: #f4f6fb;
+    border-right: 1px solid #e6ebf2;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.code-gutter-inner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    will-change: transform;
+}
+
+.code-ln {
+    position: absolute;
+    right: 7px;
+    font-family: ui-monospace, 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 18px;
+    color: #a3b0c2;
+    user-select: none;
+}
+
+.code-backdrop,
+.code-textarea {
+    position: absolute;
+    inset: 0 0 0 var(--code-gutter);
+    margin: 0;
+    padding: 8px 10px;
+    font-family: ui-monospace, 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 18px;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    tab-size: 2;
+    border: none;
+    outline: none;
+}
+
+.code-backdrop {
+    z-index: 0;
+    color: #334155;
+    background: #fcfdff;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    pointer-events: none;
+    scrollbar-gutter: stable;
+}
+
+/* 上面的通用选择器 * { font-family: 'Roboto', sans-serif } 会覆盖 span 从
+   .code-backdrop 继承来的等宽字体：高亮窗口里的 token 会用比例字体渲染，
+   于是"看到的文字"和 textarea（真正接收光标/鼠标的那一层）对不上，
+   表现为光标本符、鼠标点在文字上却落在别的字符处。这里强制等宽度量。 */
+.code-backdrop * {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    word-spacing: inherit;
+    font-variant: inherit;
+    font-stretch: inherit;
+    text-transform: inherit;
+    white-space: inherit;
+    tab-size: inherit;
+}
+
+.code-textarea {
+    z-index: 1;
+    color: transparent;
+    caret-color: #4f46e5;
+    background: transparent;
+    overflow-y: auto;
+    overflow-x: hidden;
+    resize: none;
+    scrollbar-gutter: stable;
+}
+
+.code-textarea::selection {
+    background: rgba(99, 102, 241, .25);
+}
+
+.code-textarea::placeholder {
+    color: #b6c2d2;
+}
+
+.code-textarea::-webkit-scrollbar,
+.code-backdrop::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.code-textarea::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.code-textarea::-webkit-scrollbar-track,
+.code-backdrop::-webkit-scrollbar-track,
+.code-backdrop::-webkit-scrollbar-thumb {
+    background: transparent;
+}
+
+/* ---------- HTML 语法高亮（背板着色） ---------- */
+.hx-text {
+    color: #334155;
+}
+
+.hx-tag {
+    color: #2563eb;
+    /* 用 text-shadow 增粗：不改变字符宽度，保证与 textarea 换行位置完全一致 */
+    text-shadow: 0.45px 0 currentColor;
+}
+
+.hx-punc {
+    color: #94a3b8;
+}
+
+.hx-attr {
+    color: #b45309;
+}
+
+.hx-str {
+    color: #059669;
+}
+
+.hx-comment {
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.hx-doctype {
+    color: #7c3aed;
+}
+
+.hx-ent {
+    color: #db2777;
+}
+
+.hx-raw {
+    color: #0f766e;
+}
+
+.hx-ws {
+    color: inherit;
+}
+
+/* 光标所在标签与其配对标签 */
+.hx-match {
+    background: rgba(99, 102, 241, .16);
+    border-radius: 2px;
+    box-shadow: inset 0 -1px 0 rgba(99, 102, 241, .45);
+}
+
+/* ---------- 输入提示下拉框（HTML / CSS3 / JS） ---------- */
+.ed-ac {
+    position: fixed;
+    z-index: 80;
+    width: 248px;
+    max-width: calc(100vw - 12px);
+    background: #fff;
+    border: 1px solid #dbe3ee;
+    border-radius: 8px;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, .16);
+    overflow: hidden;
+}
+
+.ed-ac.hidden {
+    display: none;
+}
+
+/* `*` 里的 Roboto 会盖掉继承来的等宽字体，这里显式声明 */
+.ed-ac * {
+    font-family: ui-monospace, 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+.ed-ac-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 4px 8px;
+    background: #f6f8fc;
+    border-bottom: 1px solid #e8eef7;
+}
+
+.ed-ac-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.ed-ac-keys {
+    font-size: 9px;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ed-ac-list {
+    max-height: 178px;
+    overflow-y: auto;
+    padding: 3px;
+}
+
+.ed-ac-item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 3px 6px;
+    border-radius: 5px;
+    cursor: pointer;
+    height: 22px;
+}
+
+.ed-ac-item code {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1d4ed8;
+    white-space: nowrap;
+}
+
+.ed-ac-item span {
+    flex: 1;
+    min-width: 0;
+    font-size: 10px;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+}
+
+.ed-ac-item.on,
+.ed-ac-item:hover {
+    background: #eef2ff;
+}
+
+.ed-ac-item.on code {
+    color: #4338ca;
+}
+
+/* 命中高亮 */
+mark.ed-hit {
+    background: #fde68a;
+    color: inherit;
+    border-radius: 2px;
+    padding: 0;
+}
+
+mark.ed-hit.ed-hit-current {
+    background: #6366f1;
+    color: #fff;
+}
+
+/* ---------- 代码片段管理弹窗 ---------- */
+/* 用双类名提高优先级，确保覆盖 .ed-dialog-box / .ed-dialog-body 的默认值 */
+.ed-dialog-box.ed-snip-box {
+    max-width: 340px;
+    height: 100%;
+    max-height: 460px;
+}
+
+.ed-snip-tip {
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: 400;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+.ed-dialog-body.ed-snip-body {
+    flex: 1;
+    min-height: 0;
+    gap: 0;
+}
+
+.ed-snip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ed-snip-list.hidden {
+    display: none !important;
+}
+
+.ed-snip-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 6px;
+    border: 1px solid #eef2f7;
+    border-radius: 6px;
+    background: #fbfcfe;
+}
+
+.ed-snip-item:hover {
+    border-color: #dbe3ef;
+    background: #f6f8fc;
+}
+
+.ed-snip-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.ed-snip-key {
+    font-family: ui-monospace, 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 11px;
+    color: #4f46e5;
+    background: #eef2ff;
+    padding: 1px 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.ed-snip-badge {
+    font-size: 9px;
+    color: #64748b;
+    background: #eef2f7;
+    border-radius: 4px;
+    padding: 1px 4px;
+}
+
+.ed-snip-desc {
+    font-size: 10px;
+    color: #94a3b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ed-snip-ops {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.ed-snip-empty {
+    padding: 18px 0;
+    text-align: center;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.ed-snip-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ed-snip-form.hidden {
+    display: none !important;
+}
+
+.ed-snip-ftext {
+    min-height: 116px !important;
+    font-family: ui-monospace, 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 11px !important;
+    line-height: 16px;
+}
+
+.ed-snip-gap {
+    flex: 1;
+}
+
+/* ---------- 代码片段管理弹窗结束 ---------- */
+
+/* ---------- JSON 树 ---------- */
+.ed-tree {
+    font-family: ui-monospace, 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 18px;
+    color: #334155;
+}
+
+.ed-tree.stale {
+    opacity: .45;
+    pointer-events: none;
+}
+
+.jnode {
+    position: relative;
+}
+
+.jchildren {
+    margin-left: 5px;
+    padding-left: 9px;
+    border-left: 1px dashed #e2e8f0;
+}
+
+.jnode.collapsed > .jchildren,
+.jnode.collapsed > .jline.jclose {
+    display: none;
+}
+
+.jline {
+    display: flex;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    word-break: break-all;
+    cursor: default;
+}
+
+.jline:hover {
+    background: #f1f5f9;
+}
+
+.jline.selected {
+    background: #e0e7ff;
+    box-shadow: inset 0 0 0 1px #c7d2fe;
+}
+
+.jtoggle {
+    flex: 0 0 12px;
+    width: 12px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 9px;
+    line-height: 18px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform .15s;
+}
+
+.jtoggle.empty {
+    cursor: default;
+}
+
+.jnode:not(.collapsed) > .jline > .jtoggle {
+    transform: rotate(90deg);
+}
+
+.jkey {
+    color: #7c3aed;
+    cursor: pointer;
+}
+
+.jidx {
+    color: #94a3b8;
+    cursor: pointer;
+}
+
+.jval {
+    cursor: pointer;
+    white-space: pre-wrap;
+}
+
+.jstr { color: #16a34a; }
+.jnum { color: #ea580c; }
+.jbool { color: #2563eb; }
+.jnull { color: #94a3b8; font-style: italic; }
+.jpunc { color: #94a3b8; }
+
+.jmeta {
+    align-self: center;
+    margin-left: 4px;
+    font-size: 10px;
+    color: #cbd5e1;
+    flex-shrink: 0;
+}
+
+/* ---------- 右键菜单 ---------- */
+.ed-ctx {
+    position: fixed;
+    z-index: 500;
+    min-width: 140px;
+    padding: 4px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, .16);
+    font-size: 12px;
+    color: #334155;
+}
+
+.ed-ctx-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.ed-ctx-item .material-icons {
+    font-size: 14px !important;
+    color: inherit;
+}
+
+.ed-ctx-item:hover {
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.ed-ctx-item.danger:hover {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+.ed-ctx-sep {
+    height: 1px;
+    margin: 4px 2px;
+    background: #f1f5f9;
+}
+
+/* ---------- 节点编辑弹窗 ---------- */
+.ed-dialog {
+    position: absolute;
+    inset: 0;
+    z-index: 480;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: rgba(15, 23, 42, .28);
+}
+
+.ed-dialog.hidden {
+    display: none !important;
+}
+
+.ed-dialog-box {
+    width: 100%;
+    max-width: 320px;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .24);
+}
+
+.ed-dialog-title {
+    flex-shrink: 0;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.ed-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    overflow-y: auto;
+}
+
+.ed-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.ed-field.hidden {
+    display: none !important;
+}
+
+.ed-field > span {
+    font-weight: 500;
+}
+
+.ed-input,
+.ed-select {
+    width: 100%;
+    padding: 5px 7px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    outline: none;
+    font-size: 12px;
+    font-family: inherit;
+    color: #334155;
+    background: #fff;
+}
+
+.ed-input:focus,
+.ed-select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, .1);
+}
+
+textarea.ed-input {
+    min-height: 62px;
+    resize: vertical;
+    font-family: ui-monospace, Consolas, monospace;
+}
+
+.ed-dialog-error {
+    font-size: 11px;
+    color: #ef4444;
+    word-break: break-all;
+}
+
+.ed-dialog-footer {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 10px 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.ed-btn {
+    padding: 5px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.ed-btn:hover {
+    background: #cbd5e1;
+}
+
+.ed-btn.primary {
+    background: #6366f1;
+    color: #fff;
+}
+
+.ed-btn.primary:hover {
+    background: #4f46e5;
+}
+
+/* ---------- HTML 实时预览 ---------- */
+/* HTML 预览用沙箱 iframe 承载，避免用户样式污染侧边栏 */
+.ed-pane-body.no-pad {
+    padding: 0;
+    overflow: hidden;
+}
+
+.html-frame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #fff;
+}
+
+/* ---------- Markdown 预览 ---------- */
+.md-body {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #334155;
+    word-break: break-word;
+}
+
+.md-body > *:first-child {
+    margin-top: 0;
+}
+
+.md-body h1,
+.md-body h2,
+.md-body h3,
+.md-body h4,
+.md-body h5,
+.md-body h6 {
+    margin: 12px 0 6px;
+    line-height: 1.35;
+    color: #1e293b;
+}
+
+.md-body h1 {
+    font-size: 19px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.md-body h2 { font-size: 17px; }
+.md-body h3 { font-size: 15px; }
+.md-body h4, .md-body h5, .md-body h6 { font-size: 13px; }
+
+.md-body p {
+    margin: 6px 0;
+}
+
+.md-body ul,
+.md-body ol {
+    margin: 6px 0 6px 18px;
+    padding-left: 4px;
+}
+
+.md-body li {
+    margin: 2px 0;
+}
+
+.md-body blockquote {
+    margin: 6px 0;
+    padding: 4px 10px;
+    border-left: 3px solid #c7d2fe;
+    border-radius: 0 6px 6px 0;
+    background: #f8fafc;
+    color: #64748b;
+}
+
+.md-body blockquote p {
+    margin: 2px 0;
+}
+
+.md-body code {
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 11.5px;
+    color: #db2777;
+}
+
+.md-body pre.md-code {
+    margin: 8px 0;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #f8fafc;
+    overflow-x: auto;
+}
+
+.md-body pre.md-code code {
+    padding: 0;
+    background: transparent;
+    color: #334155;
+    font-size: 11.5px;
+    line-height: 1.6;
+}
+
+.md-body hr {
+    margin: 10px 0;
+    border: none;
+    border-top: 1px solid #e2e8f0;
+}
+
+.md-body table {
+    width: 100%;
+    margin: 8px 0;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.md-body th,
+.md-body td {
+    padding: 4px 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.md-body th {
+    background: #f8fafc;
+    font-weight: 600;
+}
+
+.md-body img {
+    max-width: 100%;
+    border-radius: 4px;
+}
+
+.md-body a {
+    color: #4f46e5;
+    text-decoration: none;
+    border-bottom: 1px dotted #a5b4fc;
+}
+
+.md-body del {
+    color: #94a3b8;
+}
+
+.md-task {
+    color: #6366f1;
+}
+
+/* 独立预览页（dev/editor-preview.html）用的兜底样式 */
+.ed-toast {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 8px 16px;
+    border-radius: 18px;
+    background: rgba(30, 41, 59, .9);
+    color: #fff;
+    font-size: 12px;
+    z-index: 900;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+}
+
+.ed-toast.show {
+    opacity: 1;
 }
