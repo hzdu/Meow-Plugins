@@ -1881,6 +1881,12 @@
         return KNOWN_TAGS.indexOf(n) !== -1 || /^h[1-6]$/.test(n);
     }
 
+    // [type=email] → 给没加引号的值补上引号（已经是引号的保持原样）
+    function normalizeAttrs(raw) {
+        return String(raw).replace(/([A-Za-z_:][-A-Za-z0-9_:.]*)\s*=\s*([^\s"'][^\s>]*)/g,
+            (m, k, v) => k + '="' + v + '"');
+    }
+
     // 解析简写：tag#id.a.b[attr=val]{text}*n，支持 > 子级、+ 同级
     function parseAbbr(src) {
         let pos = 0;
@@ -1894,19 +1900,19 @@
             for (;;) {
                 const c = src[pos];
                 if (c === '#') {
-                    const m = /^#([A-Za-z0-9_:-]+)/.exec(src.slice(pos));
+                    const m = /^#([A-Za-z0-9_$:-]+)/.exec(src.slice(pos));
                     if (!m) return null;
                     node.id = m[1]; pos += m[0].length; continue;
                 }
                 if (c === '.') {
-                    const m = /^\.([A-Za-z0-9_:-]+)/.exec(src.slice(pos));
+                    const m = /^\.([A-Za-z0-9_$:-]+)/.exec(src.slice(pos));
                     if (!m) return null;
                     node.classes.push(m[1]); pos += m[0].length; continue;
                 }
                 if (c === '[') {
                     const e = src.indexOf(']', pos);
                     if (e === -1) return null;
-                    node.attrs = src.slice(pos + 1, e); pos = e + 1; continue;
+                    node.attrs = normalizeAttrs(src.slice(pos + 1, e)); pos = e + 1; continue;
                 }
                 if (c === '{') {
                     const e = src.indexOf('}', pos);
@@ -1946,18 +1952,25 @@
         return nodes;
     }
 
-    function renderAbbrNodes(nodes, depth, out) {
+    // 没写标签名时按父元素推断（ul>.item → li）
+    const IMPLIED_TAGS = {
+        ul: 'li', ol: 'li', dl: 'dt', table: 'tr', tbody: 'tr', thead: 'tr', tfoot: 'tr',
+        tr: 'td', select: 'option', optgroup: 'option', colgroup: 'col', map: 'area',
+        audio: 'source', video: 'source', picture: 'source', object: 'param'
+    };
+
+    function renderAbbrNodes(nodes, depth, out, parentTag) {
         nodes.forEach(n => {
             for (let r = 0; r < n.repeat; r++) {
-                renderAbbrNode(n, depth, n.repeat > 1 ? String(r + 1) : '', out);
+                renderAbbrNode(n, depth, n.repeat > 1 ? String(r + 1) : '', out, parentTag);
             }
         });
     }
 
-    function renderAbbrNode(n, depth, rep, out) {
+    function renderAbbrNode(n, depth, rep, out, parentTag) {
         const sub = s => String(s == null ? '' : s).replace(/\$/g, rep || '');
-        const pad = '  '.repeat(depth);
-        const tag = n.name && n.name !== '!' ? n.name : 'div';
+        const pad = out.pad + '  '.repeat(depth);
+        const tag = n.name && n.name !== '!' ? n.name : (IMPLIED_TAGS[String(parentTag || '').toLowerCase()] || 'div');
         if (n.name === '!') {
             out.text += (out.text ? '\n' : '') + sub(BUILTIN_SNIPPETS[0].body);
             return;
@@ -1971,7 +1984,7 @@
         out.text += '<' + tag + attrs + '>';
         if (isVoid) { if (n.text !== null) out.text += sub(n.text); return; }
         if (n.children.length) {
-            renderAbbrNodes(n.children, depth + 1, out);
+            renderAbbrNodes(n.children, depth + 1, out, tag);
             out.text += '\n' + pad + '</' + tag + '>';
         } else if (n.text !== null) {
             out.text += sub(n.text) + '</' + tag + '>';
@@ -1982,12 +1995,12 @@
         }
     }
 
-    // 展开简写；失败返回 null
-    function expandAbbreviation(abbr) {
+    // 展开简写；失败返回 null。basePad = 当前行的缩进，多行结果按它对齐
+    function expandAbbreviation(abbr, basePad) {
         const nodes = parseAbbr(abbr);
         if (!nodes) return null;
-        const out = { text: '', caret: -1 };
-        renderAbbrNodes(nodes, 0, out);
+        const out = { text: '', caret: -1, pad: String(basePad == null ? '' : basePad) };
+        renderAbbrNodes(nodes, 0, out, '');
         if (!out.text) return null;
         return out;
     }
@@ -2044,6 +2057,14 @@
         return isKnownTag(text);
     }
 
+    // 展开点所在行的缩进（多行展开时后续行跟着对齐）
+    function lineIndentBefore(ta, at) {
+        const v = ta.value;
+        const line = v.slice(v.lastIndexOf('\n', at - 1) + 1, at);
+        const m = /^[ \t]*/.exec(line);
+        return m ? m[0] : '';
+    }
+
     function expandSnippetAt(ta, abbr) {
         const snip = findSnippet(abbr.text);
         let text = '';
@@ -2054,7 +2075,7 @@
             text = ph.text;
             fields = ph.fields;
         } else {
-            const ex = expandAbbreviation(abbr.text);
+            const ex = expandAbbreviation(abbr.text, lineIndentBefore(ta, abbr.start));
             if (!ex) return false;
             text = ex.text;
             caret = ex.caret;
@@ -2062,8 +2083,11 @@
         const markAt = text.indexOf(SNIP_MARK);
         text = text.split(SNIP_MARK).join('');
         if (markAt !== -1) caret = markAt;
-        replaceRangeText(ta, abbr.start, abbr.end, text);
-        const base = abbr.start;
+        // 简写前面正好是 < 时一起吃掉，避免展开成 <<div></div>
+        let from = abbr.start;
+        if (ta.value.charAt(from - 1) === '<' && !findSnippet(abbr.text)) from--;
+        replaceRangeText(ta, from, abbr.end, text);
+        const base = from;
         if (fields.length) {
             setFields(ta, fields.map(f => ({ start: base + f.start, end: base + f.end })));
         } else if (caret !== -1) {
