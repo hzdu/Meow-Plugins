@@ -1,0 +1,85 @@
+name: Build and Release Extension
+
+on:
+  push:
+    branches:
+      - main  # 若默认分支为 master，请调整为 master
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Parse Latest Changelog from history.md
+        id: parse_changelog
+        run: |
+          python3 - << 'EOF'
+          import os
+          import re
+
+          with open('history.md', 'r', encoding='utf-8') as f:
+              lines = f.readlines()
+
+          # 匹配版本号格式：支持 19.1.1、18.10.31 或带 Markdown 标题符号（如 ## 19.1.1）
+          version_pattern = re.compile(r'^(?:#+\s*)?(\d+(?:\.\d+)+)\s*$')
+
+          version = None
+          body_lines = []
+          capturing = False
+
+          for line in lines:
+              match = version_pattern.match(line.strip())
+              if match:
+                  if not capturing:
+                      # 找到最顶部的最新版本号
+                      version = match.group(1)
+                      capturing = True
+                      continue
+                  else:
+                      # 遇到下一个版本号，停止解析
+                      break
+              elif capturing:
+                  body_lines.append(line)
+
+          body_text = "".join(body_lines).strip()
+
+          if not version:
+              raise ValueError("未在 history.md 中检测到有效的版本号！")
+
+          # 写入 GitHub Actions 环境变量与步骤输出
+          tag_name = f"v{version}"
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as gh_out:
+              gh_out.write(f"version={version}\n")
+              gh_out.write(f"tag_name={tag_name}\n")
+
+          with open('release_notes.txt', 'w', encoding='utf-8') as rn:
+              rn.write(body_text)
+
+          print(f"Detected Version: {version}")
+          print(f"Tag Name: {tag_name}")
+          EOF
+
+      - name: Package Extension (Exclude .md files)
+        run: |
+          # 打包所有文件，生成 Meow_<版本号>.zip，递归排除所有层级的 .md 文件及非发布内容
+          zip -r "Meow_${{ steps.parse_changelog.outputs.version }}.zip" . \
+            -x "*.md" \
+            -x "*/*.md" \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "release_notes.txt"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.parse_changelog.outputs.tag_name }}
+          name: Meow ${{ steps.parse_changelog.outputs.tag_name }}
+          body_path: release_notes.txt
+          files: Meow_${{ steps.parse_changelog.outputs.version }}.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
