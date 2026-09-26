@@ -443,8 +443,16 @@
         const input = scopeEl.querySelector('.ed-search-input');
         const prevBtn = scopeEl.querySelector('.ed-search-prev');
         const nextBtn = scopeEl.querySelector('.ed-search-next');
+        const clearBtn = scopeEl.querySelector('.ed-search-clear');
         const countEl = scopeEl.querySelector('.ed-search-count');
         const st = { query: '', matches: [], index: -1 };
+
+        // 输入框有内容时才显示清空按钮
+        // 注意：scopeEl 是整个 .ed-pane 面板而非 .ed-search 本身，必须用 closest 定位搜索栏容器
+        function syncClearBtn() {
+            const box = (clearBtn || input).closest('.ed-search');
+            if (box) box.classList.toggle('has-query', !!input.value);
+        }
 
         function updateCount() {
             if (!st.query) { countEl.textContent = ''; countEl.classList.remove('no-hit'); return; }
@@ -458,6 +466,7 @@
         }
 
         function run(opts) {
+            syncClearBtn();
             recompute();
             updateCount();
             handlers.onUpdate(st, opts || {});
@@ -491,6 +500,12 @@
         });
         prevBtn.addEventListener('click', () => step(-1));
         nextBtn.addEventListener('click', () => step(1));
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                st.clear();
+                input.focus();
+            });
+        }
 
         st.refresh = () => run({ scroll: false });
         st.refreshWithScroll = () => run({ scroll: true });
@@ -507,6 +522,7 @@
             st.query = '';
             st.matches = [];
             st.index = -1;
+            syncClearBtn();
             updateCount();
             handlers.onUpdate(st, { scroll: false });
         };
@@ -2288,6 +2304,30 @@
     }
 
     // ================== DOM 构建 ==================
+    // Markdown 快捷插入按钮条（仅 Markdown 编辑器工具栏中渲染）
+    const MD_INSERT_BAR =
+        '<div class="ed-insert-bar" title="Markdown 快捷插入">' +
+        '  <button type="button" class="ed-mini-btn" data-md="h1" title="一级标题 #"><span class="md-glyph">H1</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="h2" title="二级标题 ##"><span class="md-glyph">H2</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="h3" title="三级标题 ###"><span class="md-glyph">H3</span></button>' +
+        '  <span class="ed-insert-sep"></span>' +
+        '  <button type="button" class="ed-mini-btn" data-md="bold" title="粗体 **"><span class="material-icons">format_bold</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="italic" title="斜体 *"><span class="material-icons">format_italic</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="strike" title="删除线 ~~"><span class="material-icons">format_strikethrough</span></button>' +
+        '  <span class="ed-insert-sep"></span>' +
+        '  <button type="button" class="ed-mini-btn" data-md="icode" title="行内代码 `"><span class="material-icons">code</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="codeblock" title="代码块 ```"><span class="material-icons">data_object</span></button>' +
+        '  <span class="ed-insert-sep"></span>' +
+        '  <button type="button" class="ed-mini-btn" data-md="link" title="链接 [文字](URL)"><span class="material-icons">link</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="image" title="图片 ![描述](URL)"><span class="material-icons">image</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="table" title="表格"><span class="material-icons">table_chart</span></button>' +
+        '  <span class="ed-insert-sep"></span>' +
+        '  <button type="button" class="ed-mini-btn" data-md="ul" title="无序列表 -"><span class="material-icons">format_list_bulleted</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="ol" title="有序列表 1."><span class="material-icons">format_list_numbered</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="quote" title="引用 >"><span class="material-icons">format_quote</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="hr" title="分隔线 ---"><span class="material-icons">remove</span></button>' +
+        '</div>';
+
     // 每种编辑器的差异部分（搜索占位符、工具栏动作、下屏内容）
     const PANE_CONF = {
         json: {
@@ -2315,6 +2355,7 @@
             tabindex: '',
             bodyClass: '',
             bodyInner: '<div class="md-body"></div>',
+            insertBar: MD_INSERT_BAR,
             actions:
                 '<button type="button" class="ed-mini-btn" data-act="copy" title="复制 Markdown 源码"><span class="material-icons">content_copy</span></button>' +
                 '<button type="button" class="ed-mini-btn" data-act="copyhtml" title="复制预览 HTML"><span class="material-icons">code</span></button>' +
@@ -2344,13 +2385,14 @@
             '<div class="ed-search">' +
             '  <span class="material-icons ed-search-icon">search</span>' +
             '  <input type="text" class="ed-search-input" spellcheck="false" placeholder="' + cfg.searchPlaceholder + '">' +
+            '  <button type="button" class="ed-mini-btn ed-search-clear" title="清空搜索（Esc）"><span class="material-icons">close</span></button>' +
             '  <span class="ed-search-count"></span>' +
             '  <button type="button" class="ed-mini-btn ed-search-prev" title="上一个（Shift+Enter）"><span class="material-icons">keyboard_arrow_up</span></button>' +
             '  <button type="button" class="ed-mini-btn ed-search-next" title="下一个（Enter）"><span class="material-icons">keyboard_arrow_down</span></button>' +
             '</div>';
 
         return '<section class="ed-pane' + cfg.hidden + '" data-pane="' + kind + '">' +
-            '<div class="ed-toolbar">' + searchBar + '<div class="ed-actions">' + cfg.actions + '</div></div>' +
+            '<div class="ed-toolbar">' + searchBar + (cfg.insertBar || '') + '<div class="ed-actions">' + cfg.actions + '</div></div>' +
             '<div class="ed-split">' +
             '  <div class="ed-cell ed-cell-top">' +
             '    <div class="code-area' + (cfg.gutter ? ' has-gutter' : '') + '">' +
@@ -2772,7 +2814,106 @@
             });
         });
 
+        // Markdown 快捷插入按钮
+        const insertBar = paneEl.querySelector('.ed-insert-bar');
+        if (insertBar) {
+            insertBar.querySelectorAll('[data-md]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    mdQuickInsert(ta, btn.dataset.md);
+                    state.md.text = ta.value;
+                    dom.md.search.syncFromText();
+                    renderMarkdown({});
+                    scheduleSave();
+                    ta.focus();
+                });
+            });
+        }
+
         initSplitter('md', dom.md);
+    }
+
+    // ================== Markdown 快捷插入 ==================
+    // 直接以字符串方式替换 [start, end) 区间。
+    // 不用 execCommand/insertAtCaret：点击工具栏按钮时 textarea 已失焦，
+    // Chrome 此时 execCommand('insertText') 只插入不替换选区，会把行内容复制一遍。
+    function mdReplaceRange(ta, start, end, text, selStart, selEnd) {
+        const sy = ta.scrollTop;
+        ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
+        if (sy) ta.scrollTop = sy;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        try {
+            ta.selectionStart = (typeof selStart === 'number') ? selStart : start + text.length;
+            ta.selectionEnd = (typeof selEnd === 'number') ? selEnd : start + text.length;
+        } catch (e) { /* 忽略 */ }
+    }
+
+    // 展开 ${n:默认值} 占位符模板：插入后把选区落在第 1 个占位符内容上，方便直接输入替换
+    function mdExpandInsert(ta, template) {
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        let out = '';
+        let first = null;              // 第 1 个占位符在插入文本中的 [start, end]
+        let idx = 0;
+        const re = /\$\{(\d+)(?::([^}]*))?\}/g;
+        let m;
+        while ((m = re.exec(template)) !== null) {
+            out += template.slice(idx, m.index);
+            const def = m[2] != null ? m[2] : '';
+            if (!first) first = [out.length, out.length + def.length];
+            out += def;
+            idx = m.index + m[0].length;
+        }
+        out += template.slice(idx);
+        const selA = start + (first ? first[0] : out.length);
+        const selB = start + (first ? first[1] : out.length);
+        mdReplaceRange(ta, start, end, out, selA, selB);
+    }
+
+    // 行首前缀类插入（标题/列表/引用）：给当前行（或选中的每一行）加前缀
+    function mdPrefixLines(ta, prefix) {
+        const value = ta.value;
+        const lineStart = value.lastIndexOf('\n', ta.selectionStart - 1) + 1;
+        const nl = value.indexOf('\n', ta.selectionEnd);
+        const blockEnd = nl === -1 ? value.length : nl;
+        const block = value.slice(lineStart, blockEnd);
+        const prefixed = block.split('\n').map(l => prefix + l).join('\n');
+        mdReplaceRange(ta, lineStart, blockEnd, prefixed, lineStart, lineStart + prefixed.length);
+    }
+
+    // 包裹类插入（粗体/斜体等）：有选区时包裹选区，否则插入占位模板并选中占位文字
+    function mdWrapSelection(ta, mark, ph) {
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        if (start !== end) {
+            const sel = ta.value.slice(start, end);
+            const innerA = start + mark.length;
+            const innerB = start + mark.length + sel.length;
+            mdReplaceRange(ta, start, end, mark + sel + mark, innerA, innerB);
+        } else {
+            mdExpandInsert(ta, mark + ph + mark);
+        }
+    }
+
+    function mdQuickInsert(ta, kind) {
+        switch (kind) {
+            case 'h1': mdPrefixLines(ta, '# '); break;
+            case 'h2': mdPrefixLines(ta, '## '); break;
+            case 'h3': mdPrefixLines(ta, '### '); break;
+            case 'bold': mdWrapSelection(ta, '**', '${1:粗体文字}'); break;
+            case 'italic': mdWrapSelection(ta, '*', '${1:斜体文字}'); break;
+            case 'strike': mdWrapSelection(ta, '~~', '${1:删除线文字}'); break;
+            case 'icode': mdWrapSelection(ta, '`', '${1:代码}'); break;
+            case 'link': mdExpandInsert(ta, '[${1:链接文字}](${2:https://})'); break;
+            case 'image': mdExpandInsert(ta, '![${1:图片描述}](${2:图片URL})'); break;
+            case 'codeblock': mdExpandInsert(ta, '```js\n${1:代码}\n```'); break;
+            case 'table':
+                mdExpandInsert(ta, '| ${1:表头} | 表头 | 表头 |\n| --- | --- | --- |\n| 内容 | 内容 | 内容 |\n| 内容 | 内容 | 内容 |');
+                break;
+            case 'ul': mdPrefixLines(ta, '- '); break;
+            case 'ol': mdPrefixLines(ta, '1. '); break;
+            case 'quote': mdPrefixLines(ta, '> '); break;
+            case 'hr': mdExpandInsert(ta, '\n\n---\n\n'); break;
+        }
     }
 
     // ================== 输入提示下拉框（HTML / CSS3 / JS） ==================

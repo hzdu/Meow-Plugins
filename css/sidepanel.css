@@ -5892,6 +5892,61 @@ border-color: #16a34a;
     font-size: 16px !important;
 }
 
+/* 清空搜索按钮：搜索框有内容时才显示 */
+.ed-search-clear {
+    display: none;
+    width: 18px;
+    height: 18px;
+}
+
+.ed-search.has-query .ed-search-clear {
+    display: flex;
+}
+
+.ed-search-clear .material-icons {
+    font-size: 14px !important;
+    color: #94a3b8;
+}
+
+.ed-search-clear:hover .material-icons {
+    color: #4f46e5;
+}
+
+/* Markdown 快捷插入按钮条（工具栏内独占一行，窄屏横向滚动） */
+.ed-insert-bar {
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.ed-insert-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.ed-insert-bar .ed-mini-btn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 20px;
+}
+
+.md-glyph {
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.ed-insert-sep {
+    flex-shrink: 0;
+    width: 1px;
+    height: 14px;
+    margin: 0 2px;
+    background: #e2e8f0;
+}
+
 .ed-actions {
     display: flex;
     align-items: center;
