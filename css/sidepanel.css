@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+/* 注意：这里禁止使用 @import 引入远程字体（如 fonts.googleapis.com）。
+   @import 会阻塞本文件的 CSSOM 构建，进而阻塞首屏渲染；Google Fonts 在部分网络
+   环境下连接会长时间挂起，这正是侧边栏第一次打开白屏的主因之一。
+   Roboto 现由 js/cdn-styles.js 异步注入，未加载完成时自动回退到系统字体。 */
 
 /* 火焰流动边框 — 动画角度变量 */
 @property --fire-angle {
@@ -16,7 +19,10 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Roboto', sans-serif;
+    /* Roboto 由 js/cdn-styles.js 异步加载；加载前/失败时回退到系统字体，
+       保证首屏一定可用可读（不再依赖远程字体的到达时间）。 */
+    font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
 }
 
 body {
@@ -220,6 +226,34 @@ padding-left: 30px;
 
 .text-btn:hover {
     color: #ef4444;
+}
+
+/* 工具栏里的纯图标按钮（如「稍后阅读」的清空全部 / 垃圾桶图标）。
+   说明文字走原生 title，尺寸做得比 .icon-btn(28px) 小，避免撑高这条提示栏。 */
+.icon-only-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: none;
+    color: #94a3b8;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.icon-only-btn .fa-regular {
+    font-size: 14px;
+}
+
+/* 破坏性操作：悬停变红，与原文字按钮的悬停反馈保持一致 */
+.icon-only-btn:hover {
+    color: #ef4444;
+    background: #fee2e2;
 }
 
 /* === 列表区域 === */
@@ -819,7 +853,7 @@ border-top: 1px dashed #f1f5f9;
     font-family: monospace;
 }
 
-.ip-copy-btn.material-icons {
+.ip-copy-btn.mi {
     font-size: 11px;
     color: #cbd5e1;
     cursor: pointer;
@@ -925,7 +959,7 @@ border-top: 1px dashed #f1f5f9;
     border-color: #6366f1;
 }
 
-.icon-btn .material-icons {
+.icon-btn .mi {
     font-size: 16px;
 }
 
@@ -1063,7 +1097,7 @@ display: block;
     background: #f8fafc;
 }
 
-.drop-zone .material-icons {
+.drop-zone .mi {
     font-size: 24px;
     margin-bottom: 4px;
 }
@@ -1145,7 +1179,7 @@ display: block;
     color: #fca5a5;
 }
 
-.lb-btn .material-icons {
+.lb-btn .mi {
     font-size: 20px;
 }
 
@@ -1364,7 +1398,7 @@ display: block;
     font-weight: 600;
 }
 
-.full-cat-item .material-icons {
+.full-cat-item .mi {
     font-size: 16px !important;
     margin-top: 4px;
 }
@@ -1407,13 +1441,23 @@ display: block;
     display: none !important;
 }
 
+/* === 图标基础 ===
+   全部图标已统一为 Font Awesome Pro 线框风格（fa-regular），由 js/cdn-styles.js
+   异步加载。.mi 是原先 .material-icons 的替代类名，仅承担尺寸/颜色/布局职责，
+   字形由 fa-* 类提供。
+   --fa-width 默认 1.25em，而 Material Icons 的图标宽度就是 1em；这里统一成 1em，
+   避免图标统一替换后各处间距、按钮宽度发生位移。 */
+.mi {
+    --fa-width: 1em;
+}
+
 .empty-state {
     text-align: center;
     color: #94a3b8;
     margin-top: 40px;
 }
 
-.empty-state .material-icons {
+.empty-state .mi {
     font-size: 48px;
     margin-bottom: 8px;
     color: #e2e8f0;
@@ -2264,7 +2308,7 @@ display: block;
     background: #eef2ff;
 }
 
-.ai-tag-add-btn .material-icons {
+.ai-tag-add-btn .mi {
     font-size: 18px;
 }
 
@@ -2407,7 +2451,7 @@ display: block;
     gap: 6px;
 }
 
-.fa-card-actions .material-icons,
+.fa-card-actions .mi,
 .fa-card-actions .fa-xmark {
     font-size: 16px;
     color: #cbd5e1;
@@ -2415,7 +2459,7 @@ display: block;
     transition: color 0.2s;
 }
 
-.fa-card-actions .material-icons:hover,
+.fa-card-actions .mi:hover,
 .fa-card-actions .fa-xmark:hover {
     color: #6366f1;
 }
@@ -2630,7 +2674,7 @@ display: block;
     position: relative;
     overflow: hidden;
 }
-.ai-card .material-icons,
+.ai-card .mi,
 .ai-card .fa-regular {
     font-size: 12px;
     vertical-align: middle;
@@ -2857,7 +2901,7 @@ display: block;
     margin-top: 40px;
 }
 
-.ai-provider-empty .material-icons {
+.ai-provider-empty .mi {
     font-size: 48px;
     color: #e2e8f0;
     margin-bottom: 8px;
@@ -3098,7 +3142,7 @@ display: block;
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 }
 
-.ai-model-select-search .material-icons {
+.ai-model-select-search .mi {
     font-size: 16px;
     color: #94a3b8;
     flex-shrink: 0;
@@ -3316,8 +3360,8 @@ display: block;
     background: #450a0a;
 }
 
-.dark .ai-provider-empty .material-icons,
-.theme-dark .ai-provider-empty .material-icons {
+.dark .ai-provider-empty .mi,
+.theme-dark .ai-provider-empty .mi {
     color: #334155;
 }
 
@@ -3527,7 +3571,7 @@ display: block;
     flex-shrink: 0;
 }
 
-.srv-cat-tab .material-icons,
+.srv-cat-tab .mi,
 .srv-cat-tab .fa-folder,
 .srv-cat-tab .fa-folder-open {
     font-size: 15px;
@@ -3555,7 +3599,7 @@ display: block;
     color: #6366f1;
 }
 
-.srv-cat-tab.active .material-icons,
+.srv-cat-tab.active .mi,
 .srv-cat-tab.active .fa-folder,
 .srv-cat-tab.active .fa-folder-open {
     color: #f59e0b;
@@ -3665,7 +3709,7 @@ display: block;
     flex-shrink: 0;
 }
 
-.srv-cat-list-actions .material-icons {
+.srv-cat-list-actions .mi {
     font-size: 16px;
     color: #cbd5e1;
     cursor: pointer;
@@ -3673,7 +3717,7 @@ display: block;
     padding: 2px;
 }
 
-.srv-cat-list-actions .material-icons:hover {
+.srv-cat-list-actions .mi:hover {
     color: #6366f1;
 }
 
@@ -3854,7 +3898,7 @@ display: block;
     flex-shrink: 0;
 }
 
-.srv-card-actions .material-icons,
+.srv-card-actions .mi,
 .srv-card-actions .fa-xmark {
     font-size: 16px;
     color: #cbd5e1;
@@ -3862,7 +3906,7 @@ display: block;
     transition: color 0.2s;
 }
 
-.srv-card-actions .material-icons:hover,
+.srv-card-actions .mi:hover,
 .srv-card-actions .fa-xmark:hover {
     color: #6366f1;
 }
@@ -4188,7 +4232,7 @@ display: block;
     flex-shrink: 0;
 }
 
-.srv-ws-item-actions .material-icons:hover {
+.srv-ws-item-actions .mi:hover {
     color: #6366f1 !important;
 }
 
@@ -4558,7 +4602,7 @@ display: block;
     flex-shrink: 0;
 }
 
-.srv-ws-edit-actions .material-icons:hover {
+.srv-ws-edit-actions .mi:hover {
     color: #6366f1 !important;
 }
 
@@ -4668,16 +4712,16 @@ display: block;
     border-color: #475569;
 }
 
-.dark .srv-card-actions .material-icons,
+.dark .srv-card-actions .mi,
 .dark .srv-card-actions .fa-xmark,
-.theme-dark .srv-card-actions .material-icons,
+.theme-dark .srv-card-actions .mi,
 .theme-dark .srv-card-actions .fa-xmark {
     color: #475569;
 }
 
-.dark .srv-card-actions .material-icons:hover,
+.dark .srv-card-actions .mi:hover,
 .dark .srv-card-actions .fa-xmark:hover,
-.theme-dark .srv-card-actions .material-icons:hover,
+.theme-dark .srv-card-actions .mi:hover,
 .theme-dark .srv-card-actions .fa-xmark:hover {
     color: #6366f1;
 }
@@ -4955,11 +4999,11 @@ border-color: #16a34a;
     text-decoration: none;
 }
 
-.srv-provider-link .material-icons {
+.srv-provider-link .mi {
     transition: color 0.2s;
 }
 
-.srv-provider-link:hover .material-icons {
+.srv-provider-link:hover .mi {
     color: #0891b2 !important;
 }
 
@@ -5032,8 +5076,8 @@ border-color: #16a34a;
 }
 
 /* 暗色：供应商链接 */
-.dark .srv-provider-link:hover .material-icons,
-.theme-dark .srv-provider-link:hover .material-icons {
+.dark .srv-provider-link:hover .mi,
+.theme-dark .srv-provider-link:hover .mi {
     color: #06b6d4 !important;
 }
 
@@ -5888,7 +5932,7 @@ border-color: #16a34a;
     background: #c7d2fe;
 }
 
-.ed-mini-btn .material-icons {
+.ed-mini-btn .mi {
     font-size: 16px !important;
 }
 
@@ -5903,12 +5947,12 @@ border-color: #16a34a;
     display: flex;
 }
 
-.ed-search-clear .material-icons {
+.ed-search-clear .mi {
     font-size: 14px !important;
     color: #94a3b8;
 }
 
-.ed-search-clear:hover .material-icons {
+.ed-search-clear:hover .mi {
     color: #4f46e5;
 }
 
@@ -6571,7 +6615,7 @@ mark.ed-hit.ed-hit-current {
     white-space: nowrap;
 }
 
-.ed-ctx-item .material-icons {
+.ed-ctx-item .mi {
     font-size: 14px !important;
     color: inherit;
 }

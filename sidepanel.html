@@ -6,12 +6,16 @@
     <title>Meow Sidepanel</title>
     <link rel="stylesheet" href="css/sidepanel.css">
     <link rel="stylesheet" href="css/meow-confirm.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!-- Font Awesome Pro 7.3.0 (github.com/hzdu/fontawesome-pro) -->
-    <link rel="stylesheet" href="https://cdn.jsdmirror.com/cnb/ifoyar/fontawesome-pro@main/releases/v7.3.0/css/fontawesome.css">
-    <link rel="stylesheet" href="https://cdn.jsdmirror.com/cnb/ifoyar/fontawesome-pro@main/releases/v7.3.0/css/regular.css">
-    <link rel="stylesheet" href="https://cdn.jsdmirror.com/cnb/ifoyar/fontawesome-pro@main/releases/v7.3.0/css/solid.css">
-    <link rel="stylesheet" href="https://cdn.jsdmirror.com/cnb/ifoyar/fontawesome-pro@main/releases/v7.3.0/css/brands.css">
+    <!-- 远程图标 / 字体样式（Material Icons、Roboto、Font Awesome Pro 7.3.0）
+         必须交给 js/cdn-styles.js 异步注入，禁止在这里写成 <link rel="stylesheet">。
+         原因：<head> 中的远程样式是渲染阻塞资源，而这些 CDN 在长时间未打开侧边栏、
+         缓存失效后的首次请求可能长时间挂起 —— 那会造成侧边栏第一次打开白屏，
+         要第二次、第三次打开（缓存已就绪）才能显示出来。
+         详见 js/cdn-styles.js 顶部注释。 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdmirror.com" crossorigin>
+    <script src="js/cdn-styles.js"></script>
 </head>
 <body tabindex="-1">
     <div class="container">
@@ -52,7 +56,7 @@
                     <i class="fa-regular fa-wrench"></i>
                 </button>
                 <button class="tab-btn" data-target="editor" title="编辑器">
-                    <span class="material-icons" style="font-size:16px;">data_object</span>
+                    <span class="mi fa-regular fa-brackets-curly" style="font-size:16px;"></span>
                 </button>
                 <button class="tab-btn" data-target="servers" title="服务器管理">
                     <i class="fa-regular fa-cloud"></i>
@@ -62,24 +66,24 @@
             <!-- === 搜索区域 === -->
             <div id="search-group-prompts" class="search-wrapper hidden">
                 <button id="manage-cat-btn" class="icon-btn" data-i18n-title="lbl_category_manage" title="管理分类" style="flex-shrink:0;"><i class="fa-regular fa-folder-tree"></i></button>
-                <span class="material-icons search-icon-overlay">search</span>
+                <span class="mi search-icon-overlay fa-regular fa-magnifying-glass"></span>
                 <input type="text" id="search-prompts-input" class="search-input" data-i18n-ph="sp_search_p_placeholder" placeholder="搜索提示词...">
             </div>
             
             <div id="search-group-scratch" class="search-wrapper hidden">
-                <span class="material-icons search-icon-overlay">search</span>
+                <span class="mi search-icon-overlay fa-regular fa-magnifying-glass"></span>
                 <input type="text" id="search-scratch-input" class="search-input" data-i18n-ph="sp_search_s_placeholder" placeholder="搜索暂存内容...">
             </div>
 
             <div id="search-group-readlater" class="search-wrapper hidden">
-                <span class="material-icons search-icon-overlay">search</span>
+                <span class="mi search-icon-overlay fa-regular fa-magnifying-glass"></span>
                 <input type="text" id="search-readlater-input" class="search-input" data-i18n-ph="sp_search_r_placeholder" placeholder="搜索标题或链接...">
             </div>
 
             <div class="filter-wrapper hidden" style="display: flex; align-items: center; gap: 4px; overflow: hidden;">
                 <div class="filter-section" id="sp-filters" style="flex: 1;"></div>
                 <button id="open-full-cat-btn" class="icon-btn" style="border:none; background:transparent; flex-shrink:0; cursor:pointer;" title="所有分类">
-                    <span class="material-icons">more_vert</span>
+                    <span class="mi fa-regular fa-ellipsis-vertical"></span>
                 </button>
             </div>
             
@@ -90,7 +94,10 @@
 
             <div class="scratchpad-tools hidden" id="rl-tools">
                 <span class="tool-info" data-i18n="sp_tool_hint_rl">Alt+S 快速添加</span>
-                <button id="rl-clear-all" class="text-btn" data-i18n="btn_clear_all">清空全部</button>
+                <!-- 清空全部：图标按钮，鼠标悬停用原生 title 显示「清空全部」。
+                     注意这里必须用 data-i18n-title 而不是 data-i18n ——
+                     i18n.js 对 data-i18n 是 el.innerHTML = t(key)，会把图标覆盖成文字。 -->
+                <button id="rl-clear-all" class="icon-only-btn" data-i18n-title="btn_clear_all" title="清空全部" aria-label="清空全部"><i class="fa-regular fa-trash-can"></i></button>
             </div>
         </div>
 
@@ -99,17 +106,17 @@
                 <div class="ai-tags-bar">
                     <div id="ai-tags-container" class="ai-tags-container"></div>
                     <button id="ai-tag-all-btn" class="ai-tag-add-btn" title="全部AI服务" style="display:none;">
-                        <span class="material-icons">apps</span>
+                        <span class="mi fa-regular fa-grid"></span>
                     </button>
                     <button id="ai-tag-add-btn" class="ai-tag-add-btn" title="添加AI服务">
-                        <span class="material-icons">add</span>
+                        <span class="mi fa-regular fa-plus"></span>
                     </button>
                 </div>
                 <div id="ai-iframe-wrapper" class="ai-iframe-wrapper hidden">
                     <iframe id="ai-iframe" class="ai-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" allowfullscreen></iframe>
                 </div>
                 <div id="ai-empty" class="empty-state">
-                    <span class="material-icons">smart_toy</span>
+                    <span class="mi fa-regular fa-robot"></span>
                     <p>还没有AI服务<br>点击右上角 + 添加你常用的AI</p>
                 </div>
             </div>
@@ -117,7 +124,7 @@
             <div id="view-prompts" class="view-content hidden">
                 <ul id="sp-list" class="prompt-list"></ul>
                 <div id="sp-empty" class="empty-state hidden">
-                    <span class="material-icons">inbox</span>
+                    <span class="mi fa-regular fa-inbox"></span>
                     <p data-i18n="sp_empty_prompts">这里空空如也<br>快去添加你的第一个 AI 咒语吧</p>
                 </div>
             </div>
@@ -125,7 +132,7 @@
             <div id="view-scratchpad" class="view-content hidden">
                 <ul id="scratch-list" class="scratch-list"></ul>
                 <div id="scratch-empty" class="empty-state hidden">
-                    <span class="material-icons">content_paste_off</span>
+                    <span class="mi fa-regular fa-paste"></span>
                     <p data-i18n="sp_empty_scratch">暂存板为空<br>在下方粘贴文本或图片</p>
                 </div>
             </div>
@@ -133,7 +140,7 @@
             <div id="view-readlater" class="view-content hidden">
                 <ul id="readlater-list" class="scratch-list"></ul>
                 <div id="readlater-empty" class="empty-state hidden">
-                    <span class="material-icons">bookmark_remove</span>
+                    <span class="mi fa-regular fa-bookmark"></span>
                     <p data-i18n="sp_empty_rl">没有稍后阅读<br>按 Alt+S 將目前網頁加入列表</p>
                 </div>
             </div>
@@ -142,15 +149,15 @@
             <div id="view-gallery" class="view-content hidden">
                 <div class="gallery-controls" id="gallery-controls">
                     <div class="ctrl-btn" id="gallery-select-all">
-                        <span class="material-icons" style="font-size:14px">done_all</span> 全选
+                        <span class="mi fa-regular fa-check-double" style="font-size:14px"></span> 全选
                     </div>
                     <div class="ctrl-btn delete-btn" id="gallery-bulk-delete">
-                        <span class="material-icons" style="font-size:14px">delete_forever</span> 删除选中 (<span id="gallery-select-count">0</span>)
+                        <span class="mi fa-regular fa-trash-can" style="font-size:14px"></span> 删除选中 (<span id="gallery-select-count">0</span>)
                     </div>
                 </div>
                 <div id="gallery-grid" class="gallery-grid"></div>
                 <div id="gallery-empty" class="empty-state hidden">
-                    <span class="material-icons">add_photo_alternate</span>
+                    <span class="mi fa-regular fa-image"></span>
                     <p data-i18n="sp_empty_gallery">暂无图片<br>Ctrl+V 粘贴或拖拽图片至下方</p>
                 </div>
             </div>
@@ -169,7 +176,7 @@
                         <div class="spinner"></div>
                     </div>
                     <div id="hot-empty" class="empty-state hidden" style="margin-top: 50px;">
-                        <span class="material-icons">search_off</span>
+                        <span class="mi fa-regular fa-magnifying-glass"></span>
                         <p data-i18n="hot_empty">暂无数据</p>
                     </div>
                 </div>
@@ -192,35 +199,35 @@
 
             <div id="view-tools" class="view-content">
                 <div class="tool-card collapsed" data-tool-id="tool-ip">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #4f46e5;">public</span> <span data-i18n="tool_ip_title">IP 信息</span> <a href="https://tool.chinaz.com" target="_blank" rel="noopener noreferrer" title="打开站长工具" class="tool-external-link" style="color:#6366f1;" onclick="event.stopPropagation();"><span class="material-icons" style="font-size: 15px; vertical-align: middle;">open_in_new</span></a> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-globe" style="font-size: 16px; color: #4f46e5;"></span> <span data-i18n="tool_ip_title">IP 信息</span> <a href="https://tool.chinaz.com" target="_blank" rel="noopener noreferrer" title="打开站长工具" class="tool-external-link" style="color:#6366f1;" onclick="event.stopPropagation();"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size: 15px; vertical-align: middle;"></span></a> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
                             <label class="sub-label" data-i18n="tool_ipinfo_key" style="flex-shrink:0;margin-bottom:0;">IPINFO密钥</label>
                             <input type="password" id="ipinfo-key-input" class="converter-input full-border" style="flex:1;min-width:0;" placeholder="免费版可留空">
-                            <button id="btn-ipinfo-key-save" class="filter-btn" style="flex-shrink:0;background:#e0e7ff; color:#4f46e5; border-color:#c7d2fe; font-weight:500; white-space:nowrap;"><span class="material-icons" style="font-size:14px; vertical-align:middle;">save</span> <span data-i18n="action_save">保存</span></button>
+                            <button id="btn-ipinfo-key-save" class="filter-btn" style="flex-shrink:0;background:#e0e7ff; color:#4f46e5; border-color:#c7d2fe; font-weight:500; white-space:nowrap;"><span class="mi fa-regular fa-floppy-disk" style="font-size:14px; vertical-align:middle;"></span> <span data-i18n="action_save">保存</span></button>
                         </div>
                         <div style="margin-bottom:8px;">
                             <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
                                 <label class="sub-label" data-i18n="tool_domain_label" style="flex-shrink:0;margin-bottom:0;">IP/域名查询</label>
                                 <input type="text" id="domain-input" class="converter-input full-border" style="flex:1;min-width:0;" placeholder="IP 或域名，如 1.2.3.4 / example.com">
-                                <button id="btn-domain-query" class="filter-btn" style="flex-shrink:0;background:#e0e7ff; color:#4f46e5; border-color:#c7d2fe; font-weight:500; white-space:nowrap;"><span class="material-icons" style="font-size:14px; vertical-align:middle;">search</span> <span data-i18n="action_query">查询</span></button>
+                                <button id="btn-domain-query" class="filter-btn" style="flex-shrink:0;background:#e0e7ff; color:#4f46e5; border-color:#c7d2fe; font-weight:500; white-space:nowrap;"><span class="mi fa-regular fa-magnifying-glass" style="font-size:14px; vertical-align:middle;"></span> <span data-i18n="action_query">查询</span></button>
                             </div>
                             <div id="domain-result" style="font-size:12px;color:#64748b;margin-top:4px;min-height:18px;"></div>
                         </div>
-                        <button id="btn-ip-query" class="filter-btn" style="width: 100%; background: #e0e7ff; color: #4f46e5; border-color: #c7d2fe; margin-bottom: 8px; font-weight: 500;"><span class="material-icons" style="font-size: 14px; vertical-align: middle;">search</span> <span data-i18n="action_query_net">查询本地网络信息</span></button>
+                        <button id="btn-ip-query" class="filter-btn" style="width: 100%; background: #e0e7ff; color: #4f46e5; border-color: #c7d2fe; margin-bottom: 8px; font-weight: 500;"><span class="mi fa-regular fa-magnifying-glass" style="font-size: 14px; vertical-align: middle;"></span> <span data-i18n="action_query_net">查询本地网络信息</span></button>
                         <div id="ip-result-area" class="ip-result-box hidden">
                             <div class="ip-group">
-                                <div class="ip-group-title"><span class="material-icons" style="font-size: 12px; color: #ef4444;">flag</span> <span data-i18n="ip_cn_title">国内 (CN)</span></div>
-                                <div class="ip-addr-wrapper"><div class="ip-addr" id="ip-cn-addr">--</div><span class="material-icons ip-copy-btn" id="btn-copy-cn-ip">content_copy</span></div>
-                                <div class="ip-addr-wrapper" id="ip-cn-ipv6-wrapper" style="display:none;"><div class="ip-addr" id="ip-cn-ipv6" style="font-size:11px;color:#8b5cf6;">--</div><span class="material-icons ip-copy-btn" id="btn-copy-cn-ipv6">content_copy</span></div>
+                                <div class="ip-group-title"><span class="mi fa-regular fa-flag" style="font-size: 12px; color: #ef4444;"></span> <span data-i18n="ip_cn_title">国内 (CN)</span></div>
+                                <div class="ip-addr-wrapper"><div class="ip-addr" id="ip-cn-addr">--</div><span class="mi ip-copy-btn fa-regular fa-copy" id="btn-copy-cn-ip"></span></div>
+                                <div class="ip-addr-wrapper" id="ip-cn-ipv6-wrapper" style="display:none;"><div class="ip-addr" id="ip-cn-ipv6" style="font-size:11px;color:#8b5cf6;">--</div><span class="mi ip-copy-btn fa-regular fa-copy" id="btn-copy-cn-ipv6"></span></div>
                                 <div class="ip-row"><span class="ip-label" data-i18n="ip_province">省份</span><span class="ip-val" id="ip-cn-pro">--</span></div>
                                 <div class="ip-row"><span class="ip-label" data-i18n="ip_city">城市</span><span class="ip-val" id="ip-cn-city">--</span></div>
                                 <div class="ip-row" style="display:none;"><span class="ip-label">代码</span><span class="ip-val" id="ip-cn-code">--</span></div>
                                 <div class="ip-row"><span class="ip-label" data-i18n="ip_isp">运营商</span><span class="ip-val" id="ip-cn-isp">--</span></div>
                             </div>
                             <div class="ip-group">
-                                <div class="ip-group-title"><span class="material-icons" style="font-size: 12px; color: #3b82f6;">language</span> <span data-i18n="ip_intl_title">海外 (Global)</span></div>
-                                <div class="ip-addr-wrapper"><div class="ip-addr" id="ip-intl-addr">--</div><span class="material-icons ip-copy-btn" id="btn-copy-intl-ip">content_copy</span></div>
+                                <div class="ip-group-title"><span class="mi fa-regular fa-globe" style="font-size: 12px; color: #3b82f6;"></span> <span data-i18n="ip_intl_title">海外 (Global)</span></div>
+                                <div class="ip-addr-wrapper"><div class="ip-addr" id="ip-intl-addr">--</div><span class="mi ip-copy-btn fa-regular fa-copy" id="btn-copy-intl-ip"></span></div>
                                 <div class="ip-row"><span class="ip-label" data-i18n="ip_country">国家</span><span class="ip-val" id="ip-intl-country">--</span></div>
                                 <div class="ip-row"><span class="ip-label" data-i18n="ip_city">城市</span><span class="ip-val" id="ip-intl-city">--</span></div>
                                 <div class="ip-row"><span class="ip-label" data-i18n="ip_isp">运营商</span><span class="ip-val" id="ip-intl-isp">--</span></div>
@@ -230,22 +237,22 @@
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-fuel">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #f59e0b;">local_gas_station</span> <span data-i18n="tool_fuel_title">实时油价</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-gas-pump" style="font-size: 16px; color: #f59e0b;"></span> <span data-i18n="tool_fuel_title">实时油价</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
-                            <span class="material-icons" style="font-size: 18px; color: #f59e0b; flex-shrink: 0;">location_on</span>
+                            <span class="mi fa-regular fa-location-dot" style="font-size: 18px; color: #f59e0b; flex-shrink: 0;"></span>
                             <input type="text" id="fuel-region-input" class="converter-input full-border" style="flex: 1;" placeholder="输入地区，如：韶关曲江" value="韶关曲江" data-i18n-ph="fuel_ph_region">
-                            <button id="btn-fuel-query" class="filter-btn" style="flex-shrink: 0; background: #fef3c7; color: #b45309; border-color: #fcd34d; font-weight: 500;"><span class="material-icons" style="font-size: 14px; vertical-align: middle;">search</span> <span data-i18n="fuel_action_query">查询</span></button>
+                            <button id="btn-fuel-query" class="filter-btn" style="flex-shrink: 0; background: #fef3c7; color: #b45309; border-color: #fcd34d; font-weight: 500;"><span class="mi fa-regular fa-magnifying-glass" style="font-size: 14px; vertical-align: middle;"></span> <span data-i18n="fuel_action_query">查询</span></button>
                         </div>
                         <div id="fuel-result-area" class="fuel-result-box hidden">
-                            <div class="fuel-region-title"><span class="material-icons" style="font-size: 14px; color: #f59e0b;">location_on</span> <span id="fuel-region-name">--</span></div>
+                            <div class="fuel-region-title"><span class="mi fa-regular fa-location-dot" style="font-size: 14px; color: #f59e0b;"></span> <span id="fuel-region-name">--</span></div>
                             <div id="fuel-price-list" class="fuel-price-list"></div>
-                            <div class="fuel-updated"><span class="material-icons" style="font-size: 12px;">update</span> <span id="fuel-updated-time">--</span></div>
+                            <div class="fuel-updated"><span class="mi fa-regular fa-clock-rotate-left" style="font-size: 12px;"></span> <span id="fuel-updated-time">--</span></div>
                         </div>
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-exchange">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #0891b2;">currency_exchange</span> <span data-i18n="tool_exchange_title">实时汇率</span> <span class="material-icons" id="exchange-refresh-btn" data-i18n-title="exchange_refresh" title="刷新汇率" style="font-size: 15px; cursor: pointer; color: #0891b2; transition: all 0.3s;">refresh</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-money-bill-transfer" style="font-size: 16px; color: #0891b2;"></span> <span data-i18n="tool_exchange_title">实时汇率</span> <span class="mi fa-regular fa-arrows-rotate" id="exchange-refresh-btn" data-i18n-title="exchange_refresh" title="刷新汇率" style="font-size: 15px; cursor: pointer; color: #0891b2; transition: all 0.3s;"></span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <div class="exchange-input-row">
                             <input type="number" id="exchange-amount" class="converter-input full-border" style="flex: 1;" value="1" min="0" placeholder="金额" data-i18n-ph="exchange_ph_amount">
@@ -264,7 +271,7 @@
                             </select>
                         </div>
                         <div class="exchange-swap-row">
-                            <span class="material-icons exchange-swap-btn" id="exchange-swap-btn" data-i18n-title="exchange_swap" title="交换货币">swap_vert</span>
+                            <span class="mi exchange-swap-btn fa-regular fa-arrows-up-down" id="exchange-swap-btn" data-i18n-title="exchange_swap" title="交换货币"></span>
                         </div>
                         <div class="exchange-input-row" style="margin-bottom: 8px;">
                             <input type="text" id="exchange-result-val" class="converter-input full-border exchange-result-display" style="flex: 1;" readonly placeholder="换算结果" data-i18n-ph="exchange_ph_result">
@@ -283,10 +290,10 @@
                             </select>
                         </div>
                         <div id="exchange-rate-info" class="exchange-rate-info hidden">
-                            <span class="material-icons" style="font-size: 12px;">info_outline</span>
+                            <span class="mi fa-regular fa-circle-info" style="font-size: 12px;"></span>
                             <span id="exchange-rate-text">--</span>
                             <span class="exchange-divider">|</span>
-                            <span class="material-icons" style="font-size: 12px;">update</span>
+                            <span class="mi fa-regular fa-clock-rotate-left" style="font-size: 12px;"></span>
                             <span id="exchange-updated-time">--</span>
                         </div>
                         <div id="exchange-grid" class="exchange-grid hidden"></div>
@@ -294,20 +301,20 @@
                 </div>
 
                 <div class="tool-card collapsed" data-tool-id="tool-b64-text">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #64748b;">text_fields</span> <span data-i18n="tool_txt_title">Base64 文本</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-font" style="font-size: 16px; color: #64748b;"></span> <span data-i18n="tool_txt_title">Base64 文本</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <textarea id="b64-text-input" class="converter-input full-border" style="width:100%;height:250px;margin-bottom:8px;"></textarea><div style="display:flex;gap:8px;margin-bottom:8px;"><button id="btn-text-b64-encode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_encode">编码</button><button id="btn-text-b64-decode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_decode">解码</button><button id="btn-text-b64-clear" class="filter-btn" style="flex:0 0 60px;background:#f1f5f9;" data-i18n="action_clear">清空</button></div><textarea id="b64-text-output" class="converter-input full-border" style="width:100%;height:250px;background:#f8fafc;" readonly></textarea><button id="btn-text-b64-copy" class="filter-btn" style="width:100%;background:#f1f5f9;margin-top:4px;" data-i18n="msg_copied">复制结果</button>
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-img">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #0ea5e9;">image</span> <span data-i18n="tool_img_title">图片 / Base64</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-image" style="font-size: 16px; color: #0ea5e9;"></span> <span data-i18n="tool_img_title">图片 / Base64</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
-                        <div style="margin-bottom:15px;border-bottom:1px dashed #e2e8f0;padding-bottom:15px;"><label class="sub-label" data-i18n="tool_img_to_b64">图片转 Base64</label><div id="img-b64-drop-zone" class="tool-drop-zone"><span class="material-icons">add_photo_alternate</span> 点击/拖拽图片<input type="file" id="img-file-input" style="display:none;" accept="image/*"></div><textarea id="img-base64-output" class="converter-input full-border" style="width:100%;height:100px;margin-bottom:8px;" readonly></textarea><div style="display:flex;gap:8px;"><button id="btn-img-copy" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_copy">复制</button><button id="btn-img-clear" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_clear">清空</button></div></div>
+                        <div style="margin-bottom:15px;border-bottom:1px dashed #e2e8f0;padding-bottom:15px;"><label class="sub-label" data-i18n="tool_img_to_b64">图片转 Base64</label><div id="img-b64-drop-zone" class="tool-drop-zone"><span class="mi fa-regular fa-image"></span> 点击/拖拽图片<input type="file" id="img-file-input" style="display:none;" accept="image/*"></div><textarea id="img-base64-output" class="converter-input full-border" style="width:100%;height:100px;margin-bottom:8px;" readonly></textarea><div style="display:flex;gap:8px;"><button id="btn-img-copy" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_copy">复制</button><button id="btn-img-clear" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_clear">清空</button></div></div>
                         <div><label class="sub-label" data-i18n="tool_b64_to_img">Base64 转图片</label><textarea id="base64-img-input" class="converter-input full-border" style="width:100%;height:100px;margin-bottom:8px;"></textarea><div style="display:flex;gap:8px;margin-bottom:8px;"><button id="btn-base64-preview" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_preview">预览</button><button id="btn-base64-download" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_download">下载</button><button id="btn-base64-clear" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_clear">清空</button></div><div id="base64-preview-area" style="text-align:center;"><img id="base64-preview-img" style="max-width:100%;max-height:200px;display:none;border:1px solid #e2e8f0;"></div></div>
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-length">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #6366f1;">straighten</span> <span data-i18n="tool_len_title">长度换算</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-ruler" style="font-size: 16px; color: #6366f1;"></span> <span data-i18n="tool_len_title">长度换算</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <div class="converter-row">
                             <div class="converter-group">
@@ -324,9 +331,9 @@
                                 </select>
                             </div>
                             <div class="swap-group">
-                                <span class="material-icons swap-btn swap-values" title="交换数值">swap_vert</span>
-                                <span class="material-icons swap-btn swap-units" title="交换单位">compare_arrows</span>
-                                <span class="material-icons swap-btn swap-both" title="同时交换">sync_alt</span>
+                                <span class="mi swap-btn swap-values fa-regular fa-arrows-up-down" title="交换数值"></span>
+                                <span class="mi swap-btn swap-units fa-regular fa-right-left" title="交换单位"></span>
+                                <span class="mi swap-btn swap-both fa-regular fa-swap-arrows" title="同时交换"></span>
                             </div>
                             <div class="converter-group">
                                 <input type="number" id="len-input-2" class="converter-input">
@@ -345,7 +352,7 @@
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-weight">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #10b981;">scale</span> <span data-i18n="tool_wt_title">重量换算</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-scale-balanced" style="font-size: 16px; color: #10b981;"></span> <span data-i18n="tool_wt_title">重量换算</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <div class="converter-row">
                             <div class="converter-group">
@@ -361,9 +368,9 @@
                                 </select>
                             </div>
                             <div class="swap-group">
-                                <span class="material-icons swap-btn swap-values" title="交换数值">swap_vert</span>
-                                <span class="material-icons swap-btn swap-units" title="交换单位">compare_arrows</span>
-                                <span class="material-icons swap-btn swap-both" title="同时交换">sync_alt</span>
+                                <span class="mi swap-btn swap-values fa-regular fa-arrows-up-down" title="交换数值"></span>
+                                <span class="mi swap-btn swap-units fa-regular fa-right-left" title="交换单位"></span>
+                                <span class="mi swap-btn swap-both fa-regular fa-swap-arrows" title="同时交换"></span>
                             </div>
                             <div class="converter-group">
                                 <input type="number" id="wt-input-2" class="converter-input">
@@ -381,7 +388,7 @@
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-byte">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #3b82f6;">memory</span> <span data-i18n="tool_byte_title">字节转换</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-memory" style="font-size: 16px; color: #3b82f6;"></span> <span data-i18n="tool_byte_title">字节转换</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <div class="converter-row">
                             <div class="converter-group">
@@ -395,9 +402,9 @@
                                 </select>
                             </div>
                             <div class="swap-group">
-                                <span class="material-icons swap-btn swap-values" title="交换数值">swap_vert</span>
-                                <span class="material-icons swap-btn swap-units" title="交换单位">compare_arrows</span>
-                                <span class="material-icons swap-btn swap-both" title="同时交换">sync_alt</span>
+                                <span class="mi swap-btn swap-values fa-regular fa-arrows-up-down" title="交换数值"></span>
+                                <span class="mi swap-btn swap-units fa-regular fa-right-left" title="交换单位"></span>
+                                <span class="mi swap-btn swap-both fa-regular fa-swap-arrows" title="同时交换"></span>
                             </div>
                             <div class="converter-group">
                                 <input type="number" id="byte-input-2" class="converter-input">
@@ -413,23 +420,23 @@
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-num">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #f59e0b;">calculate</span> <span data-i18n="tool_num_title">数字工具</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-calculator" style="font-size: 16px; color: #f59e0b;"></span> <span data-i18n="tool_num_title">数字工具</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
-                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_shorthand">缩写还原 (k,w,m)</label><div class="converter-row compact"><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-shorthand-input" class="converter-input full-border" style="width:100%;"><button type="button" class="tool-icopy-btn" data-copy-target="num-shorthand-input" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div><span class="material-icons swap-icon" style="flex-shrink:0;">arrow_right_alt</span><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-shorthand-output" class="converter-input full-border" style="width:100%;background:#fff" readonly><button type="button" class="tool-icopy-btn" data-copy-target="num-shorthand-output" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div></div></div>
-                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_format">千分位格式化</label><div class="converter-row compact"><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-format-input" class="converter-input full-border" style="width:100%;"><button type="button" class="tool-icopy-btn" data-copy-target="num-format-input" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div><span class="material-icons swap-icon" style="flex-shrink:0;">arrow_right_alt</span><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-format-output" class="converter-input full-border" style="width:100%;background:#fff" readonly><button type="button" class="tool-icopy-btn" data-copy-target="num-format-output" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div></div></div>
-                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_capital">金额大写</label><div class="srv-input-wrap"><input type="number" id="num-capital-input" class="converter-input full-border" style="width:100%;"><button type="button" class="tool-icopy-btn" data-copy-target="num-capital-input" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div><div class="srv-input-wrap" style="margin-top:6px;"><div id="num-capital-output" class="result-box" style="margin-top:0;"><span style="color:#cbd5e1;" data-copy-skip="1" data-i18n="tool_num_result_hint">结果显示于此</span></div><button type="button" class="tool-icopy-btn" data-copy-target="num-capital-output" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div></div>
-                        <div class="srv-input-wrap"><div id="num-shorthand-spoken" class="result-box" style="font-size:13px;min-height:32px;"><span style="color:#cbd5e1;" data-copy-skip="1">口语金额</span></div><button type="button" class="tool-icopy-btn" data-copy-target="num-shorthand-spoken" title="复制" data-i18n-title="action_copy"><span class="material-icons" style="font-size:14px;">content_copy</span></button></div>
+                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_shorthand">缩写还原 (k,w,m)</label><div class="converter-row compact"><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-shorthand-input" class="converter-input full-border" style="width:100%;"><button type="button" class="tool-icopy-btn" data-copy-target="num-shorthand-input" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button></div><span class="mi swap-icon fa-regular fa-arrow-right-long" style="flex-shrink:0;"></span><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-shorthand-output" class="converter-input full-border" style="width:100%;background:#fff" readonly><button type="button" class="tool-icopy-btn" data-copy-target="num-shorthand-output" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button></div></div></div>
+                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_format">千分位格式化</label><div class="converter-row compact"><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-format-input" class="converter-input full-border" style="width:100%;"><button type="button" class="tool-icopy-btn" data-copy-target="num-format-input" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button></div><span class="mi swap-icon fa-regular fa-arrow-right-long" style="flex-shrink:0;"></span><div class="srv-input-wrap" style="flex:1;min-width:0;"><input type="text" id="num-format-output" class="converter-input full-border" style="width:100%;background:#fff" readonly><button type="button" class="tool-icopy-btn" data-copy-target="num-format-output" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button></div></div></div>
+                        <div style="margin-bottom: 12px;"><label class="sub-label" data-i18n="tool_num_capital">金额大写</label><div class="srv-input-wrap"><input type="number" id="num-capital-input" class="converter-input full-border" style="width:100%;"><button type="button" class="tool-icopy-btn" data-copy-target="num-capital-input" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button></div><div class="srv-input-wrap" style="margin-top:6px;"><div id="num-capital-output" class="result-box" style="margin-top:0;"><span style="color:#cbd5e1;" data-copy-skip="1" data-i18n="tool_num_result_hint">结果显示于此</span></div><button type="button" class="tool-icopy-btn" data-copy-target="num-capital-output" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button></div></div>
+                        <div class="srv-input-wrap"><div id="num-shorthand-spoken" class="result-box" style="font-size:13px;min-height:32px;"><span style="color:#cbd5e1;" data-copy-skip="1">口语金额</span></div><button type="button" class="tool-icopy-btn" data-copy-target="num-shorthand-spoken" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button></div>
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-enc">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #8b5cf6;">code</span> <span data-i18n="tool_enc_title">编码转换</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-code" style="font-size: 16px; color: #8b5cf6;"></span> <span data-i18n="tool_enc_title">编码转换</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <div style="margin-bottom:15px;"><label class="sub-label" data-i18n="tool_enc_url">URL 编解码</label><textarea id="url-input" class="converter-input full-border" style="width:100%;height:60px;margin-bottom:6px;"></textarea><div style="display:flex;gap:8px;"><button id="btn-url-encode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_encode">编码</button><button id="btn-url-decode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_decode">解码</button></div></div>
                         <div><label class="sub-label" data-i18n="tool_enc_uni">Unicode (\u)</label><textarea id="uni-input" class="converter-input full-border" style="width:100%;height:60px;margin-bottom:6px;"></textarea><div style="display:flex;gap:8px;"><button id="btn-uni-encode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_encode">编码</button><button id="btn-uni-decode" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_decode">解码</button></div></div>
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-header">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #ec4899;">data_object</span> <span data-i18n="tool_head_title">Header 格式化</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-brackets-curly" style="font-size: 16px; color: #ec4899;"></span> <span data-i18n="tool_head_title">Header 格式化</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <textarea id="header-input" class="converter-input full-border" style="width:100%;height:100px;margin-bottom:6px;font-family:monospace;font-size:12px;" placeholder="User-Agent: ..."></textarea>
                         <button id="btn-header-fmt" class="filter-btn" style="width:100%;background:#f1f5f9;margin-bottom:6px;" data-i18n="action_to_json">转 JSON</button>
@@ -437,7 +444,7 @@
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-pip">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #10b981;">list_alt</span> <span data-i18n="tool_pip_title">Pip 转 Reqs</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-rectangle-list" style="font-size: 16px; color: #10b981;"></span> <span data-i18n="tool_pip_title">Pip 转 Reqs</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                          <div style="margin-bottom:8px;"><label class="sub-label" data-i18n="tool_pip_desc">输入 (pip install ... 或 包名列表)</label><textarea id="pip-input" class="converter-input full-border" style="width:100%;height:80px;margin-bottom:6px;font-family:monospace;font-size:12px;"></textarea></div>
                          <button id="btn-pip-convert" class="filter-btn" style="width:100%;background:#f1f5f9;margin-bottom:8px;" data-i18n="action_convert">转换</button>
@@ -450,7 +457,7 @@
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-uuid">
-                    <h3><span class="material-icons" style="font-size: 16px; color: #f43f5e;">vpn_key</span> <span data-i18n="tool_uuid_title">UUID 生成</span> <span class="material-icons toggle-icon">expand_more</span></h3>
+                    <h3><span class="mi fa-regular fa-key" style="font-size: 16px; color: #f43f5e;"></span> <span data-i18n="tool_uuid_title">UUID 生成</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <input type="text" id="uuid-output" class="converter-input full-border" style="width:100%;margin-bottom:8px;font-family:monospace;font-size:13px;text-align:center;background:#f8fafc;" readonly>
                         <div style="display:flex;gap:8px;">
@@ -498,9 +505,9 @@
                 </div>
                 <div class="ai-filter-row" id="srv-filter-row">
                     <div style="position:relative;flex:1;">
-                        <span class="material-icons" id="srv-search-back" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:18px;color:#64748b;cursor:pointer;z-index:1;">close</span>
+                        <span class="mi fa-regular fa-xmark" id="srv-search-back" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:18px;color:#64748b;cursor:pointer;z-index:1;"></span>
                         <input type="text" id="srv-filter-input" class="ai-filter-input" placeholder="搜索 IP / 域名 / 用户名..." style="width:100%;padding:2px 28px 2px 30px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">
-                        <span class="material-icons ai-filter-clear" id="srv-filter-clear" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:#9ca3af;">close</span>
+                        <span class="mi ai-filter-clear fa-regular fa-xmark" id="srv-filter-clear" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:#9ca3af;"></span>
                     </div>
                 </div>
                 </div>
@@ -508,7 +515,7 @@
             </div>
                 <div id="srv-list" class="srv-list"></div>
                 <div id="srv-empty" class="empty-state">
-                    <span class="material-icons">dns</span>
+                    <span class="mi fa-regular fa-server"></span>
                     <p>暂无服务器记录<br>点击上方 + 添加</p>
                 </div>
             </div>
@@ -547,9 +554,9 @@
                 </div>
                 <div class="ai-filter-row" id="reg-filter-row">
                     <div style="position:relative;flex:1;">
-                        <span class="material-icons" id="reg-search-back" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:18px;color:#64748b;cursor:pointer;z-index:1;">close</span>
+                        <span class="mi fa-regular fa-xmark" id="reg-search-back" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:18px;color:#64748b;cursor:pointer;z-index:1;"></span>
                         <input type="text" id="reg-filter-input" class="ai-filter-input" placeholder="搜索昵称 / 微信 / 电话 / 硬件码 / 注册码..." style="width:100%;padding:2px 28px 2px 30px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">
-                        <span class="material-icons ai-filter-clear" id="reg-filter-clear" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:#9ca3af;">close</span>
+                        <span class="mi ai-filter-clear fa-regular fa-xmark" id="reg-filter-clear" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:#9ca3af;"></span>
                     </div>
                 </div>
                 </div>
@@ -557,7 +564,7 @@
             </div>
                 <div id="reg-list" class="srv-list"></div>
                 <div id="reg-empty" class="empty-state">
-                    <span class="material-icons">vpn_key_off</span>
+                    <span class="mi fa-regular fa-key-skeleton"></span>
                     <p>暂无注册码记录<br>点击上方 + 添加</p>
                 </div>
             </div>
@@ -570,7 +577,7 @@
                 <div class="modal-content" style="width: 90%; max-height: 92vh;">
                     <div class="modal-header">
                         <h3 id="reg-modal-title">添加注册码</h3>
-                        <span class="material-icons close-modal" id="close-reg-modal">close</span>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-reg-modal"></span>
                     </div>
                     <div class="modal-body">
                         <div class="srv-form-grid">
@@ -588,28 +595,28 @@
                                 <label>微信号</label>
                                 <div class="srv-input-wrap">
                                     <input type="text" id="reg-wechat-input" class="converter-input full-border" placeholder="微信号">
-                                    <button class="srv-icopy-btn" data-copy-target="reg-wechat-input" title="复制微信号"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                    <button class="srv-icopy-btn" data-copy-target="reg-wechat-input" title="复制微信号"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label>电话号码</label>
                                 <div class="srv-input-wrap">
                                     <input type="text" id="reg-phone-input" class="converter-input full-border" placeholder="电话号码">
-                                    <button class="srv-icopy-btn" data-copy-target="reg-phone-input" title="复制电话"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                    <button class="srv-icopy-btn" data-copy-target="reg-phone-input" title="复制电话"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label>硬件码</label>
                                 <div class="srv-input-wrap">
                                     <input type="text" id="reg-hwid-input" class="converter-input full-border" placeholder="硬件码" style="font-family:monospace;">
-                                    <button class="srv-icopy-btn" data-copy-target="reg-hwid-input" title="复制硬件码"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                    <button class="srv-icopy-btn" data-copy-target="reg-hwid-input" title="复制硬件码"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label>注册码</label>
                                 <div class="srv-input-wrap">
                                     <input type="text" id="reg-code-input" class="converter-input full-border" placeholder="注册码" style="font-family:monospace;">
-                                    <button class="srv-icopy-btn" data-copy-target="reg-code-input" title="复制注册码"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                    <button class="srv-icopy-btn" data-copy-target="reg-code-input" title="复制注册码"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                 </div>
                             </div>
                             <div class="form-group" style="grid-column: 1 / -1;">
@@ -651,7 +658,7 @@
                 <div class="modal-content" style="width: 85%; max-height: 80vh;">
                     <div class="modal-header">
                         <h3>软件分类管理</h3>
-                        <span class="material-icons close-modal" id="close-reg-cat-modal">close</span>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-reg-cat-modal"></span>
                     </div>
                     <div class="modal-body" style="padding-bottom:8px;">
                         <div style="display:flex;gap:6px;margin-bottom:10px;">
@@ -660,7 +667,7 @@
                         </div>
                         <div id="reg-cat-list" class="srv-cat-list"></div>
                         <div style="margin-top:8px;font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:4px;">
-                            <span class="material-icons" style="font-size:13px;">info</span> 拖拽左侧手柄可排序
+                            <span class="mi fa-regular fa-circle-info" style="font-size:13px;"></span> 拖拽左侧手柄可排序
                         </div>
                     </div>
                 </div>
@@ -671,14 +678,14 @@
                 <div class="modal-content" style="width: 92%; height: 620px; max-height: 92vh;">
                     <div class="modal-header">
                         <h3 id="srv-modal-title">添加服务器</h3>
-                        <span class="material-icons close-modal" id="close-srv-modal">close</span>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-srv-modal"></span>
                     </div>
                     <div class="modal-body">
                         <!-- Tab 导航 -->
                         <div class="srv-tabs">
-                            <button type="button" class="srv-tab active" data-srv-tab="info"><span class="material-icons" style="font-size:14px;">computer</span> 服务器信息</button>
-                            <button type="button" class="srv-tab" data-srv-tab="panel"><span class="material-icons" style="font-size:14px;">dashboard</span> 管理面板</button>
-                            <button type="button" class="srv-tab" data-srv-tab="websites"><span class="material-icons" style="font-size:14px;">language</span> 绑定网站</button>
+                            <button type="button" class="srv-tab active" data-srv-tab="info"><span class="mi fa-regular fa-desktop" style="font-size:14px;"></span> 服务器信息</button>
+                            <button type="button" class="srv-tab" data-srv-tab="panel"><span class="mi fa-regular fa-table-cells-large" style="font-size:14px;"></span> 管理面板</button>
+                            <button type="button" class="srv-tab" data-srv-tab="websites"><span class="mi fa-regular fa-globe" style="font-size:14px;"></span> 绑定网站</button>
                         </div>
 
                         <!-- Tab: 服务器信息 -->
@@ -717,28 +724,28 @@
                                     <label>IP 地址</label>
                                     <div class="srv-input-wrap">
                                         <input type="text" id="srv-ip-input" class="converter-input full-border" placeholder="例如：192.168.1.100">
-                                        <button class="srv-icopy-btn" data-copy-target="srv-ip-input" title="复制IP地址"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                        <button class="srv-icopy-btn" data-copy-target="srv-ip-input" title="复制IP地址"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label>端口</label>
                                     <div class="srv-input-wrap">
                                         <input type="text" id="srv-port-input" class="converter-input full-border" placeholder="例如：22">
-                                        <button class="srv-icopy-btn" data-copy-target="srv-port-input" title="复制端口"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                        <button class="srv-icopy-btn" data-copy-target="srv-port-input" title="复制端口"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label>用户名</label>
                                     <div class="srv-input-wrap">
                                         <input type="text" id="srv-user-input" class="converter-input full-border" placeholder="例如：root">
-                                        <button class="srv-icopy-btn" data-copy-target="srv-user-input" title="复制用户名"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                        <button class="srv-icopy-btn" data-copy-target="srv-user-input" title="复制用户名"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label>密码</label>
                                     <div class="srv-input-wrap">
                                         <input type="text" id="srv-pass-input" class="converter-input full-border" placeholder="服务器密码">
-                                        <button class="srv-icopy-btn" data-copy-target="srv-pass-input" title="复制密码"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                        <button class="srv-icopy-btn" data-copy-target="srv-pass-input" title="复制密码"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                     </div>
                                 </div>
                                 <div class="form-group" style="grid-column: 1 / -1;">
@@ -782,8 +789,8 @@
                                     <div class="srv-input-wrap">
                                         <input type="text" id="srv-panel-url-input" class="converter-input full-border" placeholder="https://...:8888">
                                         <div class="srv-input-actions">
-                                            <button class="srv-icopy-btn" data-copy-target="srv-panel-url-input" title="复制面板地址"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
-                                            <button class="srv-icopy-btn" data-open-url="srv-panel-url-input" title="打开面板地址"><span class="material-icons" style="font-size:14px;">open_in_new</span></button>
+                                            <button class="srv-icopy-btn" data-copy-target="srv-panel-url-input" title="复制面板地址"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                                            <button class="srv-icopy-btn" data-open-url="srv-panel-url-input" title="打开面板地址"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:14px;"></span></button>
                                         </div>
                                     </div>
                                 </div>
@@ -791,14 +798,14 @@
                                     <label>面板账号</label>
                                     <div class="srv-input-wrap">
                                         <input type="text" id="srv-panel-user-input" class="converter-input full-border" placeholder="面板用户名">
-                                        <button class="srv-icopy-btn" data-copy-target="srv-panel-user-input" title="复制面板账号"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                        <button class="srv-icopy-btn" data-copy-target="srv-panel-user-input" title="复制面板账号"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label>面板密码</label>
                                     <div class="srv-input-wrap">
                                         <input type="text" id="srv-panel-pass-input" class="converter-input full-border" placeholder="面板密码">
-                                        <button class="srv-icopy-btn" data-copy-target="srv-panel-pass-input" title="复制面板密码"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                        <button class="srv-icopy-btn" data-copy-target="srv-panel-pass-input" title="复制面板密码"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                     </div>
                                 </div>
                             </div>
@@ -807,7 +814,7 @@
                         <!-- Tab: 绑定网站 -->
                         <div class="srv-tab-pane" data-srv-pane="websites">
                             <div class="srv-section-title">
-                                <button type="button" id="srv-add-website-btn" class="srv-mini-add-btn"><span class="material-icons" style="font-size:14px;">add</span> 添加网站</button>
+                                <button type="button" id="srv-add-website-btn" class="srv-mini-add-btn"><span class="mi fa-regular fa-plus" style="font-size:14px;"></span> 添加网站</button>
                             </div>
                             <div id="srv-website-list" class="srv-website-list"></div>
                             <div id="srv-website-empty" class="srv-website-empty" style="display:none;">
@@ -827,7 +834,7 @@
                 <div class="modal-content" style="width: 95%; max-height: 92vh;">
                     <div class="modal-header">
                         <h3>常用命令</h3>
-                        <span class="material-icons close-modal" id="close-srv-commands-modal">close</span>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-srv-commands-modal"></span>
                     </div>
                     <div class="modal-body">
                         <textarea id="srv-commands-textarea" placeholder="输入常用命令，每行一个命令..." style="width:100%;height:60vh;border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-size:12px;font-family:monospace;resize:vertical;outline:none;"></textarea>
@@ -840,7 +847,7 @@
                 <div class="modal-content" style="width: 85%; max-height: 80vh;">
                     <div class="modal-header">
                         <h3>分类管理</h3>
-                        <span class="material-icons close-modal" id="close-srv-cat-modal">close</span>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-srv-cat-modal"></span>
                     </div>
                     <div class="modal-body" style="padding-bottom:8px;">
                         <div style="display:flex;gap:6px;margin-bottom:10px;">
@@ -849,7 +856,7 @@
                         </div>
                         <div id="srv-cat-list" class="srv-cat-list"></div>
                         <div style="margin-top:8px;font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:4px;">
-                            <span class="material-icons" style="font-size:13px;">info</span> 拖拽左侧手柄可排序
+                            <span class="mi fa-regular fa-circle-info" style="font-size:13px;"></span> 拖拽左侧手柄可排序
                         </div>
                     </div>
                 </div>
@@ -860,12 +867,12 @@
                 <div class="modal-content" style="width: 90%;">
                     <div class="modal-header">
                         <h3 id="srv-website-modal-title">添加网站</h3>
-                        <span class="material-icons close-modal" id="close-srv-website-modal">close</span>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-srv-website-modal"></span>
                     </div>
                     <div class="modal-body" style="max-height:80vh;">
                         <!-- 从已有站点复制配置（仅添加模式显示） -->
                         <div id="srv-ws-template-wrapper" class="srv-ws-template-bar" style="display:none;">
-                            <span class="material-icons" style="font-size:14px;color:#6366f1;flex-shrink:0;">content_copy</span>
+                            <span class="mi fa-regular fa-copy" style="font-size:14px;color:#6366f1;flex-shrink:0;"></span>
                             <select id="srv-ws-template-select" class="converter-input full-border" style="flex:1;padding:5px 8px;font-size:12px;">
                                 <option value="">从同服务器站点复制配置...</option>
                             </select>
@@ -875,7 +882,7 @@
                                 <label>域名</label>
                                 <div class="srv-input-wrap">
                                     <input type="text" id="srv-ws-domain-input" class="converter-input full-border" placeholder="例如：example.com">
-                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-domain-input" title="复制域名"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-domain-input" title="复制域名"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -891,21 +898,21 @@
                                 <label>数据库用户名</label>
                                 <div class="srv-input-wrap">
                                     <input type="text" id="srv-ws-dbuser-input" class="converter-input full-border" placeholder="例如：root">
-                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-dbuser-input" title="复制数据库用户名"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-dbuser-input" title="复制数据库用户名"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label>数据库密码</label>
                                 <div class="srv-input-wrap">
                                     <input type="text" id="srv-ws-dbpass-input" class="converter-input full-border" placeholder="数据库密码">
-                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-dbpass-input" title="复制数据库密码"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-dbpass-input" title="复制数据库密码"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label>数据库名</label>
                                 <div class="srv-input-wrap">
                                     <input type="text" id="srv-ws-dbtable-input" class="converter-input full-border" placeholder="例如：wordpress_db">
-                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-dbtable-input" title="复制数据库名"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-dbtable-input" title="复制数据库名"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -919,7 +926,7 @@
                                 <label>网站账号</label>
                                 <div class="srv-input-wrap">
                                     <input type="text" id="srv-ws-adminuser-input" class="converter-input full-border" placeholder="后台用户名" autocomplete="off">
-                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-adminuser-input" title="复制网站账号"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-adminuser-input" title="复制网站账号"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                     <div class="srv-history-dd" id="srv-user-history-dd"></div>
                                 </div>
                             </div>
@@ -927,7 +934,7 @@
                                 <label>网站密码</label>
                                 <div class="srv-input-wrap">
                                     <input type="text" id="srv-ws-adminpass-input" class="converter-input full-border" placeholder="后台密码" autocomplete="off">
-                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-adminpass-input" title="复制网站密码"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-adminpass-input" title="复制网站密码"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                     <div class="srv-history-dd" id="srv-pass-history-dd"></div>
                                 </div>
                             </div>
@@ -935,7 +942,7 @@
                                 <label>网站绝对路径</label>
                                 <div class="srv-input-wrap">
                                     <input type="text" id="srv-ws-path-input" class="converter-input full-border" placeholder="例如：/www/wwwroot/example">
-                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-path-input" title="复制绝对路径"><span class="material-icons" style="font-size:14px;">content_copy</span></button>
+                                    <button class="srv-icopy-btn" data-copy-target="srv-ws-path-input" title="复制绝对路径"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                 </div>
                             </div>
                         </div>
@@ -964,7 +971,7 @@
                 </div>
                 <div id="fa-list" class="fa-list"></div>
                 <div id="fa-empty" class="empty-state">
-                    <span class="material-icons">vpn_key_off</span>
+                    <span class="mi fa-regular fa-key-skeleton"></span>
                     <p data-i18n="2fa_empty">暂无2FA账号<br>点击上方 + 添加</p>
                 </div>
             </div>
@@ -984,14 +991,14 @@
                         </div>
                     </div>
                     <div class="ai-filter-row" style="position:relative;flex:1;min-width:120px;">
-                        <span class="material-icons" style="font-size:16px;color:#9ca3af;position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;">search</span>
+                        <span class="mi fa-regular fa-magnifying-glass" style="font-size:16px;color:#9ca3af;position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;"></span>
                         <input type="text" id="ai-provider-filter-input" class="ai-filter-input" placeholder="搜索标题或 Model..." style="width:100%;padding:6px 10px 6px 32px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">
-                        <span class="material-icons ai-filter-clear" id="ai-provider-filter-clear" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:#9ca3af;">close</span>
+                        <span class="mi ai-filter-clear fa-regular fa-xmark" id="ai-provider-filter-clear" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:#9ca3af;"></span>
                     </div>
                 </div>
                 <div id="ai-provider-list" class="fa-list"></div>
                 <div id="ai-provider-empty" class="empty-state">
-                    <span class="material-icons">psychology</span>
+                    <span class="mi fa-regular fa-brain"></span>
                     <p>暂无 AI Provider<br>点击上方 + 添加</p>
                 </div>
             </div>
@@ -1001,7 +1008,7 @@
                 <div class="modal-content" style="width: 90%; max-height: 90vh;">
                     <div class="modal-header">
                         <h3 id="ai-provider-modal-title">添加 AI Provider</h3>
-                        <span class="material-icons close-modal" id="close-ai-provider-modal">close</span>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-ai-provider-modal"></span>
                     </div>
                     <div class="modal-body">
                         <div class="form-group">
@@ -1030,7 +1037,7 @@
                         <div class="form-group">
                             <div class="ai-provider-label-row">
                                 <label>Model（一行一个）</label>
-                                <button type="button" id="ai-provider-fetch-models-btn" class="ai-fetch-models-btn" title="根据 Base URL 获取可用模型列表"><span class="material-icons" style="font-size:14px;vertical-align:middle;">cloud_download</span> 获取模型</button>
+                                <button type="button" id="ai-provider-fetch-models-btn" class="ai-fetch-models-btn" title="根据 Base URL 获取可用模型列表"><span class="mi fa-regular fa-cloud-arrow-down" style="font-size:14px;vertical-align:middle;"></span> 获取模型</button>
                             </div>
                             <textarea id="ai-provider-model-input" class="converter-input full-border" rows="2" placeholder="gpt-4o"></textarea>
                             <div id="ai-provider-model-fetch-status" class="ai-provider-fetch-status"></div>
@@ -1052,7 +1059,7 @@
                 <div class="modal-content" style="width: 80%;">
                     <div class="modal-header">
                         <h3>备注</h3>
-                        <span class="material-icons close-modal" id="close-ai-provider-note-viewer">close</span>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-ai-provider-note-viewer"></span>
                     </div>
                     <div id="ai-provider-note-viewer-content" style="padding:10px;font-size:13px;color:#374151;white-space:pre-wrap;word-break:break-word;"></div>
                 </div>
@@ -1063,7 +1070,7 @@
                 <div class="modal-content" style="width: 90%; max-width: 440px;">
                     <div class="modal-header">
                         <h3>选择要保存的模型</h3>
-                        <span class="material-icons close-modal" id="close-ai-provider-model-select-modal">close</span>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-ai-provider-model-select-modal"></span>
                     </div>
                     <div style="padding: 0 0 10px;">
                         <div class="ai-model-select-toolbar">
@@ -1072,7 +1079,7 @@
                             <button type="button" id="ai-provider-model-select-none" class="ai-model-select-link">清空</button>
                         </div>
                         <div class="ai-model-select-search">
-                            <span class="material-icons">search</span>
+                            <span class="mi fa-regular fa-magnifying-glass"></span>
                             <input type="text" id="ai-provider-model-select-search" class="ai-model-select-search-input" placeholder="过滤模型（名称或来源）...">
                         </div>
                         <div id="ai-provider-model-select-list" class="ai-model-select-list"></div>
@@ -1090,7 +1097,7 @@
                 <div class="modal-content" style="width: 85%; max-width: 360px;">
                     <div class="modal-header">
                         <h3 id="ai-setting-select-title">选择</h3>
-                        <span class="material-icons close-modal" id="close-ai-setting-select-modal">close</span>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-ai-setting-select-modal"></span>
                     </div>
                     <div style="padding: 0 0 10px;">
                         <div id="ai-setting-select-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;"></div>
@@ -1103,7 +1110,7 @@
                 <div class="modal-content" style="width: 90%;">
                     <div class="modal-header">
                         <h3 id="fa-modal-title" data-i18n="2fa_btn_add_key">添加密钥</h3>
-                        <span class="material-icons close-modal" id="close-fa-modal">close</span>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-fa-modal"></span>
                     </div>
                     <div style="padding: 0 0 10px;">
                         <label class="sub-label" data-i18n="2fa_ph_name">账号名称</label>
@@ -1122,7 +1129,7 @@
 
         <div class="bottom-section">
             <div id="input-group-prompts" class="input-area hidden">
-                <div class="prompt-collapse-header" id="prompt-collapse-header"><span class="header-label" data-i18n="lbl_add_new_prompt">添加新提示词</span><span class="material-icons toggle-icon">expand_more</span></div>
+                <div class="prompt-collapse-header" id="prompt-collapse-header"><span class="header-label" data-i18n="lbl_add_new_prompt">添加新提示词</span><span class="mi toggle-icon fa-regular fa-chevron-down"></span></div>
                 <div class="prompt-collapse-body" id="prompt-collapse-body">
                     <div class="row"><div class="select-wrapper"><select id="sp-category" class="category-select"></select></div><input type="text" id="sp-title" class="title-input" data-i18n-ph="ph_title" placeholder="标题"></div>
                     <textarea id="sp-content" class="content-input" data-i18n-ph="ph_prompt_content" placeholder="输入提示词..."></textarea>
@@ -1131,15 +1138,15 @@
             </div>
             
             <div id="input-group-scratchpad" class="input-area hidden">
-                <div class="scratch-collapse-header" id="scratch-collapse-header"><span class="header-label" data-i18n="lbl_add_new_scratch">添加新内容 (支持图片)</span><span class="material-icons toggle-icon">expand_more</span></div>
+                <div class="scratch-collapse-header" id="scratch-collapse-header"><span class="header-label" data-i18n="lbl_add_new_scratch">添加新内容 (支持图片)</span><span class="mi toggle-icon fa-regular fa-chevron-down"></span></div>
                 <div class="scratch-collapse-body" id="scratch-collapse-body">
                     <div id="scratch-input" class="content-input short rich-input" contenteditable="true" data-i18n-ph="ph_scratch_content" placeholder="在此粘贴文本或截图 (Ctrl+V)..."></div>
-                    <button id="scratch-add-btn" class="add-btn secondary"><span class="material-icons" style="font-size:16px; margin-right:4px;">add</span> <span data-i18n="action_add_scratch">添加到暂存板</span></button>
+                    <button id="scratch-add-btn" class="add-btn secondary"><span class="mi fa-regular fa-plus" style="font-size:16px; margin-right:4px;"></span> <span data-i18n="action_add_scratch">添加到暂存板</span></button>
                 </div>
             </div>
             
             <div id="input-group-gallery" class="input-area hidden">
-                <div id="gallery-drop-zone" class="drop-zone"><span class="material-icons">cloud_upload</span><span data-i18n="sp_empty_gallery">粘贴 (Ctrl+V) 或拖入图片</span></div>
+                <div id="gallery-drop-zone" class="drop-zone"><span class="mi fa-regular fa-cloud-arrow-up"></span><span data-i18n="sp_empty_gallery">粘贴 (Ctrl+V) 或拖入图片</span></div>
             </div>
              <div id="input-group-tools" class="input-area"></div>
 
@@ -1150,29 +1157,29 @@
         <div class="modal-content" style="max-height: 600px; width: 90%;">
             <div class="modal-header">
                 <h3 data-i18n="lbl_category_select">选择分类</h3>
-                <span class="material-icons close-modal" id="close-full-cat-modal">close</span>
+                <span class="mi close-modal fa-regular fa-xmark" id="close-full-cat-modal"></span>
             </div>
             <div class="full-cat-grid" id="full-cat-grid" style="overflow-y: auto;"></div>
         </div>
     </div>
 
-    <div id="cat-modal" class="modal hidden"><div class="modal-content"><div class="modal-header"><h3 data-i18n="lbl_category_manage">分类管理</h3><span class="material-icons close-modal" id="close-cat-modal">close</span></div><div class="cat-list-container" id="cat-manage-list"></div><div class="modal-footer"><input type="text" id="new-cat-name" data-i18n-ph="ph_new_cat" placeholder="新分类名称..."><button id="add-new-cat-btn" data-i18n="action_add">添加</button></div></div></div>
+    <div id="cat-modal" class="modal hidden"><div class="modal-content"><div class="modal-header"><h3 data-i18n="lbl_category_manage">分类管理</h3><span class="mi close-modal fa-regular fa-xmark" id="close-cat-modal"></span></div><div class="cat-list-container" id="cat-manage-list"></div><div class="modal-footer"><input type="text" id="new-cat-name" data-i18n-ph="ph_new_cat" placeholder="新分类名称..."><button id="add-new-cat-btn" data-i18n="action_add">添加</button></div></div></div>
     
-    <div id="text-view-modal" class="modal hidden"><div class="modal-content"><div class="modal-header"><h3 data-i18n="lbl_full_content">完整内容</h3><span class="material-icons close-modal" id="close-text-modal">close</span></div><div id="text-modal-content" class="text-modal-body"></div></div></div>
+    <div id="text-view-modal" class="modal hidden"><div class="modal-content"><div class="modal-header"><h3 data-i18n="lbl_full_content">完整内容</h3><span class="mi close-modal fa-regular fa-xmark" id="close-text-modal"></span></div><div id="text-modal-content" class="text-modal-body"></div></div></div>
 
     <!-- AI提示词查看/编辑 Modal -->
     <div id="prompt-view-modal" class="modal hidden">
         <div class="modal-content" style="width: 92%; height: 92vh; display: flex; flex-direction: column;">
             <div class="modal-header">
                 <input type="text" id="prompt-view-title-input" class="prompt-view-title-input" placeholder="标题...">
-                <span class="material-icons close-modal" id="close-prompt-view-modal">close</span>
+                <span class="mi close-modal fa-regular fa-xmark" id="close-prompt-view-modal"></span>
             </div>
             <div style="flex: 1; display: flex; flex-direction: column; min-height: 0; margin-bottom: 10px;">
                 <textarea id="prompt-view-textarea" style="flex: 1; width: 100%; resize: none; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; font-size: 13px; line-height: 1.6; font-family: inherit; outline: none; box-sizing: border-box; background: #f8fafc; color: #1e293b;" placeholder="提示词内容..."></textarea>
             </div>
             <div class="modal-footer" style="display: flex; gap: 6px; flex-wrap: nowrap;">
-                <button id="prompt-view-selectall-btn" class="prompt-view-btn"><span class="material-icons" style="font-size: 13px; vertical-align: middle; margin-right: 2px;">select_all</span><span data-i18n="action_select_all">全选</span></button>
-                <button id="prompt-view-copy-btn" class="prompt-view-btn"><span class="material-icons" style="font-size: 13px; vertical-align: middle; margin-right: 2px;">content_copy</span><span data-i18n="action_copy">复制</span></button>
+                <button id="prompt-view-selectall-btn" class="prompt-view-btn"><span class="mi fa-regular fa-square-check" style="font-size: 13px; vertical-align: middle; margin-right: 2px;"></span><span data-i18n="action_select_all">全选</span></button>
+                <button id="prompt-view-copy-btn" class="prompt-view-btn"><span class="mi fa-regular fa-copy" style="font-size: 13px; vertical-align: middle; margin-right: 2px;"></span><span data-i18n="action_copy">复制</span></button>
                 <div style="flex: 1;"></div>
                 <button id="prompt-view-cancel-btn" class="prompt-view-btn prompt-view-btn-cancel" data-i18n="action_cancel">取消</button>
                 <button id="prompt-view-save-btn" class="prompt-view-btn prompt-view-btn-save" data-i18n="action_save">保存</button>
@@ -1184,7 +1191,7 @@
         <div class="modal-content" style="max-height: 600px; width: 90%;">
             <div class="modal-header">
                 <h3>全部AI服务</h3>
-                <span class="material-icons close-modal" id="close-ai-all-modal">close</span>
+                <span class="mi close-modal fa-regular fa-xmark" id="close-ai-all-modal"></span>
             </div>
             <div class="full-cat-grid" id="ai-all-grid" style="overflow-y: auto; grid-template-columns: repeat(3, 1fr);"></div>
         </div>
@@ -1194,7 +1201,7 @@
         <div class="modal-content" style="width: 90%;">
             <div class="modal-header">
                 <h3 id="ai-modal-title">添加AI服务</h3>
-                <span class="material-icons close-modal" id="close-ai-modal">close</span>
+                <span class="mi close-modal fa-regular fa-xmark" id="close-ai-modal"></span>
             </div>
             <div style="padding: 0 0 10px;">
                 <label class="sub-label">名称</label>
@@ -1203,12 +1210,12 @@
                 <input type="text" id="ai-tag-url" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="例如：https://chat.qwen.ai/">
                 <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#475569; cursor:pointer; user-select:none; padding: 2px 0;">
                     <input type="checkbox" id="ai-tag-newtab" style="accent-color:#6366f1; cursor:pointer;">
-                    <span class="material-icons" style="font-size:14px; color:#94a3b8;">open_in_new</span>
+                    <span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:14px; color:#94a3b8;"></span>
                     新标签页打开（不支持内嵌的网站勾选此项）
                 </label>
                 <label id="ai-tag-default-label" style="display:flex; align-items:center; gap:6px; font-size:12px; color:#475569; cursor:pointer; user-select:none; padding: 2px 0;">
                     <input type="checkbox" id="ai-tag-default" style="accent-color:#6366f1; cursor:pointer;">
-                    <span class="material-icons" style="font-size:14px; color:#94a3b8;">star</span>
+                    <span class="mi fa-regular fa-star" style="font-size:14px; color:#94a3b8;"></span>
                     设为默认（打开AI合集时自动加载）
                 </label>
             </div>
@@ -1219,12 +1226,12 @@
         </div>
     </div>
 
-    <div id="gallery-lightbox" class="lightbox hidden"><div class="lightbox-content"><img id="lb-image" src="" alt="Full size"><div class="lb-actions"><button id="lb-copy-btn" class="lb-btn" data-i18n-title="action_copy" title="复制图片"><span class="material-icons">content_copy</span></button><button id="lb-base64-btn" class="lb-btn" title="复制 Base64"><span class="material-icons">data_object</span></button><button id="lb-open-btn" class="lb-btn" data-i18n-title="action_open" title="新标签页打开"><span class="material-icons">open_in_new</span></button><button id="lb-download-btn" class="lb-btn" data-i18n-title="action_download" title="下载原图"><span class="material-icons">download</span></button><button id="lb-delete-btn" class="lb-btn delete" data-i18n-title="action_delete" title="删除图片"><span class="material-icons">delete</span></button><button id="lb-close-btn" class="lb-btn" title="关闭"><span class="material-icons">close</span></button></div></div></div>
+    <div id="gallery-lightbox" class="lightbox hidden"><div class="lightbox-content"><img id="lb-image" src="" alt="Full size"><div class="lb-actions"><button id="lb-copy-btn" class="lb-btn" data-i18n-title="action_copy" title="复制图片"><span class="mi fa-regular fa-copy"></span></button><button id="lb-base64-btn" class="lb-btn" title="复制 Base64"><span class="mi fa-regular fa-brackets-curly"></span></button><button id="lb-open-btn" class="lb-btn" data-i18n-title="action_open" title="新标签页打开"><span class="mi fa-regular fa-arrow-up-right-from-square"></span></button><button id="lb-download-btn" class="lb-btn" data-i18n-title="action_download" title="下载原图"><span class="mi fa-regular fa-download"></span></button><button id="lb-delete-btn" class="lb-btn delete" data-i18n-title="action_delete" title="删除图片"><span class="mi fa-regular fa-trash-can"></span></button><button id="lb-close-btn" class="lb-btn" title="关闭"><span class="mi fa-regular fa-xmark"></span></button></div></div></div>
     <div id="toast" class="toast hidden" data-i18n="msg_copied">已复制到剪贴板</div>
     
-<div id="scratch-edit-modal" class="modal hidden"><div class="modal-content" style="width: 92%; height: 92vh; display: flex; flex-direction: column;"><div class="modal-header"><h3 data-i18n="lbl_edit_content">编辑内容</h3><span class="material-icons close-modal" id="close-scratch-modal">close</span></div>
+<div id="scratch-edit-modal" class="modal hidden"><div class="modal-content" style="width: 92%; height: 92vh; display: flex; flex-direction: column;"><div class="modal-header"><h3 data-i18n="lbl_edit_content">编辑内容</h3><span class="mi close-modal fa-regular fa-xmark" id="close-scratch-modal"></span></div>
 <div id="scratch-modal-input" class="rich-input" contenteditable="true" data-i18n-ph="ph_scratch_content" placeholder="在此粘贴文本或截图 (Ctrl+V)..." style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; overflow-y: auto; outline: none; font-family: inherit; font-size: 13px; line-height: 1.5; margin-bottom: 10px; background: #fff;"></div>
-<div class="modal-footer" style="display: flex; gap: 6px; flex-wrap: nowrap;"><button id="scratch-modal-selectall" class="prompt-view-btn"><span class="material-icons" style="font-size: 13px; vertical-align: middle; margin-right: 2px;">select_all</span><span data-i18n="action_select_all">全选</span></button><button id="scratch-modal-copy" class="prompt-view-btn"><span class="material-icons" style="font-size: 13px; vertical-align: middle; margin-right: 2px;">content_copy</span><span data-i18n="action_copy">复制</span></button><div style="flex: 1;"></div><button id="scratch-modal-cancel" class="prompt-view-btn prompt-view-btn-cancel" data-i18n="action_cancel">取消</button><button id="scratch-modal-save" class="prompt-view-btn prompt-view-btn-save" data-i18n="action_save">保存</button></div></div></div>
+<div class="modal-footer" style="display: flex; gap: 6px; flex-wrap: nowrap;"><button id="scratch-modal-selectall" class="prompt-view-btn"><span class="mi fa-regular fa-square-check" style="font-size: 13px; vertical-align: middle; margin-right: 2px;"></span><span data-i18n="action_select_all">全选</span></button><button id="scratch-modal-copy" class="prompt-view-btn"><span class="mi fa-regular fa-copy" style="font-size: 13px; vertical-align: middle; margin-right: 2px;"></span><span data-i18n="action_copy">复制</span></button><div style="flex: 1;"></div><button id="scratch-modal-cancel" class="prompt-view-btn prompt-view-btn-cancel" data-i18n="action_cancel">取消</button><button id="scratch-modal-save" class="prompt-view-btn prompt-view-btn-save" data-i18n="action_save">保存</button></div></div></div>
 
     <script src="js/i18n.js"></script>
     <script src="js/meow-confirm.js"></script>

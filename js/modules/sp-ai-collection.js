@@ -34,8 +34,7 @@ function renderAiTags() {
         div.appendChild(nameSpan);
         if (tag.openInNewTab) {
             const newtabIcon = document.createElement('span');
-            newtabIcon.className = 'material-icons';
-            newtabIcon.textContent = 'open_in_new';
+            newtabIcon.className = 'mi fa-regular fa-arrow-up-right-from-square';
             newtabIcon.style.cssText = 'font-size:12px; opacity:0.5; margin-left:1px;';
             div.appendChild(newtabIcon);
         }
@@ -51,7 +50,7 @@ function renderAiTags() {
             document.querySelectorAll('.ai-tag-ctx-menu').forEach(m => m.remove());
             const menu = document.createElement('div');
             menu.className = 'ai-tag-ctx-menu';
-            menu.innerHTML = '<span class="material-icons" style="font-size:14px;">open_in_new</span> 在标签页打开';
+            menu.innerHTML = '<span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:14px;"></span> 在标签页打开';
             menu.style.left = e.pageX + 'px';
             menu.style.top = e.pageY + 'px';
             menu.addEventListener('click', function(ev) {
@@ -138,8 +137,7 @@ function renderAiAllGrid() {
 
         // 0. Drag Handle - 右上角拖拽排序图标
         const dragHandle = document.createElement('span');
-        dragHandle.className = 'material-icons ai-drag-handle';
-        dragHandle.textContent = 'drag_indicator';
+        dragHandle.className = 'mi fa-regular fa-grip-dots-vertical ai-drag-handle';
         dragHandle.title = '按住拖动排序';
         dragHandle.setAttribute('draggable', 'true');
         dragHandle.addEventListener('dragstart', function(e) {
@@ -187,8 +185,7 @@ function renderAiAllGrid() {
         // 1. Check Icon (Default/Active) - Placed BEFORE text
         if (isActive) {
             const checkIcon = document.createElement('span');
-            checkIcon.className = 'material-icons';
-            checkIcon.textContent = 'check_circle';
+            checkIcon.className = 'mi fa-regular fa-circle-check';
             checkIcon.style.cssText = 'font-size:16px;color:#6366f1;flex-shrink:0;';
             item.appendChild(checkIcon);
         }
@@ -202,16 +199,14 @@ function renderAiAllGrid() {
         // 4. New Tab Icon
         if (tag.openInNewTab) {
             const ntIcon = document.createElement('span');
-            ntIcon.className = 'material-icons';
-            ntIcon.textContent = 'open_in_new';
+            ntIcon.className = 'mi fa-regular fa-arrow-up-right-from-square';
             ntIcon.style.cssText = 'font-size:13px;opacity:0.5;flex-shrink:0;';
             item.appendChild(ntIcon);
         }
 
         // 5. Edit Icon - Placed AFTER text (at the end)
         const editBtn = document.createElement('span');
-        editBtn.className = 'material-icons';
-        editBtn.textContent = 'edit';
+        editBtn.className = 'mi fa-regular fa-pen-to-square';
         editBtn.style.cssText = 'font-size:14px;color:#94a3b8;cursor:pointer;flex-shrink:0;';
         editBtn.addEventListener('click', function(e) {
             e.stopPropagation();

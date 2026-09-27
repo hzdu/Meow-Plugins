@@ -791,7 +791,7 @@
             }
             const row = document.createElement('div');
             row.className = 'ed-ctx-item' + (it.danger ? ' danger' : '');
-            row.innerHTML = '<span class="material-icons">' + esc(it.icon || 'chevron_right') + '</span>' +
+            row.innerHTML = '<span class="mi fa-regular ' + esc(it.icon || 'fa-chevron-right') + '"></span>' +
                 '<span class="ed-ctx-label">' + esc(it.label) + '</span>';
             row.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -822,26 +822,26 @@
         const value = info.value;
         const items = [];
         if (isContainer(value)) {
-            items.push({ label: '复制值（JSON）', icon: 'content_copy', run: () => copyText(JSON.stringify(value, null, 2), '已复制节点 JSON') });
+            items.push({ label: '复制值（JSON）', icon: 'fa-copy', run: () => copyText(JSON.stringify(value, null, 2), '已复制节点 JSON') });
         } else {
-            items.push({ label: '复制值', icon: 'content_copy', run: () => copyText(rawValueText(value), '已复制值') });
+            items.push({ label: '复制值', icon: 'fa-copy', run: () => copyText(rawValueText(value), '已复制值') });
         }
         if (info.key !== null && !info.isIndex) {
-            items.push({ label: '复制键名', icon: 'vpn_key', run: () => copyText(String(info.key), '已复制键名') });
+            items.push({ label: '复制键名', icon: 'fa-key', run: () => copyText(String(info.key), '已复制键名') });
         }
-        items.push({ label: '复制路径', icon: 'link', run: () => copyText(pathToText(pathArr), '已复制路径') });
-        items.push({ label: '复制节点 JSON', icon: 'data_object', run: () => copyText(JSON.stringify(value, null, 2), '已复制节点 JSON') });
+        items.push({ label: '复制路径', icon: 'fa-link', run: () => copyText(pathToText(pathArr), '已复制路径') });
+        items.push({ label: '复制节点 JSON', icon: 'fa-brackets-curly', run: () => copyText(JSON.stringify(value, null, 2), '已复制节点 JSON') });
         items.push({ sep: true });
         // 容器节点只能改名（数组元素无键名，不可编辑）
         if (!isContainer(value) || !info.isIndex) {
-            items.push({ label: '编辑节点', icon: 'edit', run: () => openNodeDialog('edit', pathArr) });
+            items.push({ label: '编辑节点', icon: 'fa-pen-to-square', run: () => openNodeDialog('edit', pathArr) });
         }
         if (isContainer(value)) {
-            items.push({ label: '插入子节点', icon: 'add', run: () => openNodeDialog('insert', pathArr) });
+            items.push({ label: '插入子节点', icon: 'fa-plus', run: () => openNodeDialog('insert', pathArr) });
         }
         if (pathArr.length) {
             items.push({ sep: true });
-            items.push({ label: '删除节点', icon: 'delete', danger: true, run: () => removeNode(pathArr) });
+            items.push({ label: '删除节点', icon: 'fa-trash-can', danger: true, run: () => removeNode(pathArr) });
         }
         return items;
     }
@@ -1046,8 +1046,8 @@
                 '<span class="ed-snip-desc">' + esc(s.desc || '') + '</span>' +
                 '</div>' +
                 '<div class="ed-snip-ops">' +
-                '<button type="button" class="ed-mini-btn" data-op="edit" title="编辑"><span class="material-icons">edit</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-op="del" title="删除"><span class="material-icons">delete</span></button>' +
+                '<button type="button" class="ed-mini-btn" data-op="edit" title="编辑"><span class="mi fa-regular fa-pen-to-square"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-op="del" title="删除"><span class="mi fa-regular fa-trash-can"></span></button>' +
                 '</div>' +
                 '</div>';
         });
@@ -2311,21 +2311,21 @@
         '  <button type="button" class="ed-mini-btn" data-md="h2" title="二级标题 ##"><span class="md-glyph">H2</span></button>' +
         '  <button type="button" class="ed-mini-btn" data-md="h3" title="三级标题 ###"><span class="md-glyph">H3</span></button>' +
         '  <span class="ed-insert-sep"></span>' +
-        '  <button type="button" class="ed-mini-btn" data-md="bold" title="粗体 **"><span class="material-icons">format_bold</span></button>' +
-        '  <button type="button" class="ed-mini-btn" data-md="italic" title="斜体 *"><span class="material-icons">format_italic</span></button>' +
-        '  <button type="button" class="ed-mini-btn" data-md="strike" title="删除线 ~~"><span class="material-icons">format_strikethrough</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="bold" title="粗体 **"><span class="mi fa-regular fa-bold"></span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="italic" title="斜体 *"><span class="mi fa-regular fa-italic"></span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="strike" title="删除线 ~~"><span class="mi fa-regular fa-strikethrough"></span></button>' +
         '  <span class="ed-insert-sep"></span>' +
-        '  <button type="button" class="ed-mini-btn" data-md="icode" title="行内代码 `"><span class="material-icons">code</span></button>' +
-        '  <button type="button" class="ed-mini-btn" data-md="codeblock" title="代码块 ```"><span class="material-icons">data_object</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="icode" title="行内代码 `"><span class="mi fa-regular fa-code"></span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="codeblock" title="代码块 ```"><span class="mi fa-regular fa-brackets-curly"></span></button>' +
         '  <span class="ed-insert-sep"></span>' +
-        '  <button type="button" class="ed-mini-btn" data-md="link" title="链接 [文字](URL)"><span class="material-icons">link</span></button>' +
-        '  <button type="button" class="ed-mini-btn" data-md="image" title="图片 ![描述](URL)"><span class="material-icons">image</span></button>' +
-        '  <button type="button" class="ed-mini-btn" data-md="table" title="表格"><span class="material-icons">table_chart</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="link" title="链接 [文字](URL)"><span class="mi fa-regular fa-link"></span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="image" title="图片 ![描述](URL)"><span class="mi fa-regular fa-image"></span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="table" title="表格"><span class="mi fa-regular fa-table"></span></button>' +
         '  <span class="ed-insert-sep"></span>' +
-        '  <button type="button" class="ed-mini-btn" data-md="ul" title="无序列表 -"><span class="material-icons">format_list_bulleted</span></button>' +
-        '  <button type="button" class="ed-mini-btn" data-md="ol" title="有序列表 1."><span class="material-icons">format_list_numbered</span></button>' +
-        '  <button type="button" class="ed-mini-btn" data-md="quote" title="引用 >"><span class="material-icons">format_quote</span></button>' +
-        '  <button type="button" class="ed-mini-btn" data-md="hr" title="分隔线 ---"><span class="material-icons">remove</span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="ul" title="无序列表 -"><span class="mi fa-regular fa-list-ul"></span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="ol" title="有序列表 1."><span class="mi fa-regular fa-list-ol"></span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="quote" title="引用 >"><span class="mi fa-regular fa-quote-right"></span></button>' +
+        '  <button type="button" class="ed-mini-btn" data-md="hr" title="分隔线 ---"><span class="mi fa-regular fa-minus"></span></button>' +
         '</div>';
 
     // 每种编辑器的差异部分（搜索占位符、工具栏动作、下屏内容）
@@ -2339,13 +2339,13 @@
             bodyClass: '',
             bodyInner: '<div class="ed-tree"></div>',
             actions:
-                '<button type="button" class="ed-mini-btn" data-act="format" title="格式化"><span class="material-icons">format_align_left</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="minify" title="压缩为一行"><span class="material-icons">compress</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="expand" title="展开全部节点"><span class="material-icons">unfold_more</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="collapse" title="折叠全部节点"><span class="material-icons">unfold_less</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="autoclose" title="自动闭合 HTML 标签"><span class="material-icons">sell</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="copy" title="复制 JSON"><span class="material-icons">content_copy</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="clear" title="清空"><span class="material-icons">delete_sweep</span></button>'
+                '<button type="button" class="ed-mini-btn" data-act="format" title="格式化"><span class="mi fa-regular fa-align-left"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="minify" title="压缩为一行"><span class="mi fa-regular fa-compress"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="expand" title="展开全部节点"><span class="mi fa-regular fa-up-down"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="collapse" title="折叠全部节点"><span class="mi fa-regular fa-down-up"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="autoclose" title="自动闭合 HTML 标签"><span class="mi fa-regular fa-tag"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="copy" title="复制 JSON"><span class="mi fa-regular fa-copy"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="clear" title="清空"><span class="mi fa-regular fa-trash-can-arrow-up"></span></button>'
         },
         markdown: {
             hidden: ' hidden',
@@ -2357,9 +2357,9 @@
             bodyInner: '<div class="md-body"></div>',
             insertBar: MD_INSERT_BAR,
             actions:
-                '<button type="button" class="ed-mini-btn" data-act="copy" title="复制 Markdown 源码"><span class="material-icons">content_copy</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="copyhtml" title="复制预览 HTML"><span class="material-icons">code</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="clear" title="清空"><span class="material-icons">delete_sweep</span></button>'
+                '<button type="button" class="ed-mini-btn" data-act="copy" title="复制 Markdown 源码"><span class="mi fa-regular fa-copy"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="copyhtml" title="复制预览 HTML"><span class="mi fa-regular fa-code"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="clear" title="清空"><span class="mi fa-regular fa-trash-can-arrow-up"></span></button>'
         },
         html: {
             hidden: ' hidden',
@@ -2371,11 +2371,11 @@
             gutter: true,
             bodyInner: '<iframe class="html-frame" title="HTML 预览" sandbox="allow-same-origin"></iframe>',
             actions:
-                '<button type="button" class="ed-mini-btn" data-act="snippets" title="代码片段（输入触发词后按 Tab 展开）"><span class="material-icons">bookmarks</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="autoclose" title="自动闭合 HTML 标签"><span class="material-icons">sell</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="copy" title="复制 HTML 源码"><span class="material-icons">content_copy</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="newtab" title="在新标签页预览"><span class="material-icons">open_in_new</span></button>' +
-                '<button type="button" class="ed-mini-btn" data-act="clear" title="清空"><span class="material-icons">delete_sweep</span></button>'
+                '<button type="button" class="ed-mini-btn" data-act="snippets" title="代码片段（输入触发词后按 Tab 展开）"><span class="mi fa-regular fa-book-bookmark"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="autoclose" title="自动闭合 HTML 标签"><span class="mi fa-regular fa-tag"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="copy" title="复制 HTML 源码"><span class="mi fa-regular fa-copy"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="newtab" title="在新标签页预览"><span class="mi fa-regular fa-arrow-up-right-from-square"></span></button>' +
+                '<button type="button" class="ed-mini-btn" data-act="clear" title="清空"><span class="mi fa-regular fa-trash-can-arrow-up"></span></button>'
         }
     };
 
@@ -2383,12 +2383,12 @@
         const cfg = PANE_CONF[kind];
         const searchBar =
             '<div class="ed-search">' +
-            '  <span class="material-icons ed-search-icon">search</span>' +
+            '  <span class="mi ed-search-icon fa-regular fa-magnifying-glass"></span>' +
             '  <input type="text" class="ed-search-input" spellcheck="false" placeholder="' + cfg.searchPlaceholder + '">' +
-            '  <button type="button" class="ed-mini-btn ed-search-clear" title="清空搜索（Esc）"><span class="material-icons">close</span></button>' +
+            '  <button type="button" class="ed-mini-btn ed-search-clear" title="清空搜索（Esc）"><span class="mi fa-regular fa-xmark"></span></button>' +
             '  <span class="ed-search-count"></span>' +
-            '  <button type="button" class="ed-mini-btn ed-search-prev" title="上一个（Shift+Enter）"><span class="material-icons">keyboard_arrow_up</span></button>' +
-            '  <button type="button" class="ed-mini-btn ed-search-next" title="下一个（Enter）"><span class="material-icons">keyboard_arrow_down</span></button>' +
+            '  <button type="button" class="ed-mini-btn ed-search-prev" title="上一个（Shift+Enter）"><span class="mi fa-regular fa-chevron-up"></span></button>' +
+            '  <button type="button" class="ed-mini-btn ed-search-next" title="下一个（Enter）"><span class="mi fa-regular fa-chevron-down"></span></button>' +
             '</div>';
 
         return '<section class="ed-pane' + cfg.hidden + '" data-pane="' + kind + '">' +
@@ -2416,15 +2416,15 @@
     function buildHtml() {
         return '<div class="ed-rail" title="按住图标可拖动排序">' +
             '<div class="ed-rail-tab active" data-editor="json" title="JSON 编辑器">' +
-            '  <span class="material-icons ed-rail-icon">data_object</span>' +
+            '  <span class="mi ed-rail-icon fa-regular fa-brackets-curly"></span>' +
             '  <span class="ed-rail-label">JSON</span>' +
             '</div>' +
             '<div class="ed-rail-tab" data-editor="markdown" title="Markdown 编辑器">' +
-            '  <span class="material-icons ed-rail-icon">article</span>' +
+            '  <span class="mi ed-rail-icon fa-regular fa-file-lines"></span>' +
             '  <span class="ed-rail-label">Markdown</span>' +
             '</div>' +
             '<div class="ed-rail-tab" data-editor="html" title="HTML 编辑器">' +
-            '  <span class="material-icons ed-rail-icon">code</span>' +
+            '  <span class="mi ed-rail-icon fa-regular fa-code"></span>' +
             '  <span class="ed-rail-label">HTML</span>' +
             '</div>' +
             '</div>' +

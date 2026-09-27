@@ -531,7 +531,7 @@ async function handleFetchProviderModels() {
     // 按钮进入获取中状态
     const origHtml = aiProviderFetchModelsBtn.innerHTML;
     aiProviderFetchModelsBtn.disabled = true;
-    aiProviderFetchModelsBtn.innerHTML = '<span class="material-icons" style="font-size:14px;vertical-align:middle;animation:fa-spin 0.9s linear infinite;">autorenew</span> 获取中…';
+    aiProviderFetchModelsBtn.innerHTML = '<span class="mi fa-regular fa-arrows-rotate" style="font-size:14px;vertical-align:middle;animation:fa-spin 0.9s linear infinite;"></span> 获取中…';
     setAiModelFetchStatus(urls.length > 1 ? '正在获取模型…（共 ' + urls.length + ' 个 Base URL）' : '正在获取模型…');
 
     const foundMap = new Map();   // model id -> 来源 host（跨地址去重）

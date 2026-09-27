@@ -288,7 +288,7 @@ function copyToClipboard(text, hintElement) {
         if (hintElement) {
             if(hintElement.tagName === 'SPAN') {
                 const originalHTML = hintElement.innerHTML;
-                hintElement.innerHTML = `<span class="material-icons" style="font-size:12px">check</span> ${meowI18n.t('msg_copied')}`;
+                hintElement.innerHTML = `<span class="mi fa-regular fa-check" style="font-size:12px"></span> ${meowI18n.t('msg_copied')}`;
                 hintElement.classList.add('copied');
                 setTimeout(() => {
                     hintElement.innerHTML = originalHTML;
@@ -418,16 +418,47 @@ function saveLastTab(target) {
     chrome.storage.local.set({ 'meow_last_tab': target });
 }
 
+// 显示指定的 Tab；传入 null/无效值时回退到 HTML 中默认激活的 Tab。
+// 这一步是「保证面板可见」的关键：只有点击 Tab 才会移除对应 view 的 hidden 类。
+function applyTabTarget(saved) {
+    if (saved) {
+        const targetBtn = document.querySelector(`.tab-btn[data-target="${saved}"]`);
+        if (targetBtn) { targetBtn.click(); return; }
+    }
+    const defaultBtn = document.querySelector('.tab-btn.active') || document.querySelector('.tab-btn');
+    if (defaultBtn) defaultBtn.click();
+}
+
 function restoreLastTab() {
-    chrome.storage.local.get(['meow_last_tab'], (result) => {
-        const saved = result.meow_last_tab;
-        if (saved) {
-            const targetBtn = document.querySelector(`.tab-btn[data-target="${saved}"]`);
-            if (targetBtn) { targetBtn.click(); return; }
-        }
-        const defaultBtn = document.querySelector('.tab-btn.active');
-        if (defaultBtn) defaultBtn.click();
-    });
+    // 兜底看门狗：长时间未打开侧边栏时 Service Worker 可能仍处于休眠状态，
+    // chrome.storage 的回调可能迟迟不返回（冷启动唤醒、重试等）。
+    // 如果一直等它，就始终没有任何 view-content 被显示出来，首次绘制看到的
+    // 就是空白面板。因此先立刻按默认 Tab 显示，storage 结果回来后再切换到上次的 Tab。
+    let settled = false;
+    const watchdog = setTimeout(() => {
+        if (settled) return;
+        console.warn('Meow: 恢复上次标签超时，先显示默认标签以保证面板可见。');
+        applyTabTarget(null);
+    }, 1200);
+
+    try {
+        chrome.storage.local.get(['meow_last_tab'], (result) => {
+            if (chrome.runtime.lastError) {
+                console.warn('Meow: 读取 meow_last_tab 失败：', chrome.runtime.lastError.message);
+                settled = true;
+                clearTimeout(watchdog);
+                applyTabTarget(null);
+                return;
+            }
+            settled = true;
+            clearTimeout(watchdog);
+            applyTabTarget(result && result.meow_last_tab);
+        });
+    } catch (err) {
+        console.warn('Meow: restoreLastTab 访问 storage 失败：', err);
+        clearTimeout(watchdog);
+        applyTabTarget(null);
+    }
 }
 
 // ================== 侧边栏顶部 Tab 拖拽排序 ==================
@@ -533,7 +564,7 @@ function renderFullCatPanel() {
     const allItem = document.createElement('div');
     const isAllActive = (currentFilter === 'all');
     allItem.className = 'full-cat-item' + (isAllActive ? ' active' : '');
-    allItem.innerHTML = '<span>' + labelAll + '</span>' + (isAllActive ? '<span class="material-icons">check_circle</span>' : '');
+    allItem.innerHTML = '<span>' + labelAll + '</span>' + (isAllActive ? '<span class="mi fa-regular fa-circle-check"></span>' : '');
     allItem.addEventListener('click', function() { selectCategoryAndClose('all'); });
     fullCatGrid.appendChild(allItem);
 
@@ -541,7 +572,7 @@ function renderFullCatPanel() {
         const item = document.createElement('div');
         const isActive = (currentFilter === cat.id);
         item.className = 'full-cat-item' + (isActive ? ' active' : '');
-        item.innerHTML = '<span>' + escapeHtml(cat.name) + '</span>' + (isActive ? '<span class="material-icons">check_circle</span>' : '');
+        item.innerHTML = '<span>' + escapeHtml(cat.name) + '</span>' + (isActive ? '<span class="mi fa-regular fa-circle-check"></span>' : '');
         item.addEventListener('click', function() { selectCategoryAndClose(cat.id); });
         fullCatGrid.appendChild(item);
     });
@@ -564,7 +595,7 @@ function renderCatManager() {
         div.className = 'cat-item-row';
         div.draggable = true;
         div.dataset.index = index;
-        div.innerHTML = '<span class="material-icons drag-handle">drag_indicator</span><span class="cat-name" title="Rename">' + escapeHtml(cat.name) + '</span><div class="cat-actions"><span class="material-icons cat-del-btn" title="Delete">delete</span></div>';
+        div.innerHTML = '<span class="mi drag-handle fa-regular fa-grip-dots-vertical"></span><span class="cat-name" title="Rename">' + escapeHtml(cat.name) + '</span><div class="cat-actions"><span class="mi cat-del-btn fa-regular fa-trash-can" title="Delete"></span></div>';
 
         div.querySelector('.cat-name').addEventListener('click', function(e) {
             e.preventDefault(); e.stopPropagation();

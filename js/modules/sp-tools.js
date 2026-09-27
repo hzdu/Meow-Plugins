@@ -219,7 +219,7 @@ function setupConverterLogic() {
             linkScamalytics.style.display = 'inline';
 
             ipResultArea.classList.remove('hidden');
-            btnIpQuery.innerHTML = '<span class="material-icons" style="font-size: 14px; vertical-align: middle;">refresh</span> ' + meowI18n.t('action_query_net');
+            btnIpQuery.innerHTML = '<span class="mi fa-regular fa-arrows-rotate" style="font-size: 14px; vertical-align: middle;"></span> ' + meowI18n.t('action_query_net');
         };
 
         // Check checking/auto-query logic
@@ -397,7 +397,7 @@ function setupConverterLogic() {
                 console.error("Meow IP Check Error:", e);
             }
             // Reset button text happens in updateIpUi or on error case
-btnIpQuery.innerHTML = '<span class="material-icons" style="font-size: 14px; vertical-align: middle;">refresh</span> ' + meowI18n.t('action_query_net');
+btnIpQuery.innerHTML = '<span class="mi fa-regular fa-arrows-rotate" style="font-size: 14px; vertical-align: middle;"></span> ' + meowI18n.t('action_query_net');
         };
 
          // Initial check
@@ -573,7 +573,7 @@ btnIpQuery.innerHTML = '<span class="material-icons" style="font-size: 14px; ver
                 fuelResultArea.classList.add('hidden');
             }
 
-            btnFuelQuery.innerHTML = '<span class="material-icons" style="font-size: 14px; vertical-align: middle;">search</span> ' + meowI18n.t('fuel_action_query');
+            btnFuelQuery.innerHTML = '<span class="mi fa-regular fa-magnifying-glass" style="font-size: 14px; vertical-align: middle;"></span> ' + meowI18n.t('fuel_action_query');
         };
     }
 
@@ -928,8 +928,7 @@ function setupToolCardDrag() {
         h3.querySelectorAll('a[href]').forEach(a => a.setAttribute('draggable', 'false'));
         if (h3.querySelector('.tool-drag-handle')) return;
         const handle = document.createElement('span');
-        handle.className = 'material-icons tool-drag-handle';
-        handle.textContent = 'drag_indicator';
+        handle.className = 'mi fa-regular fa-grip-dots-vertical tool-drag-handle';
         const toggle = h3.querySelector('.toggle-icon');
         if (toggle) {
             h3.insertBefore(handle, toggle);

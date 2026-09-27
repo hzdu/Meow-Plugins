@@ -203,8 +203,8 @@ function renderRegCodes() {
 
         // 联系人行（微信/电话）
         const contactParts = [];
-        if (reg.wechat) contactParts.push(`<span class="material-icons reg-contact-ic" style="font-size:13px;color:#31c48d;">wechat</span><span class="reg-contact-text">${escapeHtml(reg.wechat)}</span>`);
-        if (reg.phone) contactParts.push(`<span class="material-icons reg-contact-ic" style="font-size:13px;color:#3b82f6;">phone</span><span class="reg-contact-text">${escapeHtml(reg.phone)}</span>`);
+        if (reg.wechat) contactParts.push(`<span class="mi reg-contact-ic fa-brands fa-weixin" style="font-size:13px;color:#31c48d;"></span><span class="reg-contact-text">${escapeHtml(reg.wechat)}</span>`);
+        if (reg.phone) contactParts.push(`<span class="mi reg-contact-ic fa-regular fa-phone" style="font-size:13px;color:#3b82f6;"></span><span class="reg-contact-text">${escapeHtml(reg.phone)}</span>`);
 
         const card = document.createElement('div');
         card.className = 'srv-card reg-card';
@@ -213,13 +213,13 @@ function renderRegCodes() {
 
         card.innerHTML = `
             <div class="srv-card-header reg-card-header">
-                <span class="material-icons srv-card-toggle">expand_more</span>
-                <span class="material-icons" style="font-size:16px;color:#8b5cf6;">verified_user</span>
+                <span class="mi srv-card-toggle fa-regular fa-chevron-down"></span>
+                <span class="mi fa-regular fa-shield-check" style="font-size:16px;color:#8b5cf6;"></span>
                 <span class="srv-card-name reg-card-name${expiryInfo.critical ? ' reg-card-name-danger' : ''}" title="${escapeHtml(displayName)}">${escapeHtml(displayName)}</span>
                 ${hasPrice ? `<span class="reg-price-badge" title="销售金额">¥${formatRegPrice(reg.salePrice)}</span>` : ''}
                 <span class="reg-status-badge ${expiryInfo.className}">${expiryInfo.label}</span>
                 <div class="srv-card-actions">
-                    <span class="material-icons reg-edit-btn" data-id="${reg.id}" title="编辑">edit</span>
+                    <span class="mi reg-edit-btn fa-regular fa-pen-to-square" data-id="${reg.id}" title="编辑"></span>
                     <i class="fa-regular fa-xmark reg-del-btn" data-id="${reg.id}" title="删除"></i>
                 </div>
             </div>
@@ -233,9 +233,9 @@ function renderRegCodes() {
                 <div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(reg.code || '')}" title="点击复制"><span class="srv-info-label">注册码</span><span class="srv-info-val reg-code-val-inline">${escapeHtml(reg.code || '--')}</span></div>
                 <div class="srv-info-row"><span class="srv-info-label">购买时间</span><span class="srv-info-val">${escapeHtml(reg.purchase || '--')}</span></div>
                 <div class="srv-info-row"><span class="srv-info-label">到期时间</span><span class="srv-info-val">${escapeHtml(reg.expiry || '永久授权')}</span></div>
-                ${reg.note ? `<div class="srv-note-box"><span class="material-icons" style="font-size:12px;color:#a8a29e;">description</span> ${escapeHtml(reg.note)}</div>` : ''}
+                ${reg.note ? `<div class="srv-note-box"><span class="mi fa-regular fa-file-lines" style="font-size:12px;color:#a8a29e;"></span> ${escapeHtml(reg.note)}</div>` : ''}
                 <div class="reg-card-actions">
-                    <button class="srv-copy-btn" data-copy-type="all" title="一键复制客户全部信息"><span class="material-icons" style="font-size:13px;">content_copy</span>复制全部信息</button>
+                    <button class="srv-copy-btn" data-copy-type="all" title="一键复制客户全部信息"><span class="mi fa-regular fa-copy" style="font-size:13px;"></span>复制全部信息</button>
                 </div>
             </div>
         `;
@@ -579,12 +579,12 @@ function renderRegCatManageList() {
         item.draggable = true;
         item.dataset.index = index;
         item.innerHTML = `
-            <span class="material-icons srv-cat-drag-handle">drag_indicator</span>
-            <span class="material-icons" style="font-size:16px;color:#8b5cf6;flex-shrink:0;">apps</span>
+            <span class="mi srv-cat-drag-handle fa-regular fa-grip-dots-vertical"></span>
+            <span class="mi fa-regular fa-grid" style="font-size:16px;color:#8b5cf6;flex-shrink:0;"></span>
             <span class="srv-cat-list-name">${escapeHtml(cat.name)}</span>
             <div class="srv-cat-list-actions">
-                <span class="material-icons reg-cat-rename-icon" title="重命名">edit</span>
-                <span class="material-icons reg-cat-del-icon" title="删除">delete</span>
+                <span class="mi reg-cat-rename-icon fa-regular fa-pen-to-square" title="重命名"></span>
+                <span class="mi reg-cat-del-icon fa-regular fa-trash-can" title="删除"></span>
             </div>
         `;
 

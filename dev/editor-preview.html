@@ -8,8 +8,12 @@
     <meta charset="UTF-8">
     <title>Meow 编辑器预览</title>
     <link rel="stylesheet" href="../css/sidepanel.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdmirror.com/cnb/ifoyar/fontawesome-pro@main/releases/v7.3.0/css/fontawesome.css">
+    <!-- 图标/字体与 sidepanel.html 保持一致：统一走 js/cdn-styles.js 异步注入。
+         这样既不会阻塞首屏渲染，也能一并加载 regular.css（线框图标必需的 400 字重）。
+         Material Icons 已全部替换为 Font Awesome Pro 线框图标。 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://cdn.jsdmirror.com" crossorigin>
+    <script src="../js/cdn-styles.js"></script>
 </head>
 <body tabindex="-1">
     <div class="container" style="height:100vh; max-width:420px; margin:0 auto; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;">
@@ -17,7 +21,7 @@
             <div class="tab-group">
                 <button class="tab-btn" data-target="tools"><i class="fa-regular fa-wrench"></i></button>
                 <button class="tab-btn active" data-target="editor" title="编辑器">
-                    <span class="material-icons" style="font-size:16px;">data_object</span>
+                    <i class="fa-regular fa-brackets-curly" style="font-size:16px;"></i>
                 </button>
                 <button class="tab-btn" data-target="servers"><i class="fa-regular fa-cloud"></i></button>
             </div>

@@ -140,7 +140,7 @@ async function fetchHotList(source) {
                 }
 
                 if (heatText) {
-                    heatHtml = `<span class="hot-meta"><span class="material-icons" style="font-size:12px;">local_fire_department</span> ${heatText}</span>`;
+                    heatHtml = `<span class="hot-meta"><span class="mi fa-regular fa-fire" style="font-size:12px;"></span> ${heatText}</span>`;
                 }
 
                 div.innerHTML = `

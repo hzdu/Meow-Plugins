@@ -43,8 +43,8 @@ function render2FA() {
             <div class="fa-card-header">
                 <span class="fa-card-name">${safeName}</span>
                 <div class="fa-card-actions">
-                    <span class="material-icons fa-refresh-btn" data-id="${account.id}">refresh</span>
-                    <span class="material-icons fa-edit-btn" data-id="${account.id}">edit</span>
+                    <span class="mi fa-refresh-btn fa-regular fa-arrows-rotate" data-id="${account.id}"></span>
+                    <span class="mi fa-edit-btn fa-regular fa-pen-to-square" data-id="${account.id}"></span>
                     <i class="fa-regular fa-xmark fa-del-btn" data-id="${account.id}"></i>
                 </div>
             </div>
@@ -57,7 +57,7 @@ function render2FA() {
                     </svg>
                 </div>
                 <span class="fa-code-value refreshing" id="fa-code-${account.id}">${meowI18n.t('2fa_code_refreshing')}</span>
-                <span class="fa-copy-hint"><span class="material-icons" style="font-size:12px">content_copy</span> ${meowI18n.t('action_copy')}</span>
+                <span class="fa-copy-hint"><span class="mi fa-regular fa-copy" style="font-size:12px"></span> ${meowI18n.t('action_copy')}</span>
             </div>
         `;
 

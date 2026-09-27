@@ -193,7 +193,7 @@ function renderServers() {
         card.className = 'srv-card';
         card.dataset.id = srv.id;
 
-        const osIcon = srv.os === 'Windows' ? 'window' : (srv.os === 'Other' ? 'help_outline' : 'terminal');
+        const osIcon = srv.os === 'Windows' ? 'fa-window-maximize' : (srv.os === 'Other' ? 'fa-circle-question' : 'fa-terminal');
         const protocolLabel = SRV_PROTOCOL_LABELS[srv.protocol] || srv.protocol || 'SSH';
         const wsCount = (srv.websites || []).length;
         const displayName = srv.title || srv.ip || '(未设置)';
@@ -213,14 +213,14 @@ function renderServers() {
             return `<div class="srv-ws-item" data-widx="${wi}">
                 <div class="srv-ws-item-header">
                     <div class="srv-ws-domain">
-                        <span class="material-icons srv-ws-toggle" style="font-size:14px;color:#94a3b8;cursor:pointer;">expand_more</span>
-                        <span class="material-icons" style="font-size:12px;color:#10b981;">language</span>
+                        <span class="mi srv-ws-toggle fa-regular fa-chevron-down" style="font-size:14px;color:#94a3b8;cursor:pointer;"></span>
+                        <span class="mi fa-regular fa-globe" style="font-size:12px;color:#10b981;"></span>
                         <span class="srv-copy-row" data-copy="${escapeHtml(ws.domain || '')}" title="点击复制域名" style="cursor:pointer;">${escapeHtml(ws.domain || '(未设置域名)')}</span>
-                        ${ws.adminUrl ? `<a class="srv-ws-link" href="${escapeHtml(ws.adminUrl)}" target="_blank" onclick="event.stopPropagation()" title="打开后台"><span class="material-icons" style="font-size:12px;color:#0891b2;">open_in_new</span></a>` : ''}
+                        ${ws.adminUrl ? `<a class="srv-ws-link" href="${escapeHtml(ws.adminUrl)}" target="_blank" onclick="event.stopPropagation()" title="打开后台"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:12px;color:#0891b2;"></span></a>` : ''}
                     </div>
                     <div class="srv-ws-item-actions">
-                        <button class="srv-copy-btn" data-copy-type="website" data-widx="${wi}" title="一键复制网站信息"><span class="material-icons" style="font-size:13px;">content_copy</span>复制</button>
-                        <span class="material-icons srv-ws-edit-btn" data-widx="${wi}" title="编辑网站" style="font-size:14px;color:#cbd5e1;cursor:pointer;">edit</span>
+                        <button class="srv-copy-btn" data-copy-type="website" data-widx="${wi}" title="一键复制网站信息"><span class="mi fa-regular fa-copy" style="font-size:13px;"></span>复制</button>
+                        <span class="mi srv-ws-edit-btn fa-regular fa-pen-to-square" data-widx="${wi}" title="编辑网站" style="font-size:14px;color:#cbd5e1;cursor:pointer;"></span>
                         <i class="fa-regular fa-xmark srv-ws-del-btn" data-widx="${wi}" title="删除网站" style="font-size:14px;color:#cbd5e1;cursor:pointer;"></i>
                     </div>
                 </div>
@@ -230,20 +230,20 @@ function renderServers() {
 
         card.innerHTML = `
             <div class="srv-card-header">
-                <span class="material-icons srv-card-toggle">expand_more</span>
-                <span class="material-icons" style="font-size:16px;color:#6366f1;">${osIcon}</span>
+                <span class="mi srv-card-toggle fa-regular fa-chevron-down"></span>
+                <span class="mi fa-regular ${osIcon}" style="font-size:16px;color:#6366f1;"></span>
                 <span class="srv-card-name${srv.isCharged ? (srv.paid ? ' srv-card-name-paid' : ' srv-card-name-unpaid') : ''}"${srv.isCharged && !srv.paid ? ' title="已收费但未收款"' : ''}>${escapeHtml(displayName)}</span>
                 <span class="srv-card-badge">${escapeHtml(srv.os || '')}</span>
                 <div class="srv-card-actions">
-                    ${srv.providerUrl ? `<a class="srv-provider-link" href="${escapeHtml(srv.providerUrl)}" target="_blank" onclick="event.stopPropagation()" title="打开供应商"><span class="material-icons" style="font-size:16px;color:#cbd5e1;">open_in_new</span></a>` : ''}
-                    <span class="material-icons srv-edit-btn" data-id="${srv.id}" title="编辑">edit</span>
+                    ${srv.providerUrl ? `<a class="srv-provider-link" href="${escapeHtml(srv.providerUrl)}" target="_blank" onclick="event.stopPropagation()" title="打开供应商"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:16px;color:#cbd5e1;"></span></a>` : ''}
+                    <span class="mi srv-edit-btn fa-regular fa-pen-to-square" data-id="${srv.id}" title="编辑"></span>
                     <i class="fa-regular fa-xmark srv-del-btn" data-id="${srv.id}" title="删除"></i>
                 </div>
             </div>
             <div class="srv-card-body" style="display:none">
                 <div class="srv-section-bar">
-                    <span class="srv-section-title"><span class="material-icons" style="font-size:13px;color:#6366f1;">cloud</span> 连接信息</span>
-                    <button class="srv-copy-btn" data-copy-type="server" title="一键复制 IP/端口/用户名/密码"><span class="material-icons" style="font-size:13px;">content_copy</span>复制</button>
+                    <span class="srv-section-title"><span class="mi fa-regular fa-cloud" style="font-size:13px;color:#6366f1;"></span> 连接信息</span>
+                    <button class="srv-copy-btn" data-copy-type="server" title="一键复制 IP/端口/用户名/密码"><span class="mi fa-regular fa-copy" style="font-size:13px;"></span>复制</button>
                 </div>
                 <div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(srv.ip || '')}" title="点击复制"><span class="srv-info-label">IP 地址</span><span class="srv-info-val" style="color:#6366f1;font-weight:600;">${escapeHtml(srv.ip || '--')}</span></div>
                 <div class="srv-info-row"><span class="srv-info-label">协议</span><span class="srv-info-val">${protocolLabel}</span></div>
@@ -253,19 +253,19 @@ function renderServers() {
                 ${srv.isCharged ? `<div class="srv-info-row"><span class="srv-info-label">收费金额</span><span class="srv-info-val" style="color:#d97706;font-weight:600;">¥ ${escapeHtml(formatSrvFee(srv.chargeFee))}</span></div>` : ''}
                 ${srv.panelType && srv.panelType !== 'none' ? `
                 <div class="srv-section-bar">
-                    <span class="srv-section-title"><span class="material-icons" style="font-size:13px;color:#6366f1;">dashboard</span> ${SRV_PANEL_LABELS[srv.panelType] || '管理面板'}</span>
-                    <button class="srv-copy-btn" data-copy-type="panel" title="一键复制面板地址/账号/密码"><span class="material-icons" style="font-size:13px;">content_copy</span>复制</button>
+                    <span class="srv-section-title"><span class="mi fa-regular fa-table-cells-large" style="font-size:13px;color:#6366f1;"></span> ${SRV_PANEL_LABELS[srv.panelType] || '管理面板'}</span>
+                    <button class="srv-copy-btn" data-copy-type="panel" title="一键复制面板地址/账号/密码"><span class="mi fa-regular fa-copy" style="font-size:13px;"></span>复制</button>
                 </div>
                 ${srv.panelUrl ? `<div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(srv.panelUrl)}" title="点击复制"><span class="srv-info-label">面板地址</span><span class="srv-info-val" style="color:#0891b2;text-decoration:underline;">${escapeHtml(srv.panelUrl)}</span></div>` : ''}
                 <div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(srv.panelUser || '')}" title="点击复制"><span class="srv-info-label">面板账号</span><span class="srv-info-val">${escapeHtml(srv.panelUser || '--')}</span></div>
                 <div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(srv.panelPass || '')}" title="点击复制"><span class="srv-info-label">面板密码</span><span class="srv-info-val srv-masked">${srv.panelPass ? '••••••••' : '--'}</span></div>
                 ` : ''}
-                ${srv.note && srv.note.trim() ? `<div class="srv-note-box"><span class="material-icons" style="font-size:12px;color:#a8a29e;">description</span> ${escapeHtml(srv.note)}</div>` : ''}
+                ${srv.note && srv.note.trim() ? `<div class="srv-note-box"><span class="mi fa-regular fa-file-lines" style="font-size:12px;color:#a8a29e;"></span> ${escapeHtml(srv.note)}</div>` : ''}
                 <div class="srv-ws-section">
                     <div class="srv-ws-header">
-                        <span class="material-icons" style="font-size:12px;color:#10b981;">language</span>
+                        <span class="mi fa-regular fa-globe" style="font-size:12px;color:#10b981;"></span>
                         <span>绑定网站 (${wsCount})</span>
-                        <button type="button" class="srv-ws-add-btn" title="添加网站"><span class="material-icons" style="font-size:14px;">add</span></button>
+                        <button type="button" class="srv-ws-add-btn" title="添加网站"><span class="mi fa-regular fa-plus" style="font-size:14px;"></span></button>
                     </div>
                     ${wsCount > 0 ? websitesHtml : '<div class="srv-ws-empty-hint">暂无网站</div>'}
                 </div>
@@ -608,12 +608,12 @@ function renderSrvEditWebsites() {
         item.className = 'srv-ws-edit-item';
         item.innerHTML = `
             <div class="srv-ws-edit-info">
-                <span class="material-icons" style="font-size:14px;color:#10b981;">language</span>
+                <span class="mi fa-regular fa-globe" style="font-size:14px;color:#10b981;"></span>
                 <span class="srv-ws-edit-domain">${escapeHtml(ws.domain || '(未设置域名)')}</span>
             </div>
             <div class="srv-ws-edit-actions">
-                ${ws.adminUrl ? `<a class="srv-ws-link" href="${escapeHtml(ws.adminUrl)}" target="_blank" title="打开后台" style="display:inline-flex;font-size:16px;color:#cbd5e1;text-decoration:none;"><span class="material-icons" style="font-size:16px;">open_in_new</span></a>` : ''}
-                <span class="material-icons srv-ws-edit-btn" data-idx="${idx}" title="编辑" style="font-size:16px;color:#cbd5e1;cursor:pointer;">edit</span>
+                ${ws.adminUrl ? `<a class="srv-ws-link" href="${escapeHtml(ws.adminUrl)}" target="_blank" title="打开后台" style="display:inline-flex;font-size:16px;color:#cbd5e1;text-decoration:none;"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:16px;"></span></a>` : ''}
+                <span class="mi srv-ws-edit-btn fa-regular fa-pen-to-square" data-idx="${idx}" title="编辑" style="font-size:16px;color:#cbd5e1;cursor:pointer;"></span>
                 <i class="fa-regular fa-xmark srv-ws-edit-del" data-idx="${idx}" title="删除" style="font-size:16px;color:#cbd5e1;cursor:pointer;"></i>
             </div>
         `;
@@ -1446,12 +1446,12 @@ function setupServerLogic() {
             item.draggable = true;
             item.dataset.index = index;
             item.innerHTML = `
-                <span class="material-icons srv-cat-drag-handle">drag_indicator</span>
-                <span class="material-icons" style="font-size:16px;color:#6366f1;flex-shrink:0;">folder</span>
+                <span class="mi srv-cat-drag-handle fa-regular fa-grip-dots-vertical"></span>
+                <span class="mi fa-regular fa-folder" style="font-size:16px;color:#6366f1;flex-shrink:0;"></span>
                 <span class="srv-cat-list-name">${escapeHtml(cat.name)}</span>
                 <div class="srv-cat-list-actions">
-                    <span class="material-icons srv-cat-rename-icon" title="重命名">edit</span>
-                    <span class="material-icons srv-cat-del-icon" title="删除">delete</span>
+                    <span class="mi srv-cat-rename-icon fa-regular fa-pen-to-square" title="重命名"></span>
+                    <span class="mi srv-cat-del-icon fa-regular fa-trash-can" title="删除"></span>
                 </div>
             `;
 
