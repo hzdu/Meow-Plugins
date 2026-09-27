@@ -1,7 +1,5 @@
-### 19.1.5
+### 19.1.6
 - 修正github actions脚本
-
-### 19.1.3
 - 侧边栏FontAwesome线框图标替换掉Material Icons，减少启动时的连接提升打开速度
 
 ### 19.1.2
