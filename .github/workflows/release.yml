@@ -1,0 +1,100 @@
+name: Build and Release Extension
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'history.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check Version Change & Parse Changelog
+        id: parse_changelog
+        run: |
+          python3 - << 'EOF'
+          import os
+          import re
+          import subprocess
+
+          def extract_version_and_log(content):
+              lines = content.splitlines()
+              version_pattern = re.compile(r'^(?:#+\s*)?(\d+(?:\.\d+)+)\s*$')
+              version = None
+              body_lines = []
+              capturing = False
+              for line in lines:
+                  match = version_pattern.match(line.strip())
+                  if match:
+                      if not capturing:
+                          version = match.group(1)
+                          capturing = True
+                          continue
+                      else:
+                          break
+                  elif capturing:
+                      body_lines.append(line)
+              return version, "\n".join(body_lines).strip()
+
+          with open('history.md', 'r', encoding='utf-8') as f:
+              curr_content = f.read()
+          curr_ver, curr_body = extract_version_and_log(curr_content)
+
+          if not curr_ver:
+              raise ValueError("未在 history.md 中检测到有效的版本号！")
+
+          prev_ver = None
+          try:
+              prev_content = subprocess.check_output(
+                  ['git', 'show', 'HEAD~1:history.md'], 
+                  stderr=subprocess.DEVNULL
+              ).decode('utf-8')
+              prev_ver, _ = extract_version_and_log(prev_content)
+          except Exception:
+              pass
+
+          is_new_ver = "true" if (curr_ver != prev_ver) else "false"
+          print(f"Previous Version: {prev_ver}")
+          print(f"Current Version: {curr_ver}")
+          print(f"Is New Version: {is_new_ver}")
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as gh_out:
+              gh_out.write(f"version={curr_ver}\n")
+              gh_out.write(f"tag_name=v{curr_ver}\n")
+              gh_out.write(f"is_new_version={is_new_ver}\n")
+
+          with open('release_notes.txt', 'w', encoding='utf-8') as rn:
+              rn.write(curr_body)
+          EOF
+
+      - name: Package Extension (Exclude .md files)
+        if: steps.parse_changelog.outputs.is_new_version == 'true'
+        run: |
+          zip -r "Meow_${{ steps.parse_changelog.outputs.version }}.zip" . \
+            -x "*.md" \
+            -x "*/*.md" \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "release_notes.txt"
+
+      - name: Create GitHub Release
+        if: steps.parse_changelog.outputs.is_new_version == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.parse_changelog.outputs.tag_name }}
+          name: Meow ${{ steps.parse_changelog.outputs.tag_name }}
+          body_path: release_notes.txt
+          files: Meow_${{ steps.parse_changelog.outputs.version }}.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
