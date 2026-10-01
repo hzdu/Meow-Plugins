@@ -174,6 +174,22 @@
         });
     }
 
+    // <style> 里输入「{」时自动补全换行与闭合大括号，光标停在中间行
+    function setupCssBrace(ta) {
+        ta.addEventListener('keydown', (e) => {
+            if (e.key !== '{' || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+            const start = ta.selectionStart, end = ta.selectionEnd;
+            if (start !== end) return;
+            if (hintContext(ta.value, start) !== 'css') return;
+            if (/^\s*\}/.test(ta.value.slice(end))) return;              // 后面已有 } 时不重复补
+            e.preventDefault();
+            const lineStart = ta.value.lastIndexOf('\n', start - 1) + 1;
+            const indent = (/^[ \t]*/.exec(ta.value.slice(lineStart, start)) || [''])[0];
+            const text = '{\n' + indent + '\t\n' + indent + '}';
+            insertAtCaret(ta, text, 3 + indent.length);
+        });
+    }
+
     function syncAutoCloseButtons() {
         if (!dom.root) return;
         dom.root.querySelectorAll('[data-act="autoclose"]').forEach(btn => {
@@ -3177,7 +3193,148 @@
         ['resize', 'resize: ${1:vertical};', '可调整大小'],
         ['contain', 'contain: ${1:layout paint};', '渲染隔离'],
         ['mix-blend-mode', 'mix-blend-mode: ${1:multiply};', '混合模式'],
-        ['clip-path', 'clip-path: circle(${1:50%});', '裁剪']
+        ['clip-path', 'clip-path: circle(${1:50%});', '裁剪'],
+
+        // —— 边框 / 轮廓 / 逻辑盒 ——
+        ['border-top', 'border-top: 1px solid ${1:#e2e8f0};', '上边框'],
+        ['border-right', 'border-right: 1px solid ${1:#e2e8f0};', '右边框'],
+        ['border-bottom', 'border-bottom: 1px solid ${1:#e2e8f0};', '下边框'],
+        ['border-left', 'border-left: 1px solid ${1:#e2e8f0};', '左边框'],
+        ['border-inline', 'border-inline: ${1:1px} ${2:solid} ${3:#e2e8f0};', '逻辑左右边框'],
+        ['border-block', 'border-block: ${1:1px} ${2:solid} ${3:#e2e8f0};', '逻辑上下边框'],
+        ['border-collapse', 'border-collapse: collapse;', '表格边框合并'],
+        ['border-spacing', 'border-spacing: ${1:0};', '单元格间距'],
+        ['outline-color', 'outline-color: ${1:#6366f1};', '轮廓颜色'],
+        ['outline-offset', 'outline-offset: ${1:2px};', '轮廓偏移'],
+        ['margin-inline', 'margin-inline: ${1:auto};', '逻辑左右外边距'],
+        ['margin-block', 'margin-block: ${1:0};', '逻辑上下外边距'],
+        ['padding-inline', 'padding-inline: ${1:16px};', '逻辑左右内边距'],
+        ['padding-block', 'padding-block: ${1:8px};', '逻辑上下内边距'],
+
+        // —— Flex / Grid / 对齐 ——
+        ['flex-grow', 'flex-grow: ${1:1};', '放大比例'],
+        ['flex-shrink', 'flex-shrink: ${1:0};', '缩小比例'],
+        ['flex-basis', 'flex-basis: ${1:auto};', '基准尺寸'],
+        ['flex-flow', 'flex-flow: ${1:row} ${2:wrap};', '方向+换行简写'],
+        ['justify-items', 'justify-items: ${1:center};', '单元格水平对齐'],
+        ['place-content', 'place-content: ${1:center};', '整体对齐简写'],
+        ['place-self', 'place-self: ${1:center};', '单项对齐简写'],
+        ['grid-template-areas', 'grid-template-areas:\n  "${1:head head}"\n  "${2:side main}";', '网格区域命名'],
+        ['grid-auto-flow', 'grid-auto-flow: ${1:column};', '自动放置方向'],
+        ['grid-column-start', 'grid-column-start: ${1:1};', '起始列'],
+        ['grid-column-end', 'grid-column-end: span ${1:2};', '结束列'],
+        ['row-gap', 'row-gap: ${1:12px};', '行间距'],
+        ['column-gap', 'column-gap: ${1:12px};', '列间距'],
+
+        // —— 文字 / 排版 ——
+        ['overflow-wrap', 'overflow-wrap: ${1:anywhere};', '长词换行'],
+        ['word-spacing', 'word-spacing: ${1:2px};', '词距'],
+        ['text-wrap', 'text-wrap: ${1:balance};', '文本换行策略'],
+        ['text-decoration-line', 'text-decoration-line: ${1:underline};', '装饰线类型'],
+        ['text-decoration-color', 'text-decoration-color: ${1:#6366f1};', '装饰线颜色'],
+        ['text-decoration-thickness', 'text-decoration-thickness: ${1:2px};', '装饰线粗细'],
+        ['font-display', 'font-display: ${1:swap};', '字体加载策略'],
+        ['line-clamp', 'display: -webkit-box;\n-webkit-box-orient: vertical;\n-webkit-line-clamp: ${1:2};\noverflow: hidden;', '多行截断'],
+        ['writing-mode', 'writing-mode: ${1:vertical-rl};', '书写方向'],
+        ['direction', 'direction: ${1:rtl};', '文字方向'],
+        ['hyphens', 'hyphens: ${1:auto};', '自动断字'],
+        ['column-count', 'column-count: ${1:2};', '多列数'],
+
+        // —— 变换 / 过渡 / 动画 ——
+        ['perspective', 'perspective: ${1:1000px};', '3D 透视'],
+        ['transform-style', 'transform-style: preserve-3d;', '3D 保留'],
+        ['backface-visibility', 'backface-visibility: hidden;', '背面可见'],
+        ['transition-property', 'transition-property: ${1:opacity};', '过渡属性'],
+        ['transition-duration', 'transition-duration: ${1:.2s};', '过渡时长'],
+        ['transition-timing-function', 'transition-timing-function: ${1:ease-in-out};', '过渡曲线'],
+        ['transition-delay', 'transition-delay: ${1:.1s};', '过渡延迟'],
+        ['animation-name', 'animation-name: ${1:spin};', '动画名'],
+        ['animation-duration', 'animation-duration: ${1:.6s};', '动画时长'],
+        ['animation-timing-function', 'animation-timing-function: ${1:linear};', '动画曲线'],
+        ['animation-iteration-count', 'animation-iteration-count: ${1:infinite};', '动画次数'],
+        ['animation-fill-mode', 'animation-fill-mode: ${1:both};', '动画填充'],
+
+        // —— 滚动 / 交互 / 其它 ——
+        ['overscroll-behavior', 'overscroll-behavior: ${1:contain};', '越界滚动'],
+        ['scroll-snap-align', 'scroll-snap-align: ${1:start};', '吸附对齐'],
+        ['scroll-margin', 'scroll-margin: ${1:16px};', '滚动外边距'],
+        ['touch-action', 'touch-action: ${1:none};', '触摸手势'],
+        ['caret-color', 'caret-color: ${1:#6366f1};', '光标颜色'],
+        ['float', 'float: ${1:left};', '浮动'],
+        ['clear', 'clear: ${1:both};', '清除浮动'],
+        ['list-style-type', 'list-style-type: ${1:none};', '列表符号类型'],
+        ['counter-reset', 'counter-reset: ${1:section};', '计数器重置'],
+        ['counter-increment', 'counter-increment: ${1:section};', '计数器递增'],
+        ['mask-image', 'mask-image: linear-gradient(${1});', '遮罩图'],
+        ['isolation', 'isolation: isolate;', '层叠隔离'],
+        ['color-scheme', 'color-scheme: ${1:light dark};', '配色方案'],
+        ['object-position', 'object-position: ${1:center};', '替换元素位置'],
+        ['break-inside', 'break-inside: ${1:avoid};', '避免内部断页'],
+        ['scrollbar-width', 'scrollbar-width: ${1:thin};', '滚动条宽度'],
+        ['scrollbar-color', 'scrollbar-color: ${1:#94a3b8} ${2:transparent};', '滚动条颜色']
+    ];
+
+    // 伪类（单冒号）与伪元素（双冒号），ins 里已含冒号；带 () 的是函数型
+    const HINTS_CSS_PSEUDO = [
+        [':hover', ':hover', '鼠标悬停'],
+        [':active', ':active', '激活/按下'],
+        [':focus', ':focus', '获得焦点'],
+        [':focus-within', ':focus-within', '子孙获焦'],
+        [':focus-visible', ':focus-visible', '键盘聚焦'],
+        [':visited', ':visited', '已访问链接'],
+        [':link', ':link', '未访问链接'],
+        [':any-link', ':any-link', '任意链接'],
+        [':checked', ':checked', '已勾选'],
+        [':default', ':default', '默认选项'],
+        [':disabled', ':disabled', '禁用态'],
+        [':enabled', ':enabled', '可用态'],
+        [':read-only', ':read-only', '只读'],
+        [':read-write', ':read-write', '可编辑'],
+        [':placeholder-shown', ':placeholder-shown', '占位符显示'],
+        [':autofill', ':autofill', '自动填充'],
+        [':required', ':required', '必填'],
+        [':optional', ':optional', '选填'],
+        [':valid', ':valid', '校验通过'],
+        [':invalid', ':invalid', '校验失败'],
+        [':in-range', ':in-range', '范围内'],
+        [':out-of-range', ':out-of-range', '范围外'],
+        [':indeterminate', ':indeterminate', '不确定态'],
+        [':root', ':root', '文档根'],
+        [':empty', ':empty', '无子节点'],
+        [':first-child', ':first-child', '首个子元素'],
+        [':last-child', ':last-child', '末个子元素'],
+        [':only-child', ':only-child', '唯一子元素'],
+        [':nth-child', ':nth-child(${1:2n+1})', '第 n 个子元素'],
+        [':nth-last-child', ':nth-last-child(${1:2})', '倒数第 n 个'],
+        [':first-of-type', ':first-of-type', '同类型首个'],
+        [':last-of-type', ':last-of-type', '同类型末个'],
+        [':only-of-type', ':only-of-type', '同类型唯一'],
+        [':nth-of-type', ':nth-of-type(${1:2})', '同类型第 n 个'],
+        [':not', ':not(${1:selector})', '排除'],
+        [':is', ':is(${1:a, b})', '匹配其一'],
+        [':where', ':where(${1:a, b})', '匹配其一(零权重)'],
+        [':has', ':has(${1:> img})', '含某子元素'],
+        [':lang', ':lang(${1:zh})', '按语言'],
+        [':dir', ':dir(${1:rtl})', '按书写方向'],
+        [':target', ':target', '锚点目标'],
+        [':open', ':open', '展开态'],
+        [':modal', ':modal', '模态元素'],
+        [':fullscreen', ':fullscreen', '全屏'],
+        [':defined', ':defined', '已定义自定义元素'],
+        [':host', ':host', 'Shadow 宿主'],
+        [':host-context', ':host-context(${1})', '宿主上下文'],
+        [':slotted', ':slotted(${1})', '插槽内容'],
+        ['::before', '::before', '前置伪元素'],
+        ['::after', '::after', '后置伪元素'],
+        ['::first-line', '::first-line', '首行'],
+        ['::first-letter', '::first-letter', '首字母'],
+        ['::selection', '::selection', '选中文字'],
+        ['::placeholder', '::placeholder', '占位符'],
+        ['::marker', '::marker', '列表标记'],
+        ['::backdrop', '::backdrop', '模态背景'],
+        ['::cue', '::cue', '字幕'],
+        ['::file-selector-button', '::file-selector-button', '文件按钮'],
+        ['::part', '::part(${1:name})', '组件部件']
     ];
 
     const HINTS_JS = [
@@ -3350,6 +3507,41 @@
         ['title', 'title', '文档标题', 'document'],
         ['cookie', 'cookie', 'Cookie', 'document'],
 
+        // window 上的常用事件与全局方法
+        ['onload', 'onload = () => {\n  ${1}\n}', '页面加载完成', 'window'],
+        ['onresize', 'onresize = () => {\n  ${1}\n}', '窗口尺寸变化', 'window'],
+        ['onscroll', 'onscroll = () => {\n  ${1}\n}', '页面滚动', 'window'],
+        ['onbeforeunload', 'onbeforeunload = (e) => {\n  ${1}\n}', '离开页面前', 'window'],
+        ['onunload', 'onunload = () => {\n  ${1}\n}', '页面卸载', 'window'],
+        ['onhashchange', 'onhashchange = () => {\n  ${1}\n}', '锚点变化', 'window'],
+        ['onpopstate', 'onpopstate = (e) => {\n  ${1}\n}', '历史记录变化', 'window'],
+        ['onmessage', 'onmessage = (e) => {\n  ${1}\n}', '收到消息', 'window'],
+        ['onstorage', 'onstorage = (e) => {\n  ${1}\n}', '存储变化', 'window'],
+        ['onerror', 'onerror = (msg, src, line, col, err) => {\n  ${1}\n}', '全局错误', 'window'],
+        ['onfocus', 'onfocus = () => {\n  ${1}\n}', '窗口获得焦点', 'window'],
+        ['onblur', 'onblur = () => {\n  ${1}\n}', '窗口失去焦点', 'window'],
+        ['setTimeout', 'setTimeout(() => {\n  ${1}\n}, ${2:0})', '延时执行', 'window'],
+        ['setInterval', 'setInterval(() => {\n  ${1}\n}, ${2:1000})', '定时执行', 'window'],
+        ['clearTimeout', 'clearTimeout(${1})', '取消延时', 'window'],
+        ['clearInterval', 'clearInterval(${1})', '取消定时', 'window'],
+        ['requestAnimationFrame', 'requestAnimationFrame(() => {\n  ${1}\n})', '帧回调', 'window'],
+        ['innerWidth', 'innerWidth', '可视宽度', 'window'],
+        ['innerHeight', 'innerHeight', '可视高度', 'window'],
+        ['scrollX', 'scrollX', '横向滚动距离', 'window'],
+        ['scrollY', 'scrollY', '纵向滚动距离', 'window'],
+        ['location', 'location.href', '当前地址', 'window'],
+        ['history', 'history.back()', '历史记录', 'window'],
+        ['navigator', 'navigator.userAgent', '浏览器信息', 'window'],
+        ['localStorage', 'localStorage.getItem("${1}")', '本地存储', 'window'],
+        ['sessionStorage', 'sessionStorage.getItem("${1}")', '会话存储', 'window'],
+        ['open', 'open("${1:url}", "${2:_blank}")', '打开窗口', 'window'],
+        ['scrollTo', 'scrollTo({ top: ${1}, behavior: "smooth" })', '滚动到', 'window'],
+        ['getComputedStyle', 'getComputedStyle(${1:el}).${2:display}', '计算样式', 'window'],
+        ['matchMedia', 'matchMedia("(min-width: ${1:768}px)").matches', '媒体查询', 'window'],
+        ['fetch', 'fetch("${1}")\n  .then(res => res.json())\n  .then(data => {\n    ${2}\n  })', '网络请求', 'window'],
+        ['postMessage', 'postMessage(${1}, "${2:*}")', '发送消息', 'window'],
+        ['print', 'print()', '打印', 'window'],
+
         ['parse', 'parse(${1})', '解析 JSON', 'json'],
         ['stringify', 'stringify(${1}, null, 2)', '序列化 JSON', 'json'],
 
@@ -3456,6 +3648,8 @@
         html: 'HTML 标签',
         attr: 'HTML 属性',
         css: 'CSS3 属性',
+        'css-sel': 'CSS 选择器（来自 HTML）',
+        'css-pseudo': 'CSS 伪类 / 伪元素',
         js: 'JavaScript',
         member: 'JS 成员'
     };
@@ -3622,6 +3816,99 @@
             list.forEach(h => {
                 if (out.length < 20 && h.low.indexOf(w) > 0 && out.indexOf(h) < 0) out.push(h);
             });
+        }
+        return out;
+    }
+
+    // 扫描整篇 HTML，收集 class="..." 里的类名和 id="..." 里的 id，供 CSS 选择器提示用
+    // 按源码字符串缓存，源码不变时不重复扫描
+    let selCache = { src: null, classes: null, ids: null };
+    function collectSelectors(src) {
+        if (selCache.src === src) return selCache;
+        const classes = [], ids = [], seenC = {}, seenI = {};
+        let m;
+        const cre = /\bclass\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+        while ((m = cre.exec(src))) {
+            const val = m[1] != null ? m[1] : (m[2] || '');
+            val.split(/\s+/).forEach(c => {
+                if (c && /^[A-Za-z_][\w-]*$/.test(c) && !seenC[c]) { seenC[c] = 1; classes.push(c); }
+            });
+        }
+        const ire = /\bid\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+        while ((m = ire.exec(src))) {
+            const val = ((m[1] != null ? m[1] : (m[2] || '')).trim());
+            if (val && /^[A-Za-z_][\w-]*$/.test(val) && !seenI[val]) { seenI[val] = 1; ids.push(val); }
+        }
+        selCache = { src: src, classes: classes, ids: ids };
+        return selCache;
+    }
+
+    // CSS 里正在输入的以 . 或 # 开头的选择器 token；处在声明值位置（如 #fff / 1.5rem）时不算
+    function cssSelectorWord(src, caret) {
+        const before = src.slice(0, caret);
+        const m = /([.#][A-Za-z0-9_-]*)$/.exec(before);
+        if (!m) return null;
+        const token = m[1];
+        const start = caret - token.length;
+        const prev = start > 0 ? src.charAt(start - 1) : '';
+        // 前一个字符必须是选择器语境常见的分隔符或空白，避免 1.5rem 这类数字被当成 .5 选择器
+        if (prev && !/[\s{};,>+(~]/.test(prev)) return null;
+        return {
+            text: token, start: start, end: caret, angle: false,
+            sigil: token.charAt(0), prefix: token.slice(1).toLowerCase()
+        };
+    }
+
+    function selectorMatches(src, word) {
+        const c = collectSelectors(src);
+        const p = word.prefix;
+        const names = word.sigil === '.' ? c.classes : c.ids;
+        const desc = word.sigil === '.' ? 'class 选择器' : 'id 选择器';
+        const out = [];
+        for (let i = 0; i < names.length && out.length < 80; i++) {
+            const name = names[i];
+            if (p && name.toLowerCase().indexOf(p) !== 0) continue;
+            out.push({ key: word.sigil + name, ins: word.sigil + name, desc: desc, low: name.toLowerCase(), ini: '' });
+        }
+        return out;
+    }
+
+    // CSS 属性名集合，用于区分「a:hover」(选择器) 与「color: red」(声明值)
+    let cssPropSet = null;
+    function isCssPropName(name) {
+        if (!cssPropSet) {
+            cssPropSet = {};
+            HINTS_CSS.forEach(h => { cssPropSet[String(h[0]).toLowerCase()] = 1; });
+        }
+        return !!cssPropSet[String(name || '').toLowerCase()];
+    }
+
+    // CSS 里正在输入的 :xxx / ::xxx 伪类/伪元素；冒号前是属性名（声明值）时不算
+    function cssPseudoWord(src, caret) {
+        const before = src.slice(0, caret);
+        const m = /:{1,2}[A-Za-z-]*$/.exec(before);
+        if (!m) return null;
+        const token = m[0];
+        const start = caret - token.length;
+        const prev = start > 0 ? src.charAt(start - 1) : '';
+        // 冒号必须紧贴选择器字符（字母/数字/)/]/&/% 等），否则多半是「prop: value」
+        if (!/[A-Za-z0-9_)\]&%.]/.test(prev)) return null;
+        const nm = /([A-Za-z][A-Za-z0-9-]*)$/.exec(before.slice(0, start));
+        if (nm && isCssPropName(nm[1])) return null;
+        const colons = token.charAt(0) === ':' && token.charAt(1) === ':' ? 2 : 1;
+        return { text: token, start: start, end: caret, angle: false, colons: colons, prefix: token.slice(colons).toLowerCase() };
+    }
+
+    function pseudoMatches(word) {
+        const p = word.prefix;
+        const out = [];
+        for (let i = 0; i < HINTS_CSS_PSEUDO.length && out.length < 80; i++) {
+            const key = HINTS_CSS_PSEUDO[i][0];
+            const colons = key.charAt(1) === ':' ? 2 : 1;
+            if (colons !== word.colons) continue;
+            const name = key.slice(colons).toLowerCase();
+            if (p && name.indexOf(p) !== 0) continue;
+            out.push({ key: key, ins: HINTS_CSS_PSEUDO[i][1], desc: HINTS_CSS_PSEUDO[i][2] || '', low: name, ini: '' });
         }
         return out;
     }
@@ -3867,14 +4154,26 @@
         const caret = ta.selectionStart;
         const ctx = hintContext(src, caret);
         if (!ctx) { closeAc(); return; }
-        const word = hintWord(src, caret, ctx);
-        if (!word) { closeAc(); return; }
-        // 正文里的标签提示只在打了 < 之后才弹，否则写英文单词时会误触（如 the + 空格）
-        if (ctx === 'html' && word.text && !word.angle) { closeAc(); return; }
-        const isMember = ctx === 'js' && word.member !== undefined;
-        const items = isMember ? memberMatches(word.base, word.member) : hintMatches(ctx, word.text);
+        let word = null, items = null, ctxKey = '';
+        // CSS 里输入 . 或 # 时，优先提示 HTML 中已有的 class / id 选择器
+        if (ctx === 'css') {
+            const sel = cssSelectorWord(src, caret);
+            if (sel) { word = sel; items = selectorMatches(src, sel); ctxKey = 'css-sel'; }
+            else {
+                const ps = cssPseudoWord(src, caret);
+                if (ps) { word = ps; items = pseudoMatches(ps); ctxKey = 'css-pseudo'; }
+            }
+        }
+        if (!word) {
+            word = hintWord(src, caret, ctx);
+            if (!word) { closeAc(); return; }
+            // 正文里的标签提示只在打了 < 之后才弹，否则写英文单词时会误触（如 the + 空格）
+            if (ctx === 'html' && word.text && !word.angle) { closeAc(); return; }
+            const isMember = ctx === 'js' && word.member !== undefined;
+            items = isMember ? memberMatches(word.base, word.member) : hintMatches(ctx, word.text);
+            ctxKey = isMember ? 'member' : ctx;
+        }
         if (!items.length) { closeAc(); return; }
-        const ctxKey = isMember ? 'member' : ctx;
         const same = ac.open && ac.ctx === ctxKey && ac.word === word.text && ac.start === word.start;
         ac.ctx = ctxKey;
         ac.word = word.text;
@@ -4170,6 +4469,7 @@
             return expandSnippetAt(ta, abbr);
         });
         setupAutoCloseTags(ta);
+        setupCssBrace(ta);
 
         paneEl.querySelectorAll('.ed-actions .ed-mini-btn').forEach(btn => {
             btn.addEventListener('click', () => {
