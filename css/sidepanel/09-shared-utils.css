@@ -1,0 +1,73 @@
+/* 状态类 */
+.hidden {
+    display: none !important;
+}
+
+/* === 图标基础 ===
+   全部图标已统一为 Font Awesome Pro 线框风格（fa-regular），由 js/cdn-styles.js
+   异步加载。.mi 是原先 .material-icons 的替代类名，仅承担尺寸/颜色/布局职责，
+   字形由 fa-* 类提供。
+   --fa-width 默认 1.25em，而 Material Icons 的图标宽度就是 1em；这里统一成 1em，
+   避免图标统一替换后各处间距、按钮宽度发生位移。 */
+.mi {
+    --fa-width: 1em;
+}
+
+.empty-state {
+    text-align: center;
+    color: #94a3b8;
+    margin-top: 40px;
+}
+
+.empty-state .mi {
+    font-size: 48px;
+    margin-bottom: 8px;
+    color: #e2e8f0;
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(30, 41, 59, 0.9);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    z-index: 200;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.toast.show {
+    opacity: 1;
+}
+
+.tag-chatgpt {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.tag-midjourney {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.tag-sd {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.tag-claude {
+    background: #fae8ff;
+    color: #86198f;
+}
+
+.tag-other {
+    background: #f3f4f6;
+    color: #4b5563;
+}

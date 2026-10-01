@@ -1,0 +1,419 @@
+.cd-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #fff;
+    border: 1px solid #f3f4f6;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.cd-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.cd-title {
+    font-weight: 700;
+    color: #ea580c;
+    font-size: 0.95rem;
+}
+
+.cd-title.expired {
+    color: #b0b0b0;
+}
+
+.cd-date {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.cd-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 2px;
+}
+
+.cd-days-left {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #ea580c;
+}
+
+.cd-days-left.urgent {
+    color: var(--mark-red);
+}
+
+.cd-days-left.expired {
+    color: #b0b0b0;
+}
+
+.cd-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+}
+
+/* 倒数日卡片操作按钮缩小 */
+.cd-item .edit-btn,
+.cd-item .delete-btn {
+    font-size: 0.85rem;
+    padding: 2px;
+}
+
+.cd-actions .delete-btn {
+    color: #d1d5db;
+    cursor: pointer;
+}
+
+.cd-actions .delete-btn:hover {
+    color: var(--mark-red);
+}
+
+/* 鍊掓暟鏃ョ瓫閫夋爣绛 */
+.cd-filter-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.cd-filter-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cd-filter-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.cd-filter-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.cd-actions .edit-btn {
+    color: #d1d5db;
+    cursor: pointer;
+}
+
+.cd-actions .edit-btn:hover {
+    color: var(--primary-color);
+}
+
+/* === 倒数日完成状态开关 === */
+.cd-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cd-toggle {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.cd-checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.cd-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #d1d5db;
+    transition: .3s;
+    border-radius: 18px;
+}
+
+.cd-slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.cd-checkbox:checked + .cd-slider {
+    background-color: #16a34a;
+}
+
+.cd-checkbox:checked + .cd-slider:before {
+    transform: translateX(14px);
+}
+
+.cd-title.completed {
+    text-decoration: line-through;
+    color: #b0b0b0;
+}
+
+.cd-days-left.completed {
+    text-decoration: line-through;
+    color: #b0b0b0;
+}
+
+/* === 鍊掓暟鏃ヨ緭鍏ョ粍浠 (Modern) === */
+.cd-input-container {
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.cd-input-row-top {
+    display: flex;
+    align-items: center;
+}
+
+.cd-input-row-bottom {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* 鏃ユ湡杈撳叆妗 */
+.cd-date-input {
+    flex: 1;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #334155;
+    background-color: #f8fafc;
+    transition: all 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.cd-date-input:focus {
+    background-color: #fff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* 鏍囬杈撳叆妗 */
+.cd-title-input {
+    flex: 1;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    outline: none;
+    font-size: 14px;
+    background-color: #f8fafc;
+    transition: all 0.2s;
+    color: #334155;
+    min-width: 0;
+}
+
+.cd-title-input:focus {
+    background-color: #fff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* === 倒数日标题历史下拉框 === */
+.cd-title-wrapper {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.cd-title-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.cd-title-dropdown.hidden {
+    display: none;
+}
+
+.cd-title-dropdown-item {
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.12s;
+}
+
+.cd-title-dropdown-item:hover,
+.cd-title-dropdown-item.active {
+    background: #eef2ff;
+    color: var(--primary-color);
+}
+
+/* === 每日打卡历史下拉框 === */
+.habit-input-wrapper {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.habit-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.habit-dropdown.hidden {
+    display: none;
+}
+
+.habit-dropdown-item {
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.12s;
+}
+
+.habit-dropdown-item:hover,
+.habit-dropdown-item.active {
+    background: #eef2ff;
+    color: var(--primary-color);
+}
+
+/* === 闹钟备注历史下拉框 === */
+.alarm-label-wrapper {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.alarm-label-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.alarm-label-dropdown.hidden {
+    display: none;
+}
+
+.alarm-label-dropdown-item {
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.12s;
+}
+
+.alarm-label-dropdown-item:hover,
+.alarm-label-dropdown-item.active {
+    background: #eef2ff;
+    color: var(--primary-color);
+}
+
+/* 娣诲姞鎸夐挳 */
+.cd-add-btn {
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(99, 102, 241, 0.25);
+    flex-shrink: 0;
+}
+
+.cd-add-btn:hover {
+    background: #4f46e5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);
+}
+
+.cd-add-btn:active {
+    transform: translateY(0);
+}
+
+/* 鍙栨秷鎸夐挳 */
+#cancel-cd-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    color: #fff;
+    transition: background 0.2s;
+}

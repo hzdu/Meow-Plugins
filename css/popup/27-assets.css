@@ -1,0 +1,190 @@
+/* === 固定资产面板样式 === */
+#view-assets .assets-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: 10px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* AI 分析开关 */
+.assets-ai-toggle-row {
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+.assets-ai-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border: 1px solid #ddd6fe;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+.assets-ai-toggle-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6d28d9;
+    flex: 1;
+}
+.assets-ai-toggle input[type="checkbox"] {
+    display: none;
+}
+.assets-ai-toggle-track {
+    width: 32px;
+    height: 18px;
+    background: #d1d5db;
+    border-radius: 10px;
+    position: relative;
+    transition: background 0.25s;
+    flex-shrink: 0;
+}
+.assets-ai-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.25s;
+}
+.assets-ai-toggle input:checked + .assets-ai-toggle-track {
+    background: #8b5cf6;
+}
+.assets-ai-toggle input:checked + .assets-ai-toggle-track .assets-ai-toggle-thumb {
+    transform: translateX(14px);
+}
+
+/* 统计摘要 - 按类型显示数量 */
+.assets-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+.assets-summary-card {
+    flex: 1 1 calc(50% - 3px);
+    min-width: 0;
+    border-radius: 6px;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+.assets-summary-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* 资产列表项 */
+.assets-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.assets-item:hover {
+border-color: transparent;
+box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08);
+}
+.assets-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.assets-item-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.assets-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+.assets-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.assets-item-payment {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+.assets-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #64748b;
+    flex-wrap: wrap;
+}
+.assets-item-type {
+    font-weight: 500;
+}
+.assets-item-qty {
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+}
+.assets-item-usage {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 11px;
+    font-weight: 500;
+}
+.assets-item-note {
+    color: #9ca3af;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px;
+}
+.assets-item-edit {
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.assets-item:hover .assets-item-edit {
+    opacity: 1;
+}
+
+/* 资产面板撑满高度使列表可滚动 */
+#view-assets .assets-panel .quick-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 2px 0 0;
+}

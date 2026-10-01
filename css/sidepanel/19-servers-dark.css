@@ -1,0 +1,670 @@
+/* === 服务器管理 暗色主题 === */
+.dark #view-servers,
+.theme-dark #view-servers {
+    color: #e2e8f0;
+}
+
+.dark #srv-header,
+.theme-dark #srv-header {
+    background: #0f172a;
+}
+
+.dark .srv-count-bar,
+.theme-dark .srv-count-bar {
+    color: #64748b;
+}
+
+.dark .srv-money-bar,
+.theme-dark .srv-money-bar {
+    background: #0f172a;
+    border-top-color: #334155;
+}
+
+.dark .srv-card,
+.theme-dark .srv-card {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.dark .srv-card:hover,
+.theme-dark .srv-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+}
+
+.dark .srv-card.drag-over,
+.theme-dark .srv-card.drag-over {
+    border-color: #6366f1;
+    background: #1e1b4b;
+}
+
+.dark .srv-card-name,
+.theme-dark .srv-card-name {
+    color: #f1f5f9;
+}
+
+/* 收费但未收款的服务器标题红色提示 */
+.srv-card-name-unpaid,
+.dark .srv-card-name-unpaid,
+.theme-dark .srv-card-name-unpaid {
+    color: #ef4444 !important;
+}
+
+/* 收费且已收款的服务器标题绿色提示 */
+.srv-card-name-paid,
+.dark .srv-card-name-paid,
+.theme-dark .srv-card-name-paid {
+    color: #10b981 !important;
+}
+
+.dark .srv-card-badge,
+.theme-dark .srv-card-badge {
+    background: #334155;
+    color: #94a3b8;
+    border-color: #475569;
+}
+
+.dark .srv-card-actions .mi,
+.dark .srv-card-actions .fa-xmark,
+.theme-dark .srv-card-actions .mi,
+.theme-dark .srv-card-actions .fa-xmark {
+    color: #475569;
+}
+
+.dark .srv-card-actions .mi:hover,
+.dark .srv-card-actions .fa-xmark:hover,
+.theme-dark .srv-card-actions .mi:hover,
+.theme-dark .srv-card-actions .fa-xmark:hover {
+    color: #6366f1;
+}
+
+.dark .srv-card-body,
+.theme-dark .srv-card-body {
+    border-top-color: #334155;
+}
+
+.dark .srv-info-label,
+.theme-dark .srv-info-label {
+    color: #64748b;
+}
+
+.dark .srv-info-val,
+.theme-dark .srv-info-val {
+    color: #e2e8f0;
+}
+
+.dark .srv-info-val.srv-masked,
+.theme-dark .srv-info-val.srv-masked {
+    color: #64748b;
+}
+
+.dark .srv-wp-slider,
+.theme-dark .srv-wp-slider {
+    background: #475569;
+}
+
+.dark .srv-wp-switch input:checked + .srv-wp-slider,
+.theme-dark .srv-wp-switch input:checked + .srv-wp-slider {
+    background: #6366f1;
+}
+
+.dark .srv-wp-switch,
+.theme-dark .srv-wp-switch {
+    color: #94a3b8;
+}
+
+.dark .srv-section-bar,
+.theme-dark .srv-section-bar {
+    border-bottom-color: #334155;
+}
+
+.dark .srv-section-title,
+.theme-dark .srv-section-title {
+    color: #94a3b8;
+}
+
+.dark .srv-copy-btn,
+.theme-dark .srv-copy-btn {
+    background: #312e81;
+    border-color: #4338ca;
+    color: #c7d2fe;
+}
+
+.dark .srv-copy-btn:hover,
+.theme-dark .srv-copy-btn:hover {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: #fff;
+}
+
+.dark .srv-copy-row:hover,
+.theme-dark .srv-copy-row:hover {
+    background: #334155;
+}
+
+.dark .srv-ws-section,
+.theme-dark .srv-ws-section {
+    border-top-color: #334155;
+}
+
+.dark .srv-ws-header,
+.theme-dark .srv-ws-header {
+color: #94a3b8;
+}
+
+.dark .srv-ws-add-btn,
+.theme-dark .srv-ws-add-btn {
+background: #052e16;
+border-color: #166534;
+color: #4ade80;
+}
+
+.dark .srv-ws-add-btn:hover,
+.theme-dark .srv-ws-add-btn:hover {
+background: #14532d;
+border-color: #16a34a;
+}
+
+.dark .srv-ws-item,
+.theme-dark .srv-ws-item {
+    background: #0f172a;
+    border-color: #334155;
+}
+
+.dark .srv-ws-item:hover,
+.theme-dark .srv-ws-item:hover {
+    background: #1e1b4b;
+    border-color: #4338ca;
+}
+
+.dark .srv-ws-domain,
+.theme-dark .srv-ws-domain {
+    color: #e2e8f0;
+}
+
+.dark .srv-ws-details,
+.theme-dark .srv-ws-details {
+    border-top-color: #334155;
+}
+
+.dark .srv-ws-detail-label,
+.theme-dark .srv-ws-detail-label {
+    color: #64748b;
+}
+
+.dark .srv-ws-detail-val,
+.theme-dark .srv-ws-detail-val {
+    color: #e2e8f0;
+}
+
+.dark .srv-ws-detail-val.srv-masked,
+.theme-dark .srv-ws-detail-val.srv-masked {
+    color: #64748b;
+}
+
+.dark .srv-ws-badge,
+.theme-dark .srv-ws-badge {
+    background: #312e81;
+    color: #c7d2fe;
+    border-color: #4338ca;
+}
+
+.dark .srv-ws-empty-hint,
+.theme-dark .srv-ws-empty-hint {
+    color: #64748b;
+}
+
+/* 暗色弹窗 */
+.dark #srv-modal .modal-content,
+.dark #srv-website-modal .modal-content,
+.theme-dark #srv-modal .modal-content,
+.theme-dark #srv-website-modal .modal-content {
+    background: #1e293b;
+}
+
+/* 暗色 Tab */
+.dark .srv-tabs,
+.theme-dark .srv-tabs {
+    border-bottom-color: #334155;
+}
+
+.dark .srv-tab,
+.theme-dark .srv-tab {
+    color: #64748b;
+}
+
+.dark .srv-tab:hover,
+.theme-dark .srv-tab:hover {
+    color: #a5b4fc;
+    background: #1e1b4b;
+}
+
+.dark .srv-tab.active,
+.theme-dark .srv-tab.active {
+    color: #a5b4fc;
+    border-bottom-color: #6366f1;
+}
+
+/* 暗色滚动条 */
+.dark .srv-tab-pane .srv-form-grid::-webkit-scrollbar-thumb,
+.dark .srv-tab-pane #srv-website-list::-webkit-scrollbar-thumb,
+.theme-dark .srv-tab-pane .srv-form-grid::-webkit-scrollbar-thumb,
+.theme-dark .srv-tab-pane #srv-website-list::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+.dark #srv-modal .srv-section-title,
+.dark #srv-website-modal .srv-section-title,
+.theme-dark #srv-modal .srv-section-title,
+.theme-dark #srv-website-modal .srv-section-title {
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+}
+
+.dark #srv-modal .form-group label,
+.dark #srv-website-modal .form-group label,
+.theme-dark #srv-modal .form-group label,
+.theme-dark #srv-website-modal .form-group label {
+    color: #94a3b8;
+}
+
+.dark #srv-modal .form-group input,
+.dark #srv-modal .form-group select,
+.dark #srv-modal .form-group textarea,
+.dark #srv-website-modal .form-group input,
+.dark #srv-website-modal .form-group select,
+.dark #srv-website-modal .form-group textarea,
+.theme-dark #srv-modal .form-group input,
+.theme-dark #srv-modal .form-group select,
+.theme-dark #srv-modal .form-group textarea,
+.theme-dark #srv-website-modal .form-group input,
+.theme-dark #srv-website-modal .form-group select,
+.theme-dark #srv-website-modal .form-group textarea {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+.dark #srv-modal .form-group input:focus,
+.dark #srv-modal .form-group select:focus,
+.dark #srv-modal .form-group textarea:focus,
+.dark #srv-website-modal .form-group input:focus,
+.dark #srv-website-modal .form-group select:focus,
+.dark #srv-website-modal .form-group textarea:focus,
+.theme-dark #srv-modal .form-group input:focus,
+.theme-dark #srv-modal .form-group select:focus,
+.theme-dark #srv-modal .form-group textarea:focus,
+.theme-dark #srv-website-modal .form-group input:focus,
+.theme-dark #srv-website-modal .form-group select:focus,
+.theme-dark #srv-website-modal .form-group textarea:focus {
+    border-color: #6366f1;
+}
+
+.dark .srv-ws-edit-item,
+.theme-dark .srv-ws-edit-item {
+    background: #0f172a;
+    border-color: #334155;
+}
+
+.dark .srv-ws-edit-item:hover,
+.theme-dark .srv-ws-edit-item:hover {
+    border-color: #6366f1;
+    background: #1e1b4b;
+}
+
+.dark .srv-ws-edit-domain,
+.theme-dark .srv-ws-edit-domain {
+    color: #e2e8f0;
+}
+
+.dark .srv-mini-add-btn,
+.theme-dark .srv-mini-add-btn {
+    background: #052e16;
+    border-color: #166534;
+    color: #4ade80;
+}
+
+.dark .srv-mini-add-btn:hover,
+.theme-dark .srv-mini-add-btn:hover {
+    background: #14532d;
+    border-color: #16a34a;
+}
+
+/* 暗色：网站模板选择条 */
+.dark .srv-ws-template-bar,
+.theme-dark .srv-ws-template-bar {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.dark .srv-ws-template-bar select,
+.theme-dark .srv-ws-template-bar select {
+    background: #0f172a;
+    border-color: #475569;
+    color: #e2e8f0;
+}
+
+/* 服务器卡片：供应商链接 */
+.srv-provider-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.srv-provider-link .mi {
+    transition: color 0.2s;
+}
+
+.srv-provider-link:hover .mi {
+    color: #0891b2 !important;
+}
+
+/* 服务器卡片：备注框 */
+.srv-note-box {
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    font-size: 11px;
+    color: #78716c;
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    word-break: break-all;
+}
+
+/* === AI Setting 选择弹窗样式 === */
+.ai-setting-select-item {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+    color: #1e293b;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    font-family: monospace;
+}
+.ai-setting-select-item:hover {
+    border-color: #8b5cf6;
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+
+/* 暗色：AI Setting 选择弹窗 */
+.dark .ai-setting-select-item,
+.theme-dark .ai-setting-select-item {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+.dark .ai-setting-select-item:hover,
+.theme-dark .ai-setting-select-item:hover {
+    border-color: #6366f1;
+    background: #1e1b4b;
+    color: #c7d2fe;
+}
+
+/* === AI Provider 卡片：应用到 AI Setting 按钮 === */
+.ai-card-actions .ai-apply-btn {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.ai-card-actions .ai-apply-btn:hover {
+    color: #6d28d9 !important;
+}
+.dark .ai-card-actions .ai-apply-btn,
+.theme-dark .ai-card-actions .ai-apply-btn {
+    color: #818cf8 !important;
+}
+.dark .ai-card-actions .ai-apply-btn:hover,
+.theme-dark .ai-card-actions .ai-apply-btn:hover {
+    color: #a5b4fc !important;
+}
+
+/* 暗色：供应商链接 */
+.dark .srv-provider-link:hover .mi,
+.theme-dark .srv-provider-link:hover .mi {
+    color: #06b6d4 !important;
+}
+
+/* 暗色：备注框 */
+.dark .srv-note-box,
+.theme-dark .srv-note-box {
+    background: #422006;
+    border-color: #78350f;
+    color: #fde68a;
+}
+
+/* === 提示词查看/编辑 Modal === */
+#prompt-view-modal .modal-content {
+    max-width: 460px;
+}
+
+.prompt-view-title-input {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 4px 8px;
+    outline: none;
+    background: transparent;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.prompt-view-title-input:hover {
+    border-color: #e2e8f0;
+    background: #f8fafc;
+}
+
+.prompt-view-title-input:focus {
+    border-color: #6366f1;
+    background: #fff;
+}
+
+/* === 提示词卡片分类下拉框 === */
+.p-cat-select {
+    font-size: 10px;
+    padding: 2px 4px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #64748b;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.p-cat-select:hover {
+    border-color: #6366f1;
+}
+
+.p-cat-select:focus {
+    border-color: #6366f1;
+}
+
+#prompt-view-textarea {
+    transition: border-color 0.2s;
+}
+
+#prompt-view-textarea:focus {
+    border-color: #6366f1;
+    background: #fff;
+}
+
+/* === 通用弹窗按钮（提示词/暂存板共用） === */
+.prompt-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.prompt-view-btn-cancel {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.prompt-view-btn-cancel:hover {
+    background: #cbd5e1;
+}
+
+.prompt-view-btn-save {
+    background: #6366f1;
+    color: #fff;
+}
+
+.prompt-view-btn-save:hover {
+    background: #4f46e5;
+}
+
+.prompt-view-btn.copied {
+    color: #10b981;
+}
+
+/* 暗色：提示词查看/编辑 Modal */
+.dark #prompt-view-modal .modal-content,
+.theme-dark #prompt-view-modal .modal-content {
+    background: #1e293b;
+}
+
+.dark .prompt-view-title-input,
+.theme-dark .prompt-view-title-input {
+    color: #e2e8f0;
+}
+
+.dark .prompt-view-title-input:hover,
+.theme-dark .prompt-view-title-input:hover {
+    border-color: #334155;
+    background: #0f172a;
+}
+
+.dark .prompt-view-title-input:focus,
+.theme-dark .prompt-view-title-input:focus {
+    border-color: #6366f1;
+    background: #0f172a;
+}
+
+.dark .p-cat-select,
+.theme-dark .p-cat-select {
+    background: #1e293b;
+    border-color: #334155;
+    color: #94a3b8;
+}
+
+.dark #prompt-view-textarea,
+.theme-dark #prompt-view-textarea {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+.dark #prompt-view-textarea:focus,
+.theme-dark #prompt-view-textarea:focus {
+    border-color: #6366f1;
+    background: #0f172a;
+}
+
+.dark #prompt-view-textarea::placeholder,
+.theme-dark #prompt-view-textarea::placeholder {
+    color: #475569;
+}
+
+.dark .prompt-view-btn-cancel,
+.theme-dark .prompt-view-btn-cancel {
+    background: #334155;
+    color: #cbd5e1;
+}
+
+.dark .prompt-view-btn-cancel:hover,
+.theme-dark .prompt-view-btn-cancel:hover {
+    background: #475569;
+}
+
+/* 暗色：暂存板编辑 Modal */
+.dark #scratch-edit-modal .modal-content,
+.theme-dark #scratch-edit-modal .modal-content {
+    background: #1e293b;
+}
+
+.dark #scratch-edit-modal .modal-header h3,
+.theme-dark #scratch-edit-modal .modal-header h3 {
+    color: #e2e8f0;
+}
+
+.dark #scratch-modal-input,
+.theme-dark #scratch-modal-input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+/* 网站账号/密码历史下拉 */
+.srv-history-dd {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    max-height: 160px;
+    overflow-y: auto;
+}
+.srv-history-dd.show {
+    display: block;
+}
+.srv-history-dd .srv-history-item {
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    word-break: break-all;
+}
+.srv-history-dd .srv-history-item:last-child {
+    border-bottom: none;
+}
+.srv-history-dd .srv-history-item:hover {
+    background: #eef2ff;
+    color: #6366f1;
+}
+.srv-history-dd .srv-history-empty {
+    padding: 10px;
+    font-size: 12px;
+    color: #94a3b8;
+    text-align: center;
+}
+.dark .srv-history-dd,
+.theme-dark .srv-history-dd {
+    background: #1e293b;
+    border-color: #334155;
+}
+.dark .srv-history-dd .srv-history-item,
+.theme-dark .srv-history-dd .srv-history-item {
+    color: #cbd5e1;
+    border-bottom-color: #334155;
+}
+.dark .srv-history-dd .srv-history-item:hover,
+.theme-dark .srv-history-dd .srv-history-item:hover {
+    background: #334155;
+    color: #a5b4fc;
+}

@@ -1,0 +1,209 @@
+/* === 列表区域 === */
+.list-section {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px;
+    position: relative;
+}
+
+.list-section::-webkit-scrollbar {
+    width: 4px;
+}
+
+.list-section::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}
+
+/* 视图切换 */
+.view-content {
+    display: block;
+    padding-bottom: 15px;
+}
+
+.view-content.hidden {
+    display: none;
+}
+
+/* 列表通用 */
+.prompt-list,
+.scratch-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 10px;
+}
+
+/* 提示词卡片 */
+.prompt-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.prompt-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+}
+
+.p-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    margin: -12px -12px 6px -12px;
+    padding: 6px 12px 5px;
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 9px 9px 0 0;
+}
+
+.p-title {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 13px;
+}
+
+.p-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.p-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.p-tag.tag-custom {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.p-content {
+    font-size: 12px;
+    color: #475569;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-all;
+}
+
+.p-actions {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 暂存板卡片 */
+.scratch-card {
+background: #fff;
+border: 1px solid #e2e8f0;
+border-radius: 8px;
+padding: 10px;
+display: flex;
+flex-direction: column;
+gap: 6px;
+transition: all 0.2s;
+cursor: pointer;
+}
+
+.scratch-card:hover {
+border-color: #3b82f6;
+box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1);
+}
+
+.scratch-meta {
+    font-size: 10px;
+    color: #94a3b8;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 暂存板标题行：淡灰背景通栏（仅暂存板，不影响稍后阅读） */
+#scratch-list .scratch-meta {
+    background: #f8fafc;
+    margin: -10px -10px 0 -10px;
+    padding: 6px 10px 5px;
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 7px 7px 0 0;
+}
+
+.scratch-content {
+    font-size: 13px;
+    color: #334155;
+    line-height: 1.4;
+    word-break: break-all;
+    white-space: pre-wrap;
+    max-height: 150px;
+    overflow: hidden;
+    position: relative;
+}
+
+.scratch-content img {
+    max-width: 100%;
+    border-radius: 4px;
+    display: block;
+    margin: 4px 0;
+}
+
+.scratch-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    background: linear-gradient(to bottom, transparent, #fff);
+    pointer-events: none;
+}
+
+.scratch-actions {
+display: flex;
+justify-content: flex-end;
+align-items: center;
+gap: 8px;
+margin-top: 4px;
+padding-top: 6px;
+border-top: 1px dashed #f1f5f9;
+}
+
+.s-action {
+    font-size: 11px;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.s-action:hover {
+    color: #3b82f6;
+}
+
+.s-action.view:hover {
+    color: #8b5cf6;
+}
+
+.s-action.del:hover {
+    color: #ef4444;
+}
+
+.s-action.open:hover {
+    color: #10b981;
+}

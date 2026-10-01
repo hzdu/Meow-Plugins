@@ -1,0 +1,71 @@
+/* === 顶部区域 === */
+.top-section {
+    flex-shrink: 0;
+    padding: 12px 16px 8px 16px;
+    background: #f8fafc;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Tab 导航 */
+.tab-group {
+    display: flex;
+    background: #e2e8f0;
+    padding: 3px;
+    border-radius: 8px;
+    gap: 4px;
+}
+
+.tab-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 8px 0;
+    border-radius: 6px;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+/* Tab 图标统一使用 FontAwesome（线性 fa-regular / 实心 fa-solid） */
+.tab-btn .fa-solid,
+.tab-btn .fa-regular {
+    font-size: 16px;
+}
+
+.tab-btn:hover {
+    background: #cbd5e1;
+    color: #475569;
+}
+
+.tab-btn.active {
+    background: #fff;
+    color: #6366f1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Tab 拖拽排序 */
+.tab-btn.dragging {
+    opacity: 0.4;
+    transform: scale(0.9);
+}
+.tab-btn.drag-over {
+    position: relative;
+}
+.tab-btn.drag-over::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: #6366f1;
+    border-radius: 1px;
+    z-index: 10;
+    pointer-events: none;
+}

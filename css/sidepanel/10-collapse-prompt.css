@@ -1,0 +1,122 @@
+/* === 暂存板 & AI提示词 折叠控制样式 === */
+.scratch-collapse-header,
+.prompt-collapse-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.scratch-collapse-header:hover,
+.prompt-collapse-header:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+}
+
+.header-label {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+    margin-right: 4px;
+}
+
+.scratch-collapse-header .toggle-icon,
+.prompt-collapse-header .toggle-icon {
+    font-size: 16px;
+    color: #94a3b8;
+    margin-left: 0;
+    transition: transform 0.3s ease;
+    transform: rotate(180deg);
+}
+
+/* 折叠动画逻辑 */
+.scratch-collapse-body,
+.prompt-collapse-body {
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s, margin-top 0.3s;
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+}
+
+.scratch-collapse-body.expanded {
+    max-height: 300px;
+    opacity: 1;
+    margin-top: 8px;
+}
+
+.prompt-collapse-body.expanded {
+    max-height: 400px;
+    opacity: 1;
+    margin-top: 8px;
+}
+
+/* 展开状态 (有 active 类)：箭头向下 v */
+.scratch-collapse-header.active .toggle-icon,
+.prompt-collapse-header.active .toggle-icon {
+    transform: rotate(0deg);
+}
+
+#scratch-add-btn {
+    width: 100%;
+    margin-top: 8px;
+}
+
+/* === 暂存板编辑模式样式 === */
+.scratch-edit-input {
+    width: 100%;
+    min-height: 80px;
+    padding: 8px;
+    border: 1px solid #6366f1;
+    border-radius: 6px;
+    font-size: 13px;
+    resize: vertical;
+    outline: none;
+    margin: 6px 0;
+    background: #fff;
+    color: #334155;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+.scratch-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.s-btn-save,
+.s-btn-cancel {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    border: none;
+    font-weight: 500;
+}
+
+.s-btn-save {
+    background: #6366f1;
+    color: white;
+}
+
+.s-btn-save:hover {
+    background: #4f46e5;
+}
+
+.s-btn-cancel {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.s-btn-cancel:hover {
+    background: #cbd5e1;
+}

@@ -1,0 +1,160 @@
+/* === 国际时钟样式 === */
+.clock-container {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.main-clock-card {
+    /* iOS Liquid Glass (White/Transparent) */
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 20px;
+    padding: 16px;
+    /* Reduced from 24px */
+    color: #334155;
+    /* Dark text for light background */
+    text-align: center;
+    box-shadow:
+        0 4px 30px rgba(0, 0, 0, 0.1),
+        inset 0 0 20px rgba(255, 255, 255, 0.5);
+    /* Inner glow for liquid effect */
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+/* Optional: Add a subtle shine effect */
+.main-clock-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+    pointer-events: none;
+    transform: rotate(30deg);
+}
+
+.main-clock-card .main-time {
+    font-size: 48px;
+    font-weight: 700;
+    margin: 0;
+    font-family: 'Roboto Mono', monospace;
+    letter-spacing: 2px;
+    line-height: 1.1;
+    /* Tighter line height to reduce height */
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    /* White shadow for depth on dark text */
+    color: #4f46e5;
+    /* Primary brand color for time */
+}
+
+.main-clock-sub {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 2px;
+    /* Reduced margin */
+    opacity: 0.9;
+    color: #64748b;
+    /* Muted dark text */
+}
+
+.main-clock-card .city-name {
+    font-size: 13px;
+    /* Slightly smaller */
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.main-clock-card .date-info {
+    font-size: 13px;
+    /* Slightly smaller */
+    font-weight: 500;
+}
+
+.world-clock-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.clock-item {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+    cursor: grab;
+}
+
+.clock-item:active {
+    cursor: grabbing;
+}
+
+.clock-item:hover {
+    border-color: #6366f1;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+    transform: translateY(-1px);
+}
+
+.clock-item.dragging {
+    opacity: 0.4;
+    border-style: dashed;
+    transform: scale(0.97);
+    cursor: grabbing;
+}
+
+.clock-item.drag-over {
+    border-color: #6366f1;
+    background: #eef2ff;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.clock-city-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.clock-city-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.clock-city-diff {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.clock-right-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.clock-city-time {
+    font-size: 20px;
+    font-weight: 600;
+    color: #475569;
+    font-family: 'Roboto Mono', monospace;
+    line-height: 1;
+}
+
+.clock-city-date {
+    font-size: 10px;
+    color: #94a3b8;
+}

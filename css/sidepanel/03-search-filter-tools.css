@@ -1,0 +1,144 @@
+/* === 搜索框样式 === */
+.search-wrapper {
+position: relative;
+width: 100%;
+margin-bottom: 2px;
+display: flex;
+align-items: center;
+gap: 6px;
+}
+
+.search-wrapper.hidden {
+display: none;
+}
+
+.search-input {
+flex: 1;
+width: 100%;
+min-width: 0;
+padding: 6px 10px 6px 30px;
+border: 1px solid #cbd5e1;
+border-radius: 6px;
+font-size: 13px;
+outline: none;
+background: #fff;
+color: #334155;
+transition: border-color 0.2s;
+}
+
+.search-input:focus {
+border-color: #6366f1;
+box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.search-icon-overlay {
+position: absolute;
+left: 8px;
+top: 50%;
+transform: translateY(-50%);
+font-size: 16px;
+color: #94a3b8;
+pointer-events: none;
+}
+
+/* 当搜索框前有按钮时，调整搜索图标位置（仅 prompts 搜索框） */
+#search-group-prompts .search-icon-overlay {
+left: 42px;
+}
+#search-group-prompts .search-input {
+padding-left: 30px;
+}
+
+/* 筛选区 (隐藏滚动条) */
+.filter-section {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
+}
+
+.filter-section::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
+
+.filter-btn {
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: #64748b;
+    font-size: 11px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+
+.filter-btn.active {
+    background: #6366f1;
+    color: #fff;
+    border-color: #6366f1;
+}
+
+/* 暂存板工具栏 */
+.scratchpad-tools {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+}
+
+.tool-info {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.text-btn {
+    background: none;
+    border: none;
+    font-size: 11px;
+    color: #64748b;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.text-btn:hover {
+    color: #ef4444;
+}
+
+/* 工具栏里的纯图标按钮（如「稍后阅读」的清空全部 / 垃圾桶图标）。
+   说明文字走原生 title，尺寸做得比 .icon-btn(28px) 小，避免撑高这条提示栏。 */
+.icon-only-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: none;
+    color: #94a3b8;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.icon-only-btn .fa-regular {
+    font-size: 14px;
+}
+
+/* 破坏性操作：悬停变红，与原文字按钮的悬停反馈保持一致 */
+.icon-only-btn:hover {
+    color: #ef4444;
+    background: #fee2e2;
+}

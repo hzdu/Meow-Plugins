@@ -1,0 +1,327 @@
+/* === 灯箱 (Lightbox) 样式 === */
+.lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+.lightbox.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.lightbox-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 85%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#lb-image {
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: 4px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+}
+
+.lb-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 16px;
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.lb-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lb-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.lb-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+.lb-btn .mi {
+    font-size: 20px;
+}
+
+/* === Modal (通用弹窗) === */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: #fff;
+    width: 85%;
+    max-height: 80%;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 8px;
+}
+
+.modal-header h3 {
+    font-size: 14px;
+    color: #334155;
+}
+
+.close-modal {
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 20px;
+}
+
+.close-modal:hover {
+    color: #334155;
+}
+
+.cat-list-container {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-right: 4px;
+}
+
+/* === 分类管理拖拽排序样式 === */
+.cat-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    cursor: grab;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.cat-item-row:active {
+    cursor: grabbing;
+}
+
+.cat-item-row.dragging {
+    opacity: 0.5;
+    background: #e2e8f0;
+    transform: scale(0.98);
+}
+
+.cat-item-row.drag-over {
+    border-bottom: 2px solid #6366f1;
+    background: #f1f5f9;
+}
+
+.cat-name {
+    font-size: 13px;
+    color: #334155;
+    flex: 1;
+    cursor: pointer;
+    margin-left: 4px;
+}
+
+.cat-name:hover {
+    color: #6366f1;
+    text-decoration: underline;
+}
+
+.cat-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.cat-del-btn {
+    color: #cbd5e1;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.cat-del-btn:hover {
+    color: #ef4444;
+}
+
+.drag-handle {
+    color: #cbd5e1;
+    font-size: 16px;
+    margin-right: 4px;
+    cursor: grab;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 6px;
+}
+
+#new-cat-name {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 12px;
+    outline: none;
+}
+
+#add-new-cat-btn {
+    background: #6366f1;
+    color: white;
+    border: none;
+    padding: 0 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* === 全部分类选择面板内部项样式 === */
+.full-cat-item {
+    padding: 12px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #334155;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.full-cat-item:hover {
+    background: #f1f5f9;
+    border-color: #6366f1;
+    color: #6366f1;
+}
+
+.full-cat-item.active {
+    background: #e0e7ff;
+    border-color: #6366f1;
+    color: #6366f1;
+    font-weight: 600;
+}
+
+/* === 全部分类网格 (1行4列适配) === */
+.full-cat-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 8px !important;
+    padding: 10px 0 !important;
+}
+
+.full-cat-item {
+    padding: 10px 4px !important;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #334155;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    word-break: break-all;
+    min-height: 60px;
+}
+
+.full-cat-item:hover {
+    background: #f1f5f9;
+    border-color: #6366f1;
+    color: #6366f1;
+}
+
+.full-cat-item.active {
+    background: #e0e7ff;
+    border-color: #6366f1;
+    color: #6366f1;
+    font-weight: 600;
+}
+
+.full-cat-item .mi {
+    font-size: 16px !important;
+    margin-top: 4px;
+}
+
+/* === 文本查看 Modal === */
+.text-modal-body {
+    white-space: pre-wrap;
+    word-break: break-all;
+    height: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    font-size: 13px;
+    color: #334155;
+    line-height: 1.6;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    user-select: text;
+}
+
+.text-modal-body img {
+    max-width: 100%;
+    display: block;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+
+.text-modal-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.text-modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}

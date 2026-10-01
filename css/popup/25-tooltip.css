@@ -1,0 +1,205 @@
+/* === 财务拖拽放置高亮 === */
+.calendar-days div.drag-over-fin {
+    background: #dbeafe !important;
+    box-shadow: inset 0 0 0 2px #3b82f6;
+    transform: scale(1.05);
+    z-index: 5;
+}
+
+/* meow-confirm 对话框样式已独立为 css/meow-confirm.css */
+
+/* === 日历图标 Tooltip === */
+.cal-day-tooltip {
+    position: fixed;
+    z-index: 10000;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 12px;
+    min-width: 200px;
+    max-width: 280px;
+    max-height: 300px;
+    overflow-y: auto;
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+    font-size: 0.85rem;
+    display: none;
+}
+
+.cal-day-tooltip.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.cal-day-tooltip::-webkit-scrollbar {
+    width: 4px;
+}
+
+.cal-day-tooltip::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cal-day-tooltip::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 2px;
+}
+
+.cal-day-tooltip .ct-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.cal-day-tooltip .ct-header .material-icons {
+    font-size: 18px;
+}
+
+.cal-day-tooltip .ct-summary {
+    font-size: 0.72rem;
+    color: #6b7280;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cal-day-tooltip .ct-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.cal-day-tooltip .ct-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    background: #f9fafb;
+    font-size: 0.8rem;
+    transition: background 0.15s;
+}
+
+.cal-day-tooltip .ct-item:hover {
+    background: #f3f4f6;
+}
+
+.cal-day-tooltip .ct-item.done {
+    opacity: 0.5;
+}
+
+.cal-day-tooltip .ct-item.done .ct-text {
+    text-decoration: line-through;
+}
+
+.cal-day-tooltip .ct-check {
+    font-size: 14px !important;
+    color: #9ca3af;
+    flex-shrink: 0;
+}
+
+.cal-day-tooltip .ct-item.done .ct-check {
+    color: #22c55e;
+}
+
+.cal-day-tooltip .ct-text {
+    flex: 1;
+    color: #374151;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.cal-day-tooltip .ct-amount {
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cal-day-tooltip .ct-amount.inc {
+    color: #10b981;
+}
+
+.cal-day-tooltip .ct-amount.exp {
+    color: #ef4444;
+}
+
+.cal-day-tooltip .ct-amount.dep {
+    color: #8b5cf6;
+}
+
+.cal-day-tooltip .ct-num {
+    width: 18px;
+    height: 18px;
+    background: #fed7aa;
+    color: #ea580c;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.cal-day-tooltip .ct-tag {
+    font-size: 0.68rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    color: #6b7280;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cal-day-tooltip .ct-tag.urgent {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.cal-day-tooltip .ct-tag.past {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+/* 日历图标可悬停提示 */
+.calendar-days [data-tip-type] {
+    cursor: default;
+}
+
+/* === 财务规划列表标题 Tooltip（匹配日历 tooltip 风格） === */
+.pe-custom-tooltip {
+    position: fixed;
+    z-index: 10000;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #1e293b;
+    line-height: 1.4;
+    white-space: nowrap;
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    display: none;
+}
+
+.pe-custom-tooltip.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}

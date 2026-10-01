@@ -1,0 +1,851 @@
+/* === 鎴掔儫瑙勫垝鏍峰紡 === */
+.smoking-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 5px;
+}
+
+/* 鎴掔儫瀛愭爣绛鹃〉 */
+.smoking-subtabs {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 5px;
+    flex-shrink: 0;
+}
+
+.smoking-subtab-btn {
+    background: none;
+    border: none;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    color: #6b7280;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.smoking-subtab-btn:hover {
+    color: var(--primary-color);
+    background: #e0e7ff;
+}
+
+.smoking-subtab-btn.active {
+    color: #fff;
+    background: var(--primary-color);
+}
+
+.smoking-subtab-content {
+    display: none;
+    flex: 1;
+    overflow: hidden;
+    flex-direction: column;
+}
+
+.smoking-subtab-content.active {
+    display: flex;
+}
+
+/* 鍒楄〃鍖哄煙闇閫傞厤鍓╀綑楂樺害 */
+.smoking-list-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    margin-bottom: 2px;
+    /* 缁欎笅鏂箃ip鐣欑偣闂撮殧 */
+}
+
+/* 鎴掔儫鍒楄〃婊氬姩 */
+.smoking-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+/* 鎴掔儫鏃ュ織 */
+.smoking-diary-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+    gap: 5px;
+    height: 100%;
+}
+
+.smoking-diary-input {
+    flex: 1;
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    resize: none;
+    background: #f9fafb;
+    outline: none;
+    transition: all 0.2s;
+    font-family: inherit;
+    color: #374151;
+    box-sizing: border-box;
+}
+
+.smoking-diary-input:focus {
+    border-color: var(--primary-color);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.smoking-diary-status {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    padding-right: 5px;
+}
+
+/* 鏅鸿兘鎻愮ず娑堟伅鍖哄煙 */
+.smoking-tip-section {
+    flex-shrink: 0;
+    background: #e0f2fe;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-top: auto;
+    border: 1px solid #bae6fd;
+    max-height: 42px;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.smoking-tip-section:hover {
+    max-height: 300px;
+}
+
+.smoking-tip-section:not(:hover) .smoking-tip-content {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* === 绱у噾妯″紡浼樺寲 (User Request) === */
+.smoking-header {
+    background: #f9fafb !important;
+    /* Changed from yellow to gray */
+    border: 1px solid #f3f4f6 !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    gap: 0 !important;
+    margin-bottom: 6px !important;
+    display: flex;
+    flex-direction: column;
+}
+
+.smoking-settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 2px;
+}
+
+.smoking-goal-section,
+.smoking-sleep-section {
+    display: flex;
+    flex-direction: row;
+    /* Force row inside */
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0 !important;
+}
+
+.smoking-goal-label {
+    font-size: 0.85rem;
+    margin-bottom: 0 !important;
+    margin-right: 6px;
+    line-height: normal;
+    white-space: nowrap;
+    text-align: left;
+    font-weight: 600;
+    color: #f59e0b !important;
+}
+
+.smoking-goal-control,
+.smoking-sleep-control {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.smoking-record-section {
+    margin-bottom: 2px !important;
+    gap: 8px !important;
+    padding: 0 5px !important;
+    display: flex;
+    /* Ensure row */
+    align-items: center;
+    width: 100% !important;
+    /* Force full width */
+    box-sizing: border-box !important;
+}
+
+.smoking-time-picker {
+    flex: 1;
+    /* Allow growing */
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    /* Enable shrinking if needed */
+}
+
+/* 鎸夐挳鍜岃緭鍏ユ楂樺害鍑忓皬 */
+.smoking-record-btn {
+    flex: 0 0 auto !important;
+    /* 涓嶅啀鑷姩浼哥缉锛屾牴鎹唴瀹瑰畾瀹 */
+    padding: 0 15px !important;
+    /* 閫傚害淇濈暀鍐呰竟璺 */
+    font-size: 0.85rem !important;
+    height: 32px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    white-space: nowrap;
+    /* Prevent wrap */
+    min-width: fit-content;
+}
+
+.smoking-time-input {
+    height: 32px !important;
+    font-size: 0.85rem !important;
+    flex: 1;
+    /* Input fills picker area */
+    width: auto !important;
+    /* Override fixed width */
+    min-width: 0;
+}
+
+.smoking-record-custom-btn {
+    height: 32px !important;
+    width: 32px !important;
+    flex-shrink: 0;
+}
+
+/* 鏍囩椤电揣鍑 */
+.smoking-subtabs {
+    margin: 2px 0 2px 0 !important;
+    gap: 10px !important;
+    padding-bottom: 2px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.smoking-subtab-btn {
+    padding: 2px 8px !important;
+    font-size: 0.8rem !important;
+}
+
+/* 瀛椾綋涓庨棿璺濊皟鏁 */
+.smoking-goal-value {
+    font-size: 1.2rem !important;
+    /* 杩涗竴姝ョ缉灏忔暟瀛 */
+    font-weight: bold;
+    color: #374151 !important;
+    /* Set to dark gray */
+}
+
+.smoking-goal-btn {
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.6);
+    /* 杞诲井鑳屾櫙 */
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    /* Enhance button look on gray */
+}
+
+.smoking-goal-btn:hover {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.smoking-goal-btn .material-icons {
+    font-size: 16px;
+    color: #6b7280 !important;
+    /* Changed from brown to enhance visibility on gray */
+}
+
+/* 鍒楄〃澶撮儴绱у噾 */
+.smoking-list-header {
+    margin-bottom: 4px !important;
+    padding: 0 5px !important;
+}
+
+.smoking-item {
+    padding: 6px 10px !important;
+    margin-bottom: 4px !important;
+}
+
+/* === 鎴掔儫杩涘害鏉★紙鎵佸钩鐜颁唬椋庢牸锛=== */
+.smoking-progress-section {
+    margin-top: 0px !important;
+    margin-bottom: 2px !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.smoking-progress-bar {
+    position: relative;
+    height: 20px !important;
+    background: #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+    width: 100%;
+    flex: 1;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.smoking-progress-fill {
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    border-radius: 10px;
+    background: #f59e0b;
+    transition: width 0.6s ease;
+    z-index: 1;
+}
+
+.smoking-progress-info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem !important;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    z-index: 2;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* === 娣卞懠鍚稿閫夋锛堢幇浠 Toggle锛=== */
+.deep-breath-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 2px 0;
+    margin-right: 6px;
+    gap: 5px;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.deep-breath-label input[type="checkbox"] {
+    display: none;
+}
+
+.deep-breath-toggle {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    background: #d1d5db;
+    border-radius: 9px;
+    transition: background 0.3s ease;
+    flex-shrink: 0;
+}
+
+.deep-breath-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.deep-breath-label input:checked+.deep-breath-toggle {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.deep-breath-label input:checked+.deep-breath-toggle::after {
+    transform: translateX(14px);
+}
+
+.deep-breath-label .deep-breath-text {
+    font-size: 0.75rem;
+    line-height: 1;
+    color: #9ca3af;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.deep-breath-label input:checked~.deep-breath-text {
+    color: #6366f1;
+    font-weight: 600;
+}
+
+/* ====== 娣卞懠鍚 Modal锛堢幇浠ｈ璁★級====== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+    background-color: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(6px);
+}
+
+.modal.visible {
+    display: flex;
+    opacity: 1;
+}
+
+/* Modal 瀹瑰櫒 */
+.breath-modal-content {
+    background: linear-gradient(160deg, #ffffff 0%, #f8faff 100%);
+    border-radius: 20px;
+    width: 600px;
+    /* 鍔犲浠ュ绾虫帓琛屾 */
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2), 0 0 0 1px rgba(99, 102, 241, 0.08);
+    animation: modal-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modal-pop {
+    0% {
+        transform: scale(0.85) translateY(10px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Header */
+.breath-modal-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    position: relative;
+}
+
+.breath-modal-title {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.breath-elapsed {
+    flex: 1;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+    opacity: 0.95;
+}
+
+.breath-close-x {
+    font-size: 22px;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    opacity: 0.7;
+}
+
+.breath-close-x:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Body */
+.breath-modal-body {
+    padding: 0;
+    display: flex;
+    height: 320px;
+    /* 鍥哄畾楂樺害 */
+}
+
+/* 宸︿晶鎺掕姒 */
+.breath-leaderboard {
+    width: 240px;
+    background: #f9fafb;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+}
+
+.leaderboard-title {
+    padding: 15px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #4b5563;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+}
+
+.leaderboard-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.leaderboard-item {
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.85rem;
+    color: #6b7280;
+    transition: background 0.2s;
+}
+
+.leaderboard-item:hover {
+    background: #fff;
+}
+
+.leaderboard-item:last-child {
+    border-bottom: none;
+}
+
+.rank-badge {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.leaderboard-item:nth-child(1) .rank-badge {
+    background: #fcd34d;
+    color: #92400e;
+}
+
+.leaderboard-item:nth-child(2) .rank-badge {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.leaderboard-item:nth-child(3) .rank-badge {
+    background: #fdba74;
+    color: #9a3412;
+}
+
+.record-date {
+    flex: 1;
+    font-size: 0.75rem;
+}
+
+.record-duration {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-family: monospace;
+}
+
+/* 澶栫幆锛堣楗扮敤锛 */
+.breathing-ring-outer {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    position: relative;
+    border: none;
+    /* 绉婚櫎鍘熸潵鐨勮竟妗嗭紝璁╁畠鐪嬭捣鏉ユ洿骞插噣 */
+}
+
+/* 鍛煎惛鍦 */
+.breathing-circle {
+    width: 140px;
+    height: 140px;
+    background: #e0e7ff;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+    transform: scale(1);
+    transition: background 0.5s ease;
+    z-index: 10;
+}
+
+/* 鍚告皵 - 钃濈传鑹 */
+.breathing-circle.inhale {
+    animation: breathe-in 4s ease-in-out forwards;
+    background: #e0e7ff;
+}
+
+.breathing-circle.inhale .circle-text {
+    color: #6366f1;
+}
+
+.breathing-circle.inhale .circle-countdown {
+    color: #818cf8;
+}
+
+/* 淇濇寔 - 鐞ョ弨鑹 */
+.breathing-circle.hold {
+    transform: scale(1.25);
+    box-shadow: 0 0 25px 8px rgba(245, 158, 11, 0.15);
+    background: #fef3c7;
+}
+
+.breathing-circle.hold .circle-text {
+    color: #d97706;
+}
+
+.breathing-circle.hold .circle-countdown {
+    color: #f59e0b;
+}
+
+/* 鍛兼皵 - 缁胯壊 */
+.breathing-circle.exhale {
+    animation: breathe-out 4s ease-in-out forwards;
+    background: #d1fae5;
+}
+
+.breathing-circle.exhale .circle-text {
+    color: #059669;
+}
+
+.breathing-circle.exhale .circle-countdown {
+    color: #34d399;
+}
+
+@keyframes breathe-in {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+        background: #e0e7ff;
+    }
+
+    100% {
+        transform: scale(1.25);
+        box-shadow: 0 0 25px 8px rgba(245, 158, 11, 0.15);
+        background: #fef3c7;
+    }
+}
+
+@keyframes breathe-out {
+    0% {
+        transform: scale(1.25);
+        box-shadow: 0 0 25px 8px rgba(16, 185, 129, 0.15);
+        background: #d1fae5;
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        background: #e0e7ff;
+    }
+}
+
+.circle-text {
+    font-size: 1.4rem;
+    color: var(--primary-color);
+    font-weight: 700;
+    pointer-events: none;
+    letter-spacing: 3px;
+    transition: color 0.5s ease;
+}
+
+.circle-countdown {
+    font-size: 0.9rem;
+    color: #a5b4fc;
+    font-weight: 600;
+    pointer-events: none;
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.5s ease;
+}
+
+/* Footer */
+.breath-modal-footer {
+    padding: 12px 20px 16px;
+    display: flex;
+    justify-content: flex-end;
+    /* Default alignment */
+    align-items: center;
+    position: relative;
+    border-top: 1px solid #f3f4f6;
+    background: #fff;
+    gap: 10px;
+    /* Add gap between items */
+}
+
+.breath-tips {
+    position: static;
+    /* Remove absolute positioning */
+    transform: none;
+    margin-right: auto;
+    /* Push buttons to the right */
+    font-size: 0.8rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* "涓嶇偣" - Now the Primary Attractive Button */
+.breath-cancel-btn {
+    padding: 8px 24px;
+    border: none;
+    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    /* Darker, attractive purple/blue */
+    color: #fff;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1);
+}
+
+.breath-cancel-btn:hover {
+    background: linear-gradient(135deg, #4338ca, #3730a3);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3), 0 4px 6px -2px rgba(79, 70, 229, 0.15);
+}
+
+.breath-cancel-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px -1px rgba(79, 70, 229, 0.2);
+}
+
+/* "鐐逛笂" - Now Secondary/Unobtrusive */
+.breath-done-btn {
+    padding: 8px 18px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #9ca3af;
+    /* Light gray text */
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    box-shadow: none;
+}
+
+.breath-done-btn:hover {
+    background: #f9fafb;
+    color: #6b7280;
+    box-shadow: none;
+}
+
+/* Leaderboard Delete Button */
+.record-delete-btn {
+    opacity: 0;
+    transition: all 0.2s;
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 4px;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+}
+
+.leaderboard-item:hover .record-delete-btn {
+    opacity: 1;
+}
+
+.record-delete-btn:hover {
+    color: #ef4444;
+    background: #fee2e2;
+}
+
+/* === Width Adaptation for Smoking Goal & Sleep Sections === */
+.smoking-settings-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 8px;
+    /* Maintain spacing */
+}
+
+.smoking-goal-section,
+.smoking-sleep-section {
+    flex: 1;
+    /* Allow to grow and fill available space */
+    width: 100%;
+    /* Ensure full width usage */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* Space out label and controls */
+}
+
+/* Ensure controls are aligned properly */
+.smoking-goal-control,
+.smoking-sleep-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}

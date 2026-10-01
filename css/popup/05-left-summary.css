@@ -1,0 +1,185 @@
+/* 宸︿晶娑堟伅婊氬姩瀹瑰櫒 */
+.left-summary-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    padding-right: 2px;
+    /* 闅愯棌婊氬姩鏉′絾淇濇寔鍙粴鍔 */
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb transparent;
+}
+
+.left-summary-scroll-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.left-summary-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.left-summary-scroll-container::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 2px;
+}
+
+.left-summary-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
+}
+
+/* 鏈堝害姹囨 */
+.month-summary-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+    margin: 5px 0 5px 0;
+    border: 1px solid #f3f4f6;
+    flex-shrink: 0;
+}
+
+.balance-row,
+.flow-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.balance-row {
+    border-bottom: 1px dashed #e5e7eb;
+    padding-bottom: 6px;
+    margin-bottom: 2px;
+}
+
+.ms-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+}
+
+.ms-label {
+    color: #9ca3af;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.ms-val {
+    font-weight: 700;
+    color: #374151;
+}
+
+.ms-val.inc {
+    color: var(--mark-green);
+}
+
+.ms-val.exp {
+    color: var(--mark-red);
+}
+
+.ms-val.bal {
+    color: var(--primary-color);
+}
+
+.edit-icon {
+    font-size: 14px;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.edit-icon:hover {
+    color: var(--primary-color);
+}
+
+#countdown-summary-card {
+    padding: 0 12px;
+    background: #fff;
+    border: 1px solid #f3f4f6;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-top: 5px;
+    height: 36px;
+    overflow: hidden;
+    position: relative;
+}
+
+.cd-ticker-track {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    transition: transform 0.5s ease-in-out;
+}
+
+.cd-ticker-item {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+.cd-summary-days {
+    font-weight: bold;
+    font-size: 1rem;
+    color: var(--primary-color);
+    min-width: 40px;
+}
+
+.cd-summary-days.urgent {
+    color: var(--mark-red);
+}
+
+.cd-summary-label {
+    flex: 1;
+    margin-left: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.85rem;
+    color: #4b5563;
+}
+
+/* === 宸︿晶鎶樺彔鎸夐挳鏍峰紡 === */
+.toggle-sidebar-btn {
+    position: absolute;
+    left: 385px;
+    top: 45%;
+    transform: translate(-50%, -50%);
+    width: 22px;
+    height: 42px;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 200;
+    color: #6b7280;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s, background 0.2s;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.toggle-sidebar-btn:hover {
+    color: var(--primary-color);
+    background: #f9fafb;
+}
+
+.toggle-sidebar-btn .material-icons {
+    font-size: 16px;
+    transition: transform 0.3s ease;
+}
+
+.container.sidebar-collapsed .toggle-sidebar-btn {
+    left: 20px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+}
+
+.container.sidebar-collapsed .toggle-sidebar-btn .material-icons {
+    transform: rotate(180deg);
+}

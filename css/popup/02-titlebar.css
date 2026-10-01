@@ -1,0 +1,126 @@
+/* === 面板标题栏（绝对定位，不破坏主体布局） === */
+.panel-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    padding: 0 8px;
+    background: #f8f9fc;
+    border-bottom: 1px solid #e8ecf1;
+    cursor: default;
+    z-index: 2147483646;
+}
+
+.titlebar-drag-handle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: grab;
+    padding: 4px 8px;
+    border-radius: 6px;
+    min-width: 0;
+    flex: 1;
+    color: #6b7280;
+    transition: background 0.15s;
+}
+
+.titlebar-drag-handle:active {
+    cursor: grabbing;
+}
+
+.titlebar-drag-handle:hover {
+    background: #eef0f5;
+}
+
+.titlebar-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.titlebar-model-id {
+    font-size: 11px;
+    font-weight: 400;
+    color: #9ca3af;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+    display: none;
+}
+
+.titlebar-buttons {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.titlebar-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    transition: all 0.15s;
+}
+
+.titlebar-btn:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.titlebar-btn.titlebar-close:hover {
+    background: #fee2e2;
+    color: #ea580c;
+}
+
+/* 面板收起状态 */
+body.panel-minimized .container,
+body.panel-minimized .panel-titlebar {
+    display: none;
+}
+
+body.panel-minimized {
+    width: auto !important;
+    height: auto !important;
+    overflow: visible;
+}
+
+body.panel-minimized .panel-titlebar-mini {
+    display: flex;
+}
+
+.panel-titlebar-mini {
+    display: none;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 32px;
+    padding: 0 12px;
+    background: #f8f9fc;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    cursor: pointer;
+    white-space: nowrap;
+    gap: 8px;
+    color: #6b7280;
+}
+
+.panel-titlebar-mini:hover {
+    background: #eef0f5;
+}

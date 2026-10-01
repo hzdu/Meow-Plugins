@@ -1,0 +1,35 @@
+/* 火焰流动边框 — 动画角度变量 */
+@property --fire-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes fire-flow-angle {
+    0%   { --fire-angle: 0deg; }
+    100% { --fire-angle: 360deg; }
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    /* Roboto 由 js/cdn-styles.js 异步加载；加载前/失败时回退到系统字体，
+       保证首屏一定可用可读（不再依赖远程字体的到达时间）。 */
+    font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+}
+
+body {
+    background-color: #f8fafc;
+    color: #334155;
+    font-size: 14px;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}

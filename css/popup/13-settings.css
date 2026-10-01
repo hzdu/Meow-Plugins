@@ -1,0 +1,303 @@
+.settings-section {
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    margin-top: 10px;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: padding 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 卡片折叠时减少内边距，并加上 overflow:hidden 使渐变边框不溢出圆角 */
+.settings-section.collapsed {
+    padding: 10px 20px;
+    overflow: hidden;
+}
+
+/* 渐变边框 — 仅在折叠时悬停显示流动效果（mask 裁切为环形，中心无效果） */
+.settings-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    padding: 1.5px;
+    background: conic-gradient(
+        from var(--fire-angle, 0deg),
+        transparent,
+        transparent,
+        #ff4500,
+        #ff8c00,
+        #ffd700,
+        #ff6b00,
+        #ff4500,
+        transparent,
+        transparent
+    );
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: fire-flow-angle 2.5s linear infinite;
+    pointer-events: none;
+}
+.settings-section:hover::before {
+    opacity: 1;
+}
+.settings-section:hover {
+    border-color: transparent;
+}
+
+/* 展开后的样式：固定边框色 + 标题栏彩虹渐变背景 */
+.settings-section:not(.collapsed) {
+    border-color: #c7d2fe;
+}
+.settings-section:not(.collapsed):hover {
+    border-color: transparent;
+}
+.settings-section:not(.collapsed) .settings-section-header {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    margin: -20px -20px 8px;
+    padding: 8px 20px;
+    border-radius: 11px 11px 0 0;
+}
+.settings-section:not(.collapsed) .settings-section-header h3 {
+    color: #fff;
+    font-weight: 700;
+}
+.settings-section:not(.collapsed) .settings-section-header .settings-arrow {
+    color: rgba(255,255,255,0.85);
+}
+.settings-section > * {
+    position: relative;
+    z-index: 2;
+}
+
+.settings-section h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-desc {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+.settings-control {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.settings-control select {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    outline: none;
+    background: #f9fafb;
+}
+
+.fa-mode-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.fa-mode-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-left: 22px;
+}
+
+.fa-mode-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+    color: #4b5563;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.fa-mode-item input[type="radio"] {
+    accent-color: #16a34a;
+    cursor: pointer;
+}
+
+.danger-btn,
+.primary-btn {
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: 0.2s;
+    white-space: nowrap;
+}
+
+.danger-btn {
+    background: #ef4444;
+    color: white;
+}
+
+.danger-btn:hover {
+    background: #ea580c;
+}
+
+.primary-btn {
+    background: var(--primary-color);
+    color: white;
+}
+
+.primary-btn:hover {
+    background: #4f46e5;
+}
+
+.status-msg {
+    margin-top: 15px;
+    font-size: 0.85rem;
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-msg.success {
+    color: var(--mark-green);
+    background: #f0fdf4;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+/* === 设置卡片折叠/展开 === */
+.settings-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+}
+.settings-section-header:hover {
+    opacity: 0.8;
+}
+.settings-section-header .settings-arrow {
+    font-size: 20px;
+    color: #9ca3af;
+    transition: transform 0.3s ease;
+}
+.settings-section-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+.settings-section:not(.collapsed) .settings-section-body {
+    max-height: 2000px;
+}
+
+/* 内容区域的滑入/滑出动画，不受实际高度影响 */
+.settings-section-body > div {
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 0.35s ease;
+}
+.settings-section:not(.collapsed) .settings-section-body > div {
+    clip-path: inset(0);
+}
+.settings-section:not(.collapsed) .settings-section-header .settings-arrow {
+    transform: rotate(180deg);
+}
+
+.shortcuts-group {
+    margin-bottom: 12px;
+}
+
+.shortcuts-group h4 {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    margin-bottom: 6px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.shortcut-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px dashed #f3f4f6;
+    font-size: 0.9rem;
+    color: #4b5563;
+}
+
+kbd {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    font-family: monospace;
+}
+
+.copyright-footer {
+    margin-top: auto;
+    padding-top: 8px;
+    padding-bottom: 0px;
+    text-align: center;
+    border-top: 1px solid #f3f4f6;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.copyright-footer a {
+    font-size: 9px;
+    color: #9ca3af;
+    text-decoration: none;
+    font-family: monospace;
+}
+
+.copyright-footer a:hover {
+    color: var(--primary-color);
+}
+
+.sp-tools {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
+.sp-tool-btn {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #6b7280;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+}
+
+.sp-tool-btn:hover {
+    background: #f9fafb;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}

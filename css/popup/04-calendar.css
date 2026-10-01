@@ -1,0 +1,420 @@
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 0 5px;
+    height: 32px;
+}
+
+.current-date-wrapper {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 2px 6px;
+    transition: background 0.2s;
+}
+
+.current-date-wrapper:hover {
+    background: #f3f4f6;
+}
+
+.current-date-wrapper span:first-child {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-right: 2px;
+}
+
+.calendar-container {
+    position: relative;
+    /* flex: 1;  绉婚櫎 flex: 1锛岃瀹冩寜鍐呭鑷劧楂樺害鏄剧ず锛屾垨鑰呯粰涓涓熀纭姣斾緥 */
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 10px;
+}
+
+/* 宸︿晶搴曢儴婊氬姩鍖哄煙瀹瑰櫒 */
+.left-summary-scroll-container {
+    flex: 1;
+    /* 鍗犳嵁鍓╀綑绌洪棿 */
+    overflow-y: auto;
+    padding-right: 2px;
+    min-height: 0;
+    /* 鍏抽敭锛氬厑璁 flex item 缂╁皬 */
+    margin-bottom: 10px;
+}
+
+/* 鑷畾涔夋粴鍔ㄦ潯 */
+.left-summary-scroll-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.left-summary-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.left-summary-scroll-container::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 4px;
+}
+
+.left-summary-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
+}
+
+.picker-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 100%;
+    height: auto;
+    background: white;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+.picker-years,
+.picker-months {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.picker-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #555;
+    padding: 0 10px;
+}
+
+.nav-small {
+    cursor: pointer;
+    color: #999;
+    font-size: 1.2rem;
+}
+
+.nav-small:hover {
+    color: #333;
+}
+
+.picker-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.picker-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #333;
+    transition: all 0.2s;
+    height: 30px;
+}
+
+.picker-item:hover {
+    background: #f3f4f6;
+    color: var(--primary-color);
+}
+
+.picker-item.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.picker-separator {
+    height: 1px;
+    background: #f0f0f0;
+    margin: 8px 0;
+}
+
+.icons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.today-btn {
+    border: none;
+    background: #f3f4f6;
+    color: #555;
+    font-size: 0.75rem;
+    padding: 0 10px;
+    height: 26px;
+    border-radius: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.today-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.nav-btn {
+    cursor: pointer;
+    font-size: 1.4rem;
+    color: #888;
+    transition: 0.2s;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.nav-btn:hover {
+    color: var(--text-color);
+    background: #f0f0f0;
+}
+
+/* 鏃ュ巻缃戞牸 */
+.calendar-week-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+}
+
+.calendar-week-days div {
+    font-size: 0.75rem;
+    color: #999;
+    margin-bottom: 8px;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    border-top: 1px solid #f0f0f0;
+    border-left: 1px solid #f0f0f0;
+}
+
+.calendar-days div {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    z-index: 1;
+    border-right: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 6px;
+    background: white;
+    overflow: hidden;
+}
+
+.calendar-days div .day-number {
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1;
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.calendar-days div:hover:not(.inactive):not(.active) {
+    background: #fdf4ff;
+    color: var(--primary-color);
+}
+
+.calendar-days div.active {
+    background: #7c3aed;
+    color: white;
+    box-shadow: none;
+}
+
+.calendar-days div.active .day-number {
+    color: white;
+}
+
+.calendar-days div.inactive {
+    color: #e5e7eb;
+    background: #fcfcfc;
+    pointer-events: none;
+}
+
+/* 鏍囪 */
+.calendar-days div.has-unfinished .day-number::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-10deg);
+    width: 24px;
+    height: 24px;
+    border: 2px solid #ef4444;
+    border-radius: 50% 40% 60% 50% / 40% 60% 40% 50%;
+    z-index: -1;
+}
+
+.calendar-days div.all-finished .day-number::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(140deg);
+    width: 24px;
+    height: 24px;
+    z-index: -1;
+    border: 3px solid var(--mark-green);
+    border-left-color: rgba(52, 199, 89, 0.3);
+    border-radius: 50% 70% 40% 60% / 60% 40% 70% 50%;
+}
+
+.task-count {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: #fff;
+    font-weight: bold;
+    z-index: 2;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.has-unfinished .task-count {
+    background: #ef4444;
+}
+
+.all-finished .task-count {
+    background: #22c55e;
+}
+
+.fin-tag {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: white;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.fin-tag-green {
+    background-color: var(--mark-green);
+}
+
+.fin-tag-red {
+    background-color: var(--mark-red);
+}
+
+.fin-tag-orange {
+    background-color: #f59e0b;
+}
+
+.countdown-tag {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    font-size: 12px;
+    color: #8b5cf6;
+    z-index: 2;
+}
+
+/* 财务规划每月重复角标 */
+.pe-recur-tag {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #6366f1;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.pe-recur-tag .material-icons {
+    font-size: 10px;
+    color: #fff;
+    line-height: 1;
+}
+
+.smoking-tag {
+    position: absolute;
+    bottom: 1px;
+    left: 1px;
+    z-index: 3;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    pointer-events: auto;
+    cursor: default;
+}
+
+.smoking-tag .material-icons {
+    font-size: 24px;
+    color: rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 1;
+    line-height: 1;
+}
+
+.calendar-days div.active .smoking-tag .material-icons {
+    color: rgba(249, 115, 22, 0.6);
+}
+
+.smoking-tag .count {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    font-size: 11px;
+    color: #ea580c;
+    font-weight: 900;
+    z-index: 2;
+    text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
+    /* White outline for readability */
+}
+
+.fin-item-tag {
+    display: inline-block;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: white;
+    margin-right: 4px;
+    vertical-align: middle;
+    font-weight: 500;
+}
+
+.fin-tags-row {
+    margin-top: 2px;
+}

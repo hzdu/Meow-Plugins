@@ -1,0 +1,26 @@
+
+:root {
+    --primary-color: #6366f1;
+    --hover-color: #e0e7ff;
+    --text-color: #333;
+    --bg-color: #fff;
+    --mark-red: #ff3b30;
+    --mark-green: #34c759;
+    --done-text: #9ca3af;
+    --border-color: #eee;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+}
+
+body {
+    width: 800px;
+    height: 600px;
+    background: #fff;
+    user-select: none;
+    overflow: hidden;
+}

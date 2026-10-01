@@ -1,0 +1,376 @@
+.fin-summary {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.fin-card {
+    flex: 1;
+    padding: 4px 8px;
+    border-radius: 8px;
+    text-align: center;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.fin-card .label {
+    font-size: 0.7rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.fin-card .amount {
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.fin-card.income {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+}
+
+.fin-card.expense {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+}
+
+/* === 存款计入余额开关 === */
+.fin-deposit-toggle-row {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.fin-deposit-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.fin-deposit-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.fin-toggle-track {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    background: #cbd5e1;
+    border-radius: 10px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.fin-deposit-toggle input:checked + .fin-toggle-track {
+    background: var(--primary-color);
+}
+
+.fin-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.fin-deposit-toggle input:checked + .fin-toggle-track .fin-toggle-thumb {
+    transform: translateX(14px);
+}
+
+.fin-deposit-toggle-label {
+    font-size: 0.72rem;
+    color: #64748b;
+}
+
+/* === 璐㈠姟杈撳叆琛屼紭鍖 (New Design) === */
+.fin-input-container {
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.fin-row-top {
+    display: flex;
+    gap: 8px;
+}
+
+.fin-row-bottom {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.fin-select {
+    flex: 0 0 35%;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0 8px;
+    height: 36px;
+    background-color: #f8fafc;
+    color: #475569;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+.fin-input-amount {
+    flex: 1;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0 10px;
+    height: 36px;
+    font-size: 14px;
+    font-weight: 500;
+    outline: none;
+    background: #fff;
+}
+
+/* 鐜颁唬鏃堕棿杈撳叆妗嗘牱寮 */
+.smoking-time-input {
+    flex: 1;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    outline: none;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: #334155;
+    background-color: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    /* 绉婚櫎榛樿鐨 appearance */
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.smoking-time-input:hover {
+    background-color: #fff;
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.smoking-time-input:focus {
+    background-color: #fff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* 浼樺寲鍘熺敓鍥炬爣 */
+.smoking-time-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(0.5);
+    /* 璋冩暣鍥炬爣棰滆壊涓虹伆鑹 */
+    transition: filter 0.2s;
+}
+
+.smoking-time-input:hover::-webkit-calendar-picker-indicator {
+    filter: invert(0.3);
+    /* 鎮仠鏃跺姞娣 */
+}
+
+.fin-input-note {
+width: 100%;
+box-sizing: border-box;
+border: 1px solid #e2e8f0;
+border-radius: 8px;
+padding: 0 10px;
+height: 36px;
+font-size: 13px;
+outline: none;
+}
+
+.fin-note-wrapper {
+flex: 1;
+position: relative;
+}
+
+.fin-note-dropdown {
+position: absolute;
+top: calc(100% + 4px);
+left: 0;
+right: 0;
+background: #fff;
+border: 1px solid #e2e8f0;
+border-radius: 8px;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+max-height: 180px;
+overflow-y: auto;
+z-index: 1000;
+}
+
+.fin-note-dropdown.hidden {
+display: none;
+}
+
+.fin-note-dropdown-item {
+padding: 7px 12px;
+font-size: 13px;
+color: #374151;
+cursor: pointer;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+transition: background 0.12s;
+}
+
+.fin-note-dropdown-item:hover,
+.fin-note-dropdown-item.active {
+background: #eef2ff;
+color: var(--primary-color);
+}
+
+/* === 待办事项历史下拉框 === */
+.todo-input-wrapper {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+
+.todo-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.todo-dropdown.hidden {
+    display: none;
+}
+
+.todo-dropdown-item {
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.12s;
+}
+
+.todo-dropdown-item:hover,
+.todo-dropdown-item.active {
+    background: #eef2ff;
+    color: var(--primary-color);
+}
+
+.fin-select:focus,
+.fin-input-amount:focus,
+.fin-input-note:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.fin-add-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    box-shadow: 0 2px 5px rgba(99, 102, 241, 0.3);
+}
+
+.fin-add-btn:hover {
+    background: #4f46e5;
+}
+
+#cancel-fin-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+}
+
+.fin-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #fff;
+    border: 1px solid #f3f4f6;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* 财务卡片操作按钮统一缩小 */
+.fin-item .edit-btn,
+.fin-item .delete-btn,
+.fin-item .fin-link-btn {
+    font-size: 0.95rem;
+    padding: 3px;
+}
+
+.fin-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    margin-right: 12px;
+}
+
+.fin-note {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ea580c;
+    margin-bottom: 2px;
+}
+
+.fin-meta {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.fin-val {
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+.fin-val.inc {
+    color: var(--mark-green);
+}
+
+.fin-val.exp {
+    color: var(--mark-red);
+}
+
+.fin-val.dep {
+    color: #8b5cf6;
+}

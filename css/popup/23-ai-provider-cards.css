@@ -1,0 +1,581 @@
+/* AI Provider 弹窗两列布局 */
+.ai-modal-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 12px;
+}
+.ai-modal-col {
+    flex: 0 0 calc(50% - 6px);
+    min-width: 0;
+}
+.ai-modal-col.ai-modal-full {
+    flex: 0 0 100%;
+}
+
+.sub-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 4px;
+}
+
+.converter-input.full-border {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+    background: #f8fafc;
+    transition: border-color 0.2s;
+}
+.converter-input.full-border:focus {
+    border-color: #6366f1;
+    background: #fff;
+}
+
+.add-btn {
+    padding: 6px 16px;
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.add-btn:hover {
+    background: #4f46e5;
+}
+
+.cancel-btn {
+    padding: 6px 16px;
+    background: transparent;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.cancel-btn:hover {
+    background: #f1f5f9;
+}
+
+/* === AI Provider：获取模型 === */
+.ai-provider-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.ai-provider-label-row .sub-label {
+    margin: 0;
+}
+.ai-fetch-models-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid #ddd6fe;
+    background: #f5f3ff;
+    color: #6d28d9;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    line-height: 1.5;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.ai-fetch-models-btn .material-icons {
+    font-size: 15px;
+}
+.ai-fetch-models-btn:hover:not(:disabled) {
+    background: #ede9fe;
+    border-color: #c4b5fd;
+}
+.ai-fetch-models-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.ai-provider-fetch-status {
+    display: none;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #475569;
+    word-break: break-all;
+    margin-top: 2px;
+}
+.ai-provider-fetch-status.error {
+    color: #ef4444;
+}
+.ai-provider-fetch-status.ok {
+    color: #16a34a;
+}
+
+/* AI Provider：模型选择弹窗 */
+#ai-provider-model-select-modal .modal-content {
+    max-width: 400px;
+}
+.ai-model-select-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.ai-model-select-source {
+    flex: 1;
+    min-width: 0;
+    font-size: 11px;
+    color: #94a3b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ai-model-select-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 11px;
+    color: #8b5cf6;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-family: inherit;
+}
+.ai-model-select-link:hover {
+    text-decoration: underline;
+}
+.ai-model-select-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    padding: 5px 8px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    transition: border-color 0.2s;
+}
+.ai-model-select-search:focus-within {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.12);
+}
+.ai-model-select-search .material-icons {
+    font-size: 16px;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+.ai-model-select-search-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #1e293b;
+    font-size: 12px;
+    padding: 0;
+    font-family: inherit;
+}
+.ai-model-select-search-input::placeholder {
+    color: #94a3b8;
+}
+.ai-model-select-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+.ai-model-select-list::-webkit-scrollbar {
+    width: 4px;
+}
+.ai-model-select-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}
+.ai-model-select-empty {
+    padding: 14px 8px;
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+}
+.ai-model-select-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+.ai-model-select-item:hover {
+    border-color: #ddd6fe;
+}
+.ai-model-select-item input {
+    accent-color: #8b5cf6;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.ai-model-select-item .model-id {
+    flex: 1;
+    min-width: 0;
+    font-family: monospace;
+    font-size: 12px;
+    color: #1e293b;
+    word-break: break-all;
+}
+.ai-model-select-item .model-src {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #94a3b8;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ai-model-select-item .model-state {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #10b981;
+    white-space: nowrap;
+}
+.ai-model-select-count {
+    margin-top: 6px;
+    text-align: right;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* === AI Provider 模块样式 === */
+.ai-provider-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.ai-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: all 0.2s;
+    cursor: grab;
+    position: relative;
+    overflow: hidden;
+}
+
+.ai-card:active {
+    cursor: grabbing;
+}
+
+.ai-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    padding: 1.5px;
+    background: conic-gradient(
+        from var(--fire-angle, 0deg),
+        transparent,
+        transparent,
+        #ff4500,
+        #ff8c00,
+        #ffd700,
+        #ff6b00,
+        #ff4500,
+        transparent,
+        transparent
+    );
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: fire-flow-angle 2.5s linear infinite;
+    pointer-events: none;
+}
+
+.ai-card:hover {
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08);
+}
+
+.ai-card:hover::before {
+    opacity: 1;
+}
+
+.ai-card > * {
+    position: relative;
+    z-index: 2;
+}
+
+.ai-card.dragging {
+    opacity: 0.4;
+    border-style: dashed;
+    transform: scale(0.97);
+}
+
+.ai-card.drag-over {
+    border-color: #6366f1;
+    background: #eef2ff;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.ai-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.ai-card-toggle {
+    font-size: 18px;
+    color: #cbd5e1;
+    transition: transform 0.2s, color 0.2s;
+    flex-shrink: 0;
+    margin-right: 4px;
+}
+
+.ai-card-header:hover .ai-card-toggle {
+    color: #8b5cf6;
+}
+
+.ai-card-body {
+    display: none;
+    padding-top: 6px;
+    border-top: 1px dashed #f1f5f9;
+    margin-top: 6px;
+}
+
+.ai-card.expanded .ai-card-body {
+    display: block;
+}
+
+.ai-card.expanded .ai-card-toggle {
+    transform: rotate(180deg);
+    color: #8b5cf6;
+}
+
+.ai-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    flex: 1;
+}
+
+.ai-official-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: #94a3b8;
+    transition: color 0.2s;
+}
+.ai-official-link:hover {
+    color: #6366f1;
+}
+.ai-official-link .material-icons {
+    font-size: 16px;
+}
+
+.ai-card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.ai-card-actions .material-icons {
+    font-size: 16px;
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.ai-card-actions .material-icons:hover {
+    color: #8b5cf6;
+}
+
+.ai-card-actions .ai-del-btn:hover {
+    color: #ef4444;
+}
+
+.ai-card-actions .ai-note-btn {
+    cursor: pointer;
+    font-size: 16px;
+    color: #8b5cf6;
+    transition: color 0.2s;
+}
+.ai-card-actions .ai-note-btn:hover {
+    color: #6d28d9;
+}
+
+/* === AI Setting 样式 === */
+.ai-setting-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ai-setting-select-item {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+    color: #1e293b;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    font-family: monospace;
+}
+.ai-setting-select-item:hover {
+    border-color: #8b5cf6;
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+.ai-setting-select-item + .ai-setting-select-item {
+    margin-top: 0;
+}
+
+.ai-card-url {
+    font-size: 11px;
+    color: #94a3b8;
+    font-family: monospace;
+    word-break: break-all;
+    user-select: all;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 2px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.ai-card-url:hover {
+    color: #8b5cf6;
+}
+.ai-card-url + .ai-card-url {
+    border-top: 1px dashed #f1f5f9;
+    margin-top: 2px;
+    padding-top: 4px;
+}
+.ai-card-url .material-icons {
+    font-size: 14px;
+    color: #cbd5e1;
+    flex-shrink: 0;
+}
+
+.ai-card-key-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #94a3b8;
+    font-family: monospace;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.ai-card-key-row:hover {
+    color: #8b5cf6;
+}
+
+.ai-card-key-row .material-icons {
+    font-size: 14px;
+    color: #cbd5e1;
+    transition: color 0.2s;
+}
+
+.ai-card-key-row .material-icons:hover {
+    color: #8b5cf6;
+}
+
+.ai-card-key-masked {
+    user-select: all;
+}
+
+.ai-card-type-row {
+    font-size: 11px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+}
+.ai-card-type-row .material-icons {
+    font-size: 14px;
+    color: #cbd5e1;
+    flex-shrink: 0;
+}
+.ai-card-type-row .type-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.ai-card-model {
+    font-size: 11px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 2px 0;
+}
+.ai-card-model:hover {
+    color: #8b5cf6;
+}
+
+.ai-card-model .material-icons {
+    font-size: 14px;
+    color: #cbd5e1;
+    flex-shrink: 0;
+}
+
+.ai-card-model .badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    background: #f3e8ff;
+    color: #7c3aed;
+    transition: background 0.2s, color 0.2s;
+}
+.ai-card-model:hover .badge {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+.ai-card-model + .ai-card-model {
+    border-top: 1px dashed #f1f5f9;
+    margin-top: 2px;
+    padding-top: 4px;
+}

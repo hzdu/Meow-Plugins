@@ -1,0 +1,35 @@
+/* 面板折叠动画 */
+.container {
+    display: flex;
+    height: 100%;
+    padding: 56px 20px 20px;
+    gap: 25px;
+    transition: all 0.2s ease, gap 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+/* === 宸︿晶鍖哄煙锛氭棩鍘嗚鍥 === */
+/* 澧炲姞杩囨浮鍔ㄧ敾 */
+.left-section {
+    width: 340px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
+    overflow: hidden;
+    margin-right: 0;
+    white-space: nowrap;
+}
+
+/* 渚ц竟鏍忔姌鍙犵姸鎬 */
+.container.sidebar-collapsed {
+    gap: 0;
+}
+
+.container.sidebar-collapsed .left-section {
+    width: 0;
+    padding: 0;
+    opacity: 0;
+    flex-shrink: 0;
+}

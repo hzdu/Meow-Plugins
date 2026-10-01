@@ -1,0 +1,314 @@
+/* Footer & Tips */
+.breath-modal-footer {
+    padding: 12px 20px 16px;
+    display: flex;
+    justify-content: flex-end;
+    /* 鎸夐挳闈犲彸 */
+    align-items: center;
+    border-top: 1px solid #f3f4f6;
+    background: #fff;
+    position: relative;
+    /* 涓虹粷瀵瑰畾浣嶅仛鍙傜収 */
+}
+
+.breath-tips {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.8rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+    /* 闃叉閬尅浜や簰 */
+}
+
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.notes-count {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.notes-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: #fff;
+    border: 1px solid #f3f4f6;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: 0.2s;
+}
+
+.notes-item:hover {
+    border-color: #e5e7eb;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+}
+
+.notes-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    cursor: pointer;
+    overflow: hidden;
+    margin-right: 10px;
+}
+
+.notes-title {
+    font-size: 0.9rem;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.notes-meta {
+    font-size: 0.7rem;
+    color: #999;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.habit-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    background: #fff;
+    border: 1px solid #f3f4f6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    gap: 10px;
+}
+
+.habit-item:hover {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+}
+
+.habit-item.done {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #16a34a;
+}
+
+/* === 习惯打卡开关 === */
+.habit-switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.habit-checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.habit-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #d1d5db;
+    transition: .3s;
+    border-radius: 20px;
+}
+
+.habit-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.habit-checkbox:checked + .habit-slider {
+    background-color: #16a34a;
+}
+
+.habit-checkbox:checked + .habit-slider:before {
+    transform: translateX(16px);
+}
+
+.habit-text {
+    flex: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+    margin-right: 10px;
+}
+
+.habit-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.icon-btn {
+    font-size: 0.9rem;
+    color: #d1d5db;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.icon-btn:hover {
+    background: #f3f4f6;
+    color: var(--primary-color);
+}
+
+.habit-item.done .habit-text {
+    color: #16a34a;
+}
+
+.habit-item.done .icon-btn {
+    color: #9ca3af;
+}
+
+.habit-time {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-right: 8px;
+    font-family: monospace;
+}
+
+/* 涓嬫媺妗嗗熀纭鏍峰紡鍦 .input-group 涓凡缁熼厤 */
+
+#habit-hour-input:hover,
+#habit-minute-input:hover {
+    border-color: var(--primary-color);
+    background-color: #fff;
+}
+
+#habit-hour-input:focus,
+#habit-minute-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+    background-color: #fff;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 6px 10px;
+    gap: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+    margin-bottom: 15px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.input-group:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.input-group input,
+.input-group select {
+    border: none !important;
+    background: transparent !important;
+    outline: none !important;
+    padding: 4px 8px !important;
+    font-size: 0.9rem !important;
+    box-shadow: none !important;
+    min-width: 0;
+}
+
+.input-group button.material-icons {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--primary-color);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s;
+    font-size: 20px;
+}
+
+.input-group button.material-icons:hover {
+    opacity: 0.9;
+}
+
+.habit-target-time {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-right: 8px;
+    font-family: monospace;
+    flex-shrink: 0;
+}
+
+.habit-item.done .habit-target-time {
+    color: #16a34a;
+    background: #dcfce7;
+}
+
+.habit-check-time {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-right: 8px;
+    font-family: monospace;
+    flex-shrink: 0;
+}
+
+.habit-check-time.ontime {
+    color: white;
+    background: #22c55e;
+}
+
+.habit-check-time.late {
+    color: white;
+    background: #f59e0b;
+}
+
+.habit-check-time.verylate {
+    color: white;
+    background: #ef4444;
+}
+
+/* 打卡时间开关 - 时间输入容器显示状态 */
+#habit-time-inputs.show {
+    display: flex !important;
+}

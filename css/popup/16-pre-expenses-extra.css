@@ -1,0 +1,97 @@
+/* === 棰勬敮鍑鸿鍒掑寮烘牱寮 === */
+
+/* 宸︿晶棰勬敮鍑烘憳瑕佸尯绾㈢偣鏍囪瘑 */
+.pre-expense-summary-container {
+    position: relative;
+}
+
+.pre-expense-summary-container.has-data::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    background-color: var(--mark-red);
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(255, 59, 48, 0.4);
+}
+
+/* 棰勬敮鍑哄垪琛ㄩ」鏍峰紡 */
+.pe-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #fff;
+    border: 1px solid #f3f4f6;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.pe-item:hover {
+border-color: transparent;
+box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+transform: translateY(-1px);
+}
+
+/* 已完成任务 - 浅灰背景 + 删除线 */
+.pe-item.completed {
+    background: #f3f4f6;
+}
+.pe-item.completed .pe-title,
+.pe-item.completed .pe-amount {
+    text-decoration: line-through;
+    color: #9ca3af;
+}
+
+/* 棰勬敮鍑哄閫夋 */
+.pe-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: var(--primary-color);
+    margin-right: 10px;
+}
+
+/* 棰勬敮鍑轰俊鎭尯 */
+.pe-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    margin-right: 12px;
+    overflow: hidden;
+}
+
+.pe-title {
+    font-size: 0.95rem;
+    color: #374151;
+    font-weight: 500;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pe-meta {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-basis: 100%;
+    width: 100%;
+    margin-top: 4px;
+    padding-left: 28px;
+}
+
+.pe-amount {
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    color: #ea580c;
+}

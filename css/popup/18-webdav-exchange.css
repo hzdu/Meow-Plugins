@@ -1,0 +1,446 @@
+/* WebDAV Accordion */
+.webdav-accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 6px 0;
+    user-select: none;
+}
+
+.webdav-accordion-header:hover {
+    background-color: #f9fafb;
+}
+
+.webdav-accordion-header .webdav-arrow {
+    font-size: 20px;
+    color: #6b7280;
+    transition: transform 0.3s ease;
+}
+
+.webdav-accordion-header.active .webdav-arrow {
+    transform: rotate(180deg);
+}
+
+/* Input with copy button */
+.input-with-copy {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+}
+
+.input-with-copy input {
+    flex: 1;
+    padding: 6px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 13px;
+    min-width: 0;
+    /* Prevent flex overflow */
+}
+
+.copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 4px;
+    color: #6b7280;
+    transition: all 0.2s;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.copy-btn:hover {
+    background: #e5e7eb;
+    color: var(--primary-color);
+    border-color: #9ca3af;
+}
+
+.copy-btn .material-icons {
+    font-size: 16px;
+}
+
+/* === 实时汇率面板样式 === */
+.popup-exchange-panel {
+    padding: 10px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.popup-exchange-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0e7490;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #a5f3fc;
+}
+
+.popup-exchange-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 10px;
+    padding: 4px;
+    margin: -4px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.popup-exchange-input-row.exchange-select-focused {
+    border: 2px solid #0891b2;
+    box-shadow: 0 0 0 2px rgba(8, 145, 178, 0.15);
+    padding: 2px;
+}
+
+.popup-exchange-input-row.exchange-select-focused-to {
+    border: 2px solid #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+    padding: 2px;
+}
+
+.popup-exchange-input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    color: #374151;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.popup-exchange-input:focus {
+    border-color: #0891b2;
+    box-shadow: 0 0 0 2px rgba(8, 145, 178, 0.1);
+}
+
+.popup-exchange-select {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 6px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    outline: none;
+    color: #374151;
+    background: #fff;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.popup-exchange-swap-row {
+    display: flex;
+    justify-content: center;
+    padding: 4px 0;
+}
+
+.popup-exchange-swap-btn {
+    font-size: 20px;
+    color: #0891b2;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    background: #ecfeff;
+}
+
+.popup-exchange-swap-btn:hover {
+    background: #0891b2;
+    color: #fff;
+    transform: rotate(180deg);
+}
+
+.popup-exchange-result-display {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #0891b2 !important;
+    background: #f0fdfa !important;
+}
+
+.popup-exchange-rate-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #6b7280;
+    padding: 6px 10px;
+    margin-top: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: #f3f4f6;
+    border-radius: 6px;
+}
+
+.popup-exchange-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #a5f3fc;
+}
+
+.popup-exchange-grid .exchange-item {
+    background: #f0fdfa;
+    border: 1px solid #a5f3fc;
+    border-radius: 6px;
+    padding: 6px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.popup-exchange-grid .exchange-item:hover {
+    border-color: #0891b2;
+    box-shadow: 0 1px 4px rgba(8, 145, 178, 0.1);
+}
+
+.popup-exchange-grid .exchange-item-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #475569;
+}
+
+.webdav-accordion-header .webdav-arrow {
+    font-size: 20px;
+    color: #6b7280;
+    transition: transform 0.3s ease;
+}
+
+.webdav-accordion-header.active .webdav-arrow {
+    transform: rotate(180deg);
+}
+
+/* Input with copy button */
+.input-with-copy {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+}
+
+.input-with-copy input {
+    flex: 1;
+    padding: 6px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 13px;
+    min-width: 0;
+    /* Prevent flex overflow */
+}
+
+.copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 4px;
+    color: #6b7280;
+    transition: all 0.2s;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.copy-btn:hover {
+    background: #e5e7eb;
+    color: var(--primary-color);
+    border-color: #9ca3af;
+}
+
+.copy-btn .material-icons {
+    font-size: 16px;
+}
+
+/* === 实时汇率面板样式 === */
+.popup-exchange-panel {
+    padding: 10px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.popup-exchange-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0e7490;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #a5f3fc;
+}
+
+.popup-exchange-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 10px;
+    padding: 4px;
+    margin: -4px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.popup-exchange-input-row.exchange-select-focused {
+    border: 2px solid #0891b2;
+    box-shadow: 0 0 0 2px rgba(8, 145, 178, 0.15);
+    padding: 2px;
+}
+
+.popup-exchange-input-row.exchange-select-focused-to {
+    border: 2px solid #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+    padding: 2px;
+}
+
+.popup-exchange-input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    color: #374151;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.popup-exchange-input:focus {
+    border-color: #0891b2;
+    box-shadow: 0 0 0 2px rgba(8, 145, 178, 0.1);
+}
+
+.popup-exchange-select {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 6px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    outline: none;
+    color: #374151;
+    background: #fff;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.popup-exchange-swap-row {
+    display: flex;
+    justify-content: center;
+    padding: 4px 0;
+}
+
+.popup-exchange-swap-btn {
+    font-size: 20px;
+    color: #0891b2;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    background: #ecfeff;
+}
+
+.popup-exchange-swap-btn:hover {
+    background: #0891b2;
+    color: #fff;
+    transform: rotate(180deg);
+}
+
+.popup-exchange-result-display {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #0891b2 !important;
+    background: #f0fdfa !important;
+}
+
+.popup-exchange-rate-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #6b7280;
+    padding: 6px 10px;
+    margin-top: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: #f3f4f6;
+    border-radius: 6px;
+}
+
+.popup-exchange-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #a5f3fc;
+}
+
+.popup-exchange-grid .exchange-item {
+    background: #f0fdfa;
+    border: 1px solid #a5f3fc;
+    border-radius: 6px;
+    padding: 6px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.popup-exchange-grid .exchange-item:hover {
+    border-color: #0891b2;
+    box-shadow: 0 1px 4px rgba(8, 145, 178, 0.1);
+}
+
+.popup-exchange-grid .exchange-item-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #475569;
+}
+
+.popup-exchange-grid .exchange-item-rate {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0891b2;
+}
+
+
+

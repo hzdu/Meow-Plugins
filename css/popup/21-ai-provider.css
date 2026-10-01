@@ -1,0 +1,57 @@
+/* AI Provider 面板撑满高度 */
+#view-ai-provider {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+#view-ai-provider .ai-provider-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* AI Provider 过滤搜索栏 */
+.ai-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    margin: 8px 0 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    transition: border-color 0.2s, background 0.2s;
+}
+.ai-filter-row:focus-within {
+    border-color: #8b5cf6;
+    background: #fff;
+}
+.ai-filter-row .material-icons {
+    font-size: 16px;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+.ai-filter-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    color: #1e293b;
+    background: transparent;
+    min-width: 0;
+}
+.ai-filter-input::placeholder {
+    color: #94a3b8;
+}
+.ai-filter-clear {
+    cursor: pointer;
+    font-size: 16px;
+    color: #94a3b8 !important;
+    transition: color 0.2s;
+}
+.ai-filter-clear:hover {
+    color: #ef4444 !important;
+}

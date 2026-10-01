@@ -1,0 +1,114 @@
+/* === 鍙充晶鍖哄煙 === */
+.right-section {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    padding-left: 25px;
+    border-left: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: flex 0.3s ease, padding 0.3s ease, border 0.3s ease, width 0.3s ease, min-width 0.3s ease;
+    position: relative;
+    min-width: 380px;
+    box-sizing: border-box;
+}
+
+.container.sidebar-collapsed .right-section {
+    border-left: none;
+    padding-left: 10px;
+}
+
+/* === 鍙充晶闈㈡澘鎶樺彔鎸夐挳鏍峰紡 === */
+.toggle-right-btn {
+    position: absolute;
+    left: 385px;
+    top: 55%;
+    transform: translate(-50%, -50%);
+    width: 22px;
+    height: 42px;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 200;
+    color: #6b7280;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s, background 0.2s;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.toggle-right-btn:hover {
+    color: var(--primary-color);
+    background: #f9fafb;
+}
+
+.toggle-right-btn .material-icons {
+    font-size: 16px;
+    transition: transform 0.3s ease;
+}
+
+/* === 鍙充晶闈㈡澘鎶樺彔鐘舵 === */
+.container.right-panel-collapsed .right-section {
+    flex: 0 0 24px;
+    min-width: 24px;
+    padding-left: 0;
+    overflow: hidden;
+    border-left: none;
+}
+
+.container.right-panel-collapsed .right-section>* {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Ensure proper scrolling for nested flex containers */
+.tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    /* Crucial for nested scroll */
+    overflow: hidden;
+    width: 100%;
+    min-width: 0;
+}
+
+#weather-view-realtime,
+#weather-view-forecast {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* 鍙充晶闈㈡澘鎶樺彔鏃,宸︿晶闈㈡澘鍏ㄥ */
+.container.right-panel-collapsed .left-section {
+    width: 100%;
+    flex: 1;
+}
+
+.container.right-panel-collapsed .toggle-sidebar-btn {
+    left: calc(100% - 60px);
+}
+
+.container.right-panel-collapsed .toggle-right-btn {
+    left: calc(100% - 32px);
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+}
+
+.container.right-panel-collapsed .toggle-right-btn .material-icons {
+    transform: rotate(180deg);
+}
+
+/* 褰撲竴渚ф姌鍙犳椂,闅愯棌鍙︿竴渚х殑鎸夐挳 */
+.container.sidebar-collapsed .toggle-right-btn {
+    display: none;
+}
+
+.container.right-panel-collapsed .toggle-sidebar-btn {
+    display: none;
+}
