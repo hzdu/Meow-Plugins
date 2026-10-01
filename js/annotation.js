@@ -840,7 +840,13 @@
     const tDel = meowI18n.t('anno_sticky_del');
     const tPlace = meowI18n.t('anno_sticky_placeholder');
 
-    note.innerHTML = `<div class="meow-sticky-note-header"><div class="meow-sticky-note-close" title="${tDel}">×</div></div><textarea class="meow-sticky-note-content" placeholder="${tPlace}">${text}</textarea>`;
+    // 便签 DOM 落在宿主页面里，内联事件按页面的 CSP 编译执行，扩展自己的 CSP 保护不到这里；
+    // 而 text 可能来自别处保存后重新灌回来的内容，所以只走 value 赋值，不拼进 HTML。
+    const nbHeader = document.createElement('div'); nbHeader.className = 'meow-sticky-note-header';
+    const nbClose = document.createElement('div'); nbClose.className = 'meow-sticky-note-close'; nbClose.title = tDel; nbClose.textContent = '×';
+    nbHeader.appendChild(nbClose);
+    const nbText = document.createElement('textarea'); nbText.className = 'meow-sticky-note-content'; nbText.placeholder = tPlace; nbText.value = text == null ? '' : String(text);
+    note.appendChild(nbHeader); note.appendChild(nbText);
     document.body.appendChild(note); stickyNotes.push(note);
     const textarea = note.querySelector('textarea'); if (!text) textarea.focus();
     note.querySelector('.meow-sticky-note-close').addEventListener('click', (e) => { e.stopPropagation(); note.remove(); stickyNotes = stickyNotes.filter(n => n !== note); });

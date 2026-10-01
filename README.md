@@ -182,4 +182,25 @@ Meow/
 
 ---
 
+## 📜 许可证
+
+本项目采用 **Apache License 2.0** 开源，完整条款见 [LICENSE](./LICENSE)。
+
+简而言之，你可以：
+
+- ✅ 自由使用、复制、修改、分发本项目的全部或部分内容，包括用于商业目的
+- ✅ 闭源二次分发或作为自有产品的一部分（Apache-2.0 不是 Copyleft 协议，不要求衍生作品开源）
+- ✅ 获得贡献者显式授予的**专利许可**
+
+你需要：
+
+- ⚠️ 保留原始的版权与许可证声明
+- ⚠️ 对修改过的文件加注说明，表明你改动了它
+- ❌ 不得使用 "Meow" 名称、标志进行背书或宣传（商标权不随本许可证授予）
+- ❌ 本软件按"原样"提供，**不提供任何担保，作者不承担任何责任**
+
+> 内嵌第三方库沿用各自的原许可证：[flatpickr](https://github.com/flatpickr/flatpickr)（MIT）、[lunar-javascript](https://github.com/6tail/lunar-javascript)（MIT）。Material Icons 与 FontAwesome 通过 CDN 运行时加载，未随本仓库分发。
+
+---
+
 > **Meow** — 从摸鱼到过日子，一站式浏览器助手。喵~ 🐱

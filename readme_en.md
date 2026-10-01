@@ -182,4 +182,25 @@ Supports three languages, auto-switching based on browser language:
 
 ---
 
+## 📜 License
+
+This project is open source under the **Apache License 2.0**. Full terms: [LICENSE](./LICENSE).
+
+In short, you may:
+
+- ✅ Use, copy, modify and distribute all or part of this project, including for commercial purposes
+- ✅ Redistribute in closed source or as part of your own product (Apache-2.0 is not copyleft — derivatives need not be open source)
+- ✅ Receive an explicit **patent grant** from every contributor
+
+You must:
+
+- ⚠️ Keep the original copyright and license notices intact
+- ⚠️ Add a note to any file you changed, stating that you modified it
+- ❌ Not use the "Meow" name or logos for endorsement or promotion (trademark rights are not granted by this license)
+- ❌ Note that the software is provided "AS IS", **with no warranty and no liability** of the authors
+
+> Bundled third-party libraries keep their own licenses: [flatpickr](https://github.com/flatpickr/flatpickr) (MIT), [lunar-javascript](https://github.com/6tail/lunar-javascript) (MIT). Material Icons and FontAwesome are loaded at runtime from a CDN and are not redistributed with this repository.
+
+---
+
 > **Meow** — From slacking off to running your daily life, an all-in-one browser assistant. Meow~ 🐱

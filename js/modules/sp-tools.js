@@ -445,7 +445,7 @@ btnIpQuery.innerHTML = '<span class="mi fa-regular fa-arrows-rotate" style="font
                 domainResult.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
                     '<code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:12px;color:' + ipColor + ';max-width:100%;word-break:break-all;overflow-wrap:anywhere;">' + input + '</code>' +
                     (loc
-                        ? '<span style="color:#64748b;margin-left:8px;min-width:0;word-break:break-all;overflow-wrap:anywhere;">所在地：' + loc + '</span>'
+                        ? '<span style="color:#64748b;margin-left:8px;min-width:0;word-break:break-all;overflow-wrap:anywhere;">所在地：' + escapeHtml(loc) + '</span>'
                         : '<span style="color:#94a3b8;margin-left:8px;">所在地未知</span>') +
                     '</div>';
                 return;
@@ -490,14 +490,14 @@ btnIpQuery.innerHTML = '<span class="mi fa-regular fa-arrows-rotate" style="font
                     html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;min-width:0;">';
                     html += '<span style="min-width:0;">' + (row.first ? '<span style="color:#10b981;">✓ </span>' : '') + '<code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:12px;color:' + ipColor + ';max-width:100%;word-break:break-all;overflow-wrap:anywhere;">' + row.ip + '</code></span>';
                     html += row.loc
-                        ? '<span style="color:#64748b;margin-left:8px;min-width:0;word-break:break-all;overflow-wrap:anywhere;">所在地：' + row.loc + '</span>'
+                        ? '<span style="color:#64748b;margin-left:8px;min-width:0;word-break:break-all;overflow-wrap:anywhere;">所在地：' + escapeHtml(row.loc) + '</span>'
                         : '<span style="color:#94a3b8;margin-left:8px;">所在地未知</span>';
                     html += '</div>';
                 });
                 html += '</div>';
                 domainResult.innerHTML = html;
             } catch (e) {
-                domainResult.innerHTML = '<span style="color:#ef4444;">解析请求失败：' + e.message + '</span>';
+                domainResult.innerHTML = '<span style="color:#ef4444;">解析请求失败：' + escapeHtml(e.message) + '</span>';
             }
         };
 
@@ -558,7 +558,7 @@ btnIpQuery.innerHTML = '<span class="mi fa-regular fa-arrows-rotate" style="font
                             div.className = 'fuel-price-item';
                             div.innerHTML = `
                                 <span class="fuel-price-name">${escapeHtml(item.name)}</span>
-                                <span class="fuel-price-value">${item.price_desc || (item.price + meowI18n.t('fuel_price_unit'))}</span>
+                                <span class="fuel-price-value">${escapeHtml(item.price_desc || (item.price + meowI18n.t('fuel_price_unit')))}</span>
                             `;
                             fuelPriceList.appendChild(div);
                         });

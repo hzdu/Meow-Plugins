@@ -70,7 +70,9 @@ function closePanel() {
 
     // Listen for messages from parent (restore-view, show-minimized)
     window.addEventListener('message', (event) => {
-        const action = event.data && event.data.action;
+        const data = event.data;
+        if (!data || typeof data.action !== 'string') return;
+        const action = data.action;
         if (action === 'restore-view') {
             document.body.classList.remove('panel-minimized');
         } else if (action === 'show-minimized') {

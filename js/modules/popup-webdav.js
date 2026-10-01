@@ -150,6 +150,35 @@ if (webdavSaveBtn) {
 // WebDAV Helper: Basic Auth Header
 const getAuthFixed = (user, pass) => 'Basic ' + btoa(user + ':' + pass);
 
+// 备份文件是外部可写的，恢复时不能让它改写"扩展往哪发请求、带什么凭证"。
+// 否则拿到 WebDAV 写权限就能把 baseUrl 指向攻击者服务器，
+// 之后每次 AI 分析都会把记账/日程数据发出去。
+const NEVER_RESTORE_KEYS = ['webdav_config'];   // 端点与账密：恢复后一律以当前表单为准
+const CONFIRM_RESTORE_KEYS = [                  // 用户明确同意才接受
+    'meow_ai_setting',
+    'meow_ai_providers',
+    'meow_ipinfo_key'
+];
+
+function findConfirmableRestoreKeys(data) {
+    const local = (data && data.local) || {};
+    const sync = (data && data.sync) || {};
+    return CONFIRM_RESTORE_KEYS.filter(k => (k in local) || (k in sync));
+}
+
+function stripUnsafeRestoreKeys(payload, allowedKeys) {
+    const src = payload && typeof payload === 'object' ? payload : {};
+    const allowed = allowedKeys || [];
+    const blocked = NEVER_RESTORE_KEYS.concat(CONFIRM_RESTORE_KEYS.filter(k => !allowed.includes(k)));
+    const result = {};
+    Object.keys(src).forEach(key => {
+        if (!blocked.includes(key)) result[key] = src[key];
+    });
+    // webdav_config 不算丢数据（当前表单的配置本就要覆盖它），不进跳过清单
+    const skipped = Object.keys(src).filter(k => blocked.includes(k) && !NEVER_RESTORE_KEYS.includes(k));
+    return { payload: result, skipped: skipped };
+}
+
 // WebDAV 备份
 // WebDAV 备份
 // WebDAV 备份
@@ -385,17 +414,33 @@ if (webdavRestoreBtn) {
             if (response.ok) {
                 const data = await response.json();
                 if (data && (data.sync || data.local)) {
+                    // 先问，再动存储：clear() 之后就没有反悔余地了
+                    const confirmable = findConfirmableRestoreKeys(data);
+                    let allowKeys = [];
+                    if (confirmable.length > 0) {
+                        const accepted = await showConfirmDialog({
+                            title: meowI18n.t('webdav_restore_guard_title'),
+                            message: meowI18n.t('webdav_restore_guard_msg', { keys: confirmable.join('、') }),
+                            type: 'warning',
+                            confirmText: meowI18n.t('webdav_restore_guard_accept'),
+                            cancelText: meowI18n.t('webdav_restore_guard_skip'),
+                            defaultConfirm: false
+                        });
+                        if (accepted) allowKeys = confirmable;
+                    }
+
                     showStatus(webdavStatus, meowI18n.t('webdav_restoring'), 'success');
                     
                     // Clear and Set
                     await chrome.storage.sync.clear();
                     await chrome.storage.local.clear();
 
-                    // 旧备份的 sync 分区里可能带着账密，恢复时不能再写回 sync
-                    const syncPayload = Object.assign({}, data.sync);
-                    delete syncPayload.webdav_config;
-                    if (Object.keys(syncPayload).length > 0) await chrome.storage.sync.set(syncPayload);
-                    if (data.local) await chrome.storage.local.set(data.local);
+                    const localSide = stripUnsafeRestoreKeys(data.local, allowKeys);
+                    const syncSide = stripUnsafeRestoreKeys(data.sync, allowKeys);
+                    const skippedKeys = Array.from(new Set(syncSide.skipped.concat(localSide.skipped)));
+
+                    if (Object.keys(syncSide.payload).length > 0) await chrome.storage.sync.set(syncSide.payload);
+                    if (Object.keys(localSide.payload).length > 0) await chrome.storage.local.set(localSide.payload);
 
                     // Preserve WebDAV Config
                     const currentConfig = { url: urlRaw, user: user, pass: pass };
@@ -403,7 +448,11 @@ if (webdavRestoreBtn) {
 
                     showStatus(webdavStatus, meowI18n.t('webdav_restore_success'), 'success');
                     setTimeout(() => {
-                        alert(meowI18n.t('webdav_restore_success_msg', {file: latestFilename}));
+                        let successMsg = meowI18n.t('webdav_restore_success_msg', { file: latestFilename });
+                        if (skippedKeys.length > 0) {
+                            successMsg += '\n\n' + meowI18n.t('webdav_restore_skipped_msg', { keys: skippedKeys.join(', ') });
+                        }
+                        alert(successMsg);
                         chrome.runtime.reload();
                     }, 500);
                 } else {

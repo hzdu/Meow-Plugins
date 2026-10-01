@@ -8,6 +8,12 @@
     let originalDimensions = null; // { width, height, top, left, transform }
     let dragState = null; // { startMouseX, startMouseY, startTop, startLeft }
 
+    const PANEL_ORIGIN = new URL(chrome.runtime.getURL('popup.html')).origin;
+    const PANEL_ACTIONS = new Set([
+        'close-meow-panel', 'panel-minimize', 'panel-restore',
+        'panel-drag-start', 'panel-drag-move', 'panel-drag-end', 'panel-ready'
+    ]);
+
     // 监听来自后台的消息
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === 'toggle-panel') {
@@ -60,13 +66,21 @@
             panelIframe.contentWindow.postMessage({ 
                 action: 'switch-tab', 
                 target: targetTab 
-            }, '*');
+            }, PANEL_ORIGIN);
         }
     }
 
     // 监听来自 Iframe 内部的消息
+    // 内容脚本发的消息带着宿主页面的 origin，所以宿主页脚本无法伪装成 panelIframe 的
+    // document 通过这两道检查（它拿不到 chrome-extension:// 这个 origin）。
     window.addEventListener('message', (event) => {
-        const action = event.data && event.data.action;
+        if (!panelIframe || event.source !== panelIframe.contentWindow) return;
+        if (event.origin !== PANEL_ORIGIN) return;
+
+        const data = event.data;
+        if (!data || typeof data.action !== 'string' || !PANEL_ACTIONS.has(data.action)) return;
+
+        const action = data.action;
 
         if (action === 'close-meow-panel') {
             closePanel();
@@ -75,9 +89,13 @@
         } else if (action === 'panel-restore') {
             restorePanel();
         } else if (action === 'panel-drag-start') {
-            dragStart(event.data.clientX, event.data.clientY);
+            if (Number.isFinite(data.clientX) && Number.isFinite(data.clientY)) {
+                dragStart(data.clientX, data.clientY);
+            }
         } else if (action === 'panel-drag-move') {
-            dragMove(event.data.clientX, event.data.clientY);
+            if (Number.isFinite(data.clientX) && Number.isFinite(data.clientY)) {
+                dragMove(data.clientX, data.clientY);
+            }
         } else if (action === 'panel-drag-end') {
             dragEnd();
         } else if (action === 'panel-ready') {
@@ -200,7 +218,7 @@
         
         // 发送消息给 iframe 让其在内部显示最小化栏
         if (panelIframe.contentWindow) {
-            panelIframe.contentWindow.postMessage({ action: 'show-minimized' }, '*');
+            panelIframe.contentWindow.postMessage({ action: 'show-minimized' }, PANEL_ORIGIN);
         }
     }
 
@@ -222,7 +240,7 @@
         
         // 通知 iframe 恢复
         if (panelIframe.contentWindow) {
-            panelIframe.contentWindow.postMessage({ action: 'restore-view' }, '*');
+            panelIframe.contentWindow.postMessage({ action: 'restore-view' }, PANEL_ORIGIN);
         }
     }
 

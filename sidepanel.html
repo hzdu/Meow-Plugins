@@ -89,7 +89,7 @@
             
             <div class="scratchpad-tools hidden" id="sp-tools">
                 <span class="tool-info" data-i18n="sp_tool_hint_scratch">临时剪贴历史 (支持图文)</span>
-                <button id="sp-clear-all" class="text-btn" data-i18n="btn_clear_all">清空全部</button>
+                <button id="sp-clear-all" class="icon-only-btn" data-i18n-title="btn_clear_all" title="清空全部" aria-label="清空全部"><i class="fa-regular fa-trash-can"></i></button>
             </div>
 
             <div class="scratchpad-tools hidden" id="rl-tools">
@@ -199,7 +199,7 @@
 
             <div id="view-tools" class="view-content">
                 <div class="tool-card collapsed" data-tool-id="tool-ip">
-                    <h3><span class="mi fa-regular fa-globe" style="font-size: 16px; color: #4f46e5;"></span> <span data-i18n="tool_ip_title">IP 信息</span> <a href="https://tool.chinaz.com" target="_blank" rel="noopener noreferrer" title="打开站长工具" class="tool-external-link" style="color:#6366f1;" onclick="event.stopPropagation();"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size: 15px; vertical-align: middle;"></span></a> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
+                    <h3><span class="mi fa-regular fa-globe" style="font-size: 16px; color: #4f46e5;"></span> <span data-i18n="tool_ip_title">IP 信息</span> <a href="https://tool.chinaz.com" target="_blank" rel="noopener noreferrer" title="打开站长工具" class="tool-external-link" style="color:#6366f1;" onclick="event.stopPropagation();"><span class="mi fa-solid fa-link" style="font-size: 10px; vertical-align: middle;"></span></a> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
                             <label class="sub-label" data-i18n="tool_ipinfo_key" style="flex-shrink:0;margin-bottom:0;">IPINFO密钥</label>
@@ -252,7 +252,7 @@
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-exchange">
-                    <h3><span class="mi fa-regular fa-money-bill-transfer" style="font-size: 16px; color: #0891b2;"></span> <span data-i18n="tool_exchange_title">实时汇率</span> <span class="mi fa-regular fa-arrows-rotate" id="exchange-refresh-btn" data-i18n-title="exchange_refresh" title="刷新汇率" style="font-size: 15px; cursor: pointer; color: #0891b2; transition: all 0.3s;"></span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
+                    <h3><span class="mi fa-regular fa-money-bill-transfer" style="font-size: 16px; color: #0891b2;"></span> <span data-i18n="tool_exchange_title">实时汇率</span> <span class="mi fa-solid fa-arrows-rotate" id="exchange-refresh-btn" data-i18n-title="exchange_refresh" title="刷新汇率" style="font-size: 10px; cursor: pointer; color: #0891b2; transition: all 0.3s;"></span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <div class="exchange-input-row">
                             <input type="number" id="exchange-amount" class="converter-input full-border" style="flex: 1;" value="1" min="0" placeholder="金额" data-i18n-ph="exchange_ph_amount">
@@ -1236,6 +1236,7 @@
     <script src="js/i18n.js"></script>
     <script src="js/meow-confirm.js"></script>
     <!-- sidepanel 模块化拆分（原 js/sidepanel.js） -->
+    <script src="js/utils.js"></script>
     <script src="js/modules/sp-core.js"></script>
     <script src="js/modules/sp-prompts.js"></script>
     <script src="js/modules/sp-scratchpad.js"></script>

@@ -1,6 +1,6 @@
 // js/meow-confirm.js - iOS 风格确认对话框独立模块
 // 用法: const ok = await showConfirmDialog({ message: '确定删除?', type: 'danger' });
-// 选项: title, message, type('danger'|'warning'|'info'), confirmText, cancelText
+// 选项: title, message, type('danger'|'warning'|'info'), confirmText, cancelText, defaultConfirm(false=Enter 走取消)
 // 返回: Promise<boolean>  true=确认, false=取消
 // 键盘: ←/→ 或 Tab 切换选中按钮，Enter 执行选中按钮，Esc 取消
 
@@ -56,6 +56,7 @@
      * @param {string} [options.type='danger'] - 类型: 'danger' | 'warning' | 'info'
      * @param {string} [options.confirmText] - 确认按钮文本
      * @param {string} [options.cancelText] - 取消按钮文本
+     * @param {boolean} [options.defaultConfirm=true] - 传 false 时 Enter 落在"取消"上
      * @returns {Promise<boolean>} true=确认, false=取消
      */
     function showConfirmDialog(options) {
@@ -87,7 +88,8 @@
             requestAnimationFrame(function () { overlay.classList.add('visible'); });
 
             var btns = Array.prototype.slice.call(overlay.querySelectorAll('.meow-confirm-btn'));
-            var selected = 1; // 默认选中"确认"按钮
+            // btns[0]=取消, btns[1]=确认；defaultConfirm:false 让 Enter 落在"取消"上
+            var selected = (options.defaultConfirm === false) ? 0 : 1;
 
             function updateSelection() {
                 btns.forEach(function (b, i) {

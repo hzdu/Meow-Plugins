@@ -317,21 +317,27 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// 宿主页面与本 iframe 的 event.origin / event.source 在内容脚本通道下无法区分，
+// 所以这里不做认证，只把可执行的效果限制成"切换到页面上确实存在的标签"。
 window.addEventListener('message', (event) => {
-    if (event.data && event.data.action === 'switch-tab') {
-        const targetTab = event.data.target;
-        const btn = document.querySelector(`.tab-btn[data-tab="${targetTab}"]`);
-        if (btn) btn.click();
-        if (targetTab === 'scratchpad') {
-            setTimeout(() => {
-                const textarea = document.getElementById("scratchpad-area");
-                if (textarea) {
-                    textarea.focus();
-                    const len = textarea.value.length;
-                    textarea.setSelectionRange(len, len);
-                }
-            }, 50);
-        }
+    const data = event.data;
+    if (!data || data.action !== 'switch-tab') return;
+
+    const targetTab = data.target;
+    if (typeof targetTab !== 'string' || !/^[a-z0-9_-]{1,40}$/.test(targetTab)) return;
+
+    const btn = document.querySelector(`.tab-btn[data-tab="${targetTab}"]`);
+    if (!btn) return;
+    btn.click();
+    if (targetTab === 'scratchpad') {
+        setTimeout(() => {
+            const textarea = document.getElementById("scratchpad-area");
+            if (textarea) {
+                textarea.focus();
+                const len = textarea.value.length;
+                textarea.setSelectionRange(len, len);
+            }
+        }, 50);
     }
 });
 

@@ -263,10 +263,7 @@ const aiAllGrid = document.getElementById('ai-all-grid');
 const closeAiAllModal = document.getElementById('close-ai-all-modal');
 
 // ================== 工具函数 ==================
-function escapeHtml(text) {
-    if (!text) return '';
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
+// escapeHtml / isSafeHtmlUrl 见 js/utils.js（popup 与 sidepanel 共用）
 
 // 暂存板内容来自任意网页的右键选区，渲染进扩展页面前要按白名单清洗，
 // 否则网页能借 innerHTML 在扩展上下文里执行脚本（那里可读走 WebDAV 账密、API Key、2FA 密钥）。
@@ -284,14 +281,6 @@ const HTML_DROP_SELECTOR = 'script,style,iframe,frame,frameset,object,embed,link
     + 'form,input,button,textarea,select,option,label,fieldset,legend,'
     + 'svg,math,template,slot,noscript,xmp,plaintext,listing';
 const HTML_UNSAFE_STYLE = /(^|[;{])\s*(position|z-index|inset|top|right|bottom|left)\s*:|javascript:|vbscript:|expression\(|@import|url\(/i;
-
-// 相对路径不带协议，在扩展页里只会 404 不会外联；带协议的只放行这几个，data: 只认图片
-function isSafeHtmlUrl(value) {
-    const s = String(value || '').trim().toLowerCase();
-    if (s.startsWith('data:image/')) return true;
-    if (!/^[a-z][a-z0-9+.-]*:/.test(s)) return true;
-    return /^(https?:|mailto:|tel:|blob:)/.test(s);
-}
 
 function sanitizeNodes(node) {
     Array.from(node.childNodes).forEach(child => {

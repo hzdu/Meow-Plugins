@@ -124,8 +124,8 @@ async function fetchHotList(source) {
                 const rankClass = rank <= 3 ? `top-${rank}` : '';
 
                 let coverHtml = '';
-                if (item.cover) {
-                    coverHtml = `<img src="${item.cover}" class="hot-cover" loading="lazy">`;
+                if (item.cover && isSafeHtmlUrl(item.cover)) {
+                    coverHtml = `<img src="${escapeHtml(item.cover)}" class="hot-cover" loading="lazy">`;
                 }
 
                 // For some sources 'hot_value' might be different key or formatted
@@ -140,7 +140,7 @@ async function fetchHotList(source) {
                 }
 
                 if (heatText) {
-                    heatHtml = `<span class="hot-meta"><span class="mi fa-regular fa-fire" style="font-size:12px;"></span> ${heatText}</span>`;
+                    heatHtml = `<span class="hot-meta"><span class="mi fa-regular fa-fire" style="font-size:12px;"></span> ${escapeHtml(heatText)}</span>`;
                 }
 
                 div.innerHTML = `

@@ -345,7 +345,7 @@ async function getStorageData(key) {
     });
 }
 
-const escapeHtml = (text) => (text != null ? String(text) : '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+// escapeHtml / isSafeHtmlUrl 见 js/utils.js（popup 与 sidepanel 共用）
 
 const getRandomColor = () => {
     const hue = Math.floor(Math.random() * 360);

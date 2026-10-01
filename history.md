@@ -1,3 +1,7 @@
+
+### 19.1.9
+- 修复了一些安全问题
+- 修复了工具箱里一些因为替换Material Icons图标发生的错位跟图标过大的问题
 ### 19.1.8
 
 - popup.css 和 sidepanel.css 太大了，不知不觉这两个文件各自都快一万行代码了，有点影响阅读了，按功能拆分 popup.css 和 sidepanel.css 两个文件

@@ -120,7 +120,7 @@ function displayWeather(data) {
             html += `<div class="weather-forecast-item">
                 <span class="forecast-day">风力</span>
                 <span class="forecast-icon" style="font-size:16px;">🍃</span>
-                <span class="forecast-desc">${data.wind}</span>
+                <span class="forecast-desc">${escapeHtml(data.wind)}</span>
                 <div class="forecast-temps"></div>
             </div>`;
         }
@@ -130,7 +130,7 @@ function displayWeather(data) {
             html += `<div class="weather-forecast-item">
                 <span class="forecast-day">湿度</span>
                 <span class="forecast-icon" style="font-size:16px;">💧</span>
-                <span class="forecast-desc">${data.humidity}%</span>
+                <span class="forecast-desc">${escapeHtml(data.humidity)}%</span>
                 <div class="forecast-temps"></div>
             </div>`;
         }
@@ -141,8 +141,8 @@ function displayWeather(data) {
             html += `<div class="weather-forecast-item">
                 <span class="forecast-day">空气质量</span>
                 <span class="forecast-icon" style="font-size:16px;">🌬️</span>
-                <span class="forecast-desc">AQI ${data.aqi} · ${data.aqiQuality || ''}</span>
-                <div class="forecast-temps"><span style="color:${aqiColor};font-weight:600;">${data.aqiQuality || ''}</span></div>
+                <span class="forecast-desc">AQI ${escapeHtml(data.aqi)} · ${escapeHtml(data.aqiQuality)}</span>
+                <div class="forecast-temps"><span style="color:${aqiColor};font-weight:600;">${escapeHtml(data.aqiQuality)}</span></div>
             </div>`;
         }
         
@@ -150,9 +150,9 @@ function displayWeather(data) {
         const iconMap = { clothes: '👔', umbrella: '☂️', ultraviolet: '☀️', sports: '🏃', carwash: '🚗', cold: '🤧' };
         filtered.forEach(idx => {
             html += `<div class="weather-forecast-item">
-                <span class="forecast-day">${idx.name}</span>
+                <span class="forecast-day">${escapeHtml(idx.name)}</span>
                 <span class="forecast-icon" style="font-size:16px;">${iconMap[idx.key] || '📋'}</span>
-                <span class="forecast-desc" title="${idx.description}">${idx.level}</span>
+                <span class="forecast-desc" title="${escapeHtml(idx.description)}">${escapeHtml(idx.level)}</span>
                 <div class="forecast-temps"></div>
             </div>`;
         });
@@ -268,16 +268,16 @@ function displayForecast(daily) {
                     <span class="future-date-text">${dateStr}</span>
                 </div>
                 <div class="future-icon">
-                    <img src="${day.day_weather_icon}" style="width:24px; height:24px;" alt="${day.day_condition}">
+                    <img src="${escapeHtml(day.day_weather_icon)}" style="width:24px; height:24px;" alt="${escapeHtml(day.day_condition)}">
                 </div>
                 <div class="future-cond">
-                    ${day.day_condition}
-                    <div style="font-size:11px; color:#9ca3af;">${day.day_wind_direction} ${day.day_wind_power}级</div>
+                    ${escapeHtml(day.day_condition)}
+                    <div style="font-size:11px; color:#9ca3af;">${escapeHtml(day.day_wind_direction)} ${escapeHtml(day.day_wind_power)}级</div>
                 </div>
                 <div class="future-temp-range">
-                    <span class="forecast-low">${day.min_temperature}°</span>
+                    <span class="forecast-low">${escapeHtml(day.min_temperature)}°</span>
                     <span style="color:#9ca3af;">/</span>
-                    <span class="forecast-high">${day.max_temperature}°</span>
+                    <span class="forecast-high">${escapeHtml(day.max_temperature)}°</span>
                 </div>
             </div>
         `;

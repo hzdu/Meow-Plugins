@@ -149,23 +149,22 @@
 }
 
 .popup-exchange-swap-btn {
-    font-size: 20px;
+    font-size: 14px;
     color: #0891b2;
     cursor: pointer;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    background: #ecfeff;
+    background: transparent;
 }
 
 .popup-exchange-swap-btn:hover {
-    background: #0891b2;
-    color: #fff;
-    transform: rotate(180deg);
+    background: transparent;
+    color: #0e7490;
 }
 
 .popup-exchange-result-display {
@@ -361,23 +360,22 @@
 }
 
 .popup-exchange-swap-btn {
-    font-size: 20px;
+    font-size: 14px;
     color: #0891b2;
     cursor: pointer;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    background: #ecfeff;
+    background: transparent;
 }
 
 .popup-exchange-swap-btn:hover {
-    background: #0891b2;
-    color: #fff;
-    transform: rotate(180deg);
+    background: transparent;
+    color: #0e7490;
 }
 
 .popup-exchange-result-display {
