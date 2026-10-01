@@ -2,7 +2,65 @@
 // 此文件由 popup.js 拆分而来，请勿手动修改源文件 popup.js
 
 // === 2FA 验证模块 ===
+const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+const FA_STEP_SECONDS = 30;
+const FA_CODE_DIGITS = 6;
+
+function base32Decode(input) {
+    const clean = String(input || '').toUpperCase().replace(/[\s-=]/g, '');
+    if (!clean) return null;
+
+    const bytes = [];
+    let bits = 0;
+    let value = 0;
+    for (const ch of clean) {
+        const idx = BASE32_ALPHABET.indexOf(ch);
+        if (idx === -1) return null;
+        value = (value << 5) | idx;
+        bits += 5;
+        if (bits >= 8) {
+            bytes.push((value >>> (bits - 8)) & 0xff);
+            bits -= 8;
+        }
+    }
+    return bytes.length ? new Uint8Array(bytes) : null;
+}
+
+// RFC 6238 TOTP：密钥不出设备，纯本地 HMAC-SHA1 计算
+async function computeLocalTOTP(secret) {
+    const keyBytes = base32Decode(secret);
+    if (!keyBytes) return null;
+
+    const counter = Math.floor(Date.now() / 1000 / FA_STEP_SECONDS);
+    const counterBuf = new ArrayBuffer(8);
+    const counterView = new DataView(counterBuf);
+    // 计数器超过 32 位，JS 位运算会截断，高低位要分开写
+    counterView.setUint32(0, Math.floor(counter / 0x100000000));
+    counterView.setUint32(4, counter >>> 0);
+
+    const hmacKey = await crypto.subtle.importKey(
+        'raw', keyBytes, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']
+    );
+    const hash = new Uint8Array(await crypto.subtle.sign('HMAC', hmacKey, counterBuf));
+
+    const offset = hash[hash.length - 1] & 0x0f;
+    const binCode = ((hash[offset] & 0x7f) << 24)
+        | ((hash[offset + 1] & 0xff) << 16)
+        | ((hash[offset + 2] & 0xff) << 8)
+        | (hash[offset + 3] & 0xff);
+    return String(binCode % Math.pow(10, FA_CODE_DIGITS)).padStart(FA_CODE_DIGITS, '0');
+}
+
 async function fetch2FACode(secret) {
+    if (faComputeMode === 'local') {
+        try {
+            return await computeLocalTOTP(secret);
+        } catch (error) {
+            console.error('2FA local compute error:', error);
+            return null;
+        }
+    }
+
     try {
         const response = await fetch(`https://api.zhi.to/2fa/app/2fa.php?key=${encodeURIComponent(secret)}`);
         const res = await response.json();
@@ -154,13 +212,19 @@ function start2FATimer(account, autoFetch) {
     if (autoFetch) {
         fetchSingle2FACode(account);
 
-        faRefreshIntervals[account.id] = setInterval(() => {
-            fetchSingle2FACode(account);
-        }, 30000);
+        if (faComputeMode === 'local') {
+            scheduleLocalRefresh(account);
+        } else {
+            faRefreshIntervals[account.id] = setInterval(() => {
+                fetchSingle2FACode(account);
+            }, FA_STEP_SECONDS * 1000);
+        }
 
         let elapsed = 0;
         faRefreshIntervals[account.id + '_timeout'] = setInterval(() => {
-            elapsed = (elapsed + 1) % 30;
+            elapsed = faComputeMode === 'local'
+                ? Math.floor((Date.now() / 1000) % FA_STEP_SECONDS)
+                : (elapsed + 1) % FA_STEP_SECONDS;
             updateTimerProgress(account.id, elapsed);
         }, 1000);
     } else {
@@ -174,6 +238,15 @@ function start2FATimer(account, autoFetch) {
             timerEl.style.display = 'none';
         }
     }
+}
+
+// 本地模式下有效期由真实时钟决定，等到时间片边界再刷新，避免显示过期验证码
+function scheduleLocalRefresh(account) {
+    const nextBoundary = (Math.floor(Date.now() / 1000 / FA_STEP_SECONDS) + 1) * FA_STEP_SECONDS * 1000;
+    faRefreshIntervals[account.id] = setTimeout(() => {
+        fetchSingle2FACode(account);
+        scheduleLocalRefresh(account);
+    }, Math.max(1000, nextBoundary - Date.now()));
 }
 
 function updateTimerProgress(id, elapsed) {
@@ -212,7 +285,9 @@ async function fetchSingle2FACode(account) {
         if (!faRefreshIntervals[account.id + '_timeout']) {
             let elapsed = 0;
             faRefreshIntervals[account.id + '_timeout'] = setInterval(() => {
-                elapsed = (elapsed + 1) % 30;
+                elapsed = faComputeMode === 'local'
+                    ? Math.floor((Date.now() / 1000) % FA_STEP_SECONDS)
+                    : (elapsed + 1) % FA_STEP_SECONDS;
                 updateTimerProgress(account.id, elapsed);
             }, 1000);
         }

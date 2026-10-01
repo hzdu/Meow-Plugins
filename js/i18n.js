@@ -37,6 +37,9 @@ const translations = {
         "tab_batch_timer": "批量定时",
         "settings_2fa_options": "2FA 验证设置",
         "settings_2fa_auto_fetch": "自动获取验证码",
+        "settings_2fa_compute_mode": "验证码计算方式",
+        "settings_2fa_mode_cloud": "云计算",
+        "settings_2fa_mode_local": "本地计算",
         "settings_realtime_exchange": "实时汇率设置",
         "settings_exchange_auto_refresh": "打开时自动刷新汇率",
 
@@ -516,6 +519,9 @@ const translations = {
         "tab_batch_timer": "批次定時",
         "settings_2fa_options": "2FA 驗證設定",
         "settings_2fa_auto_fetch": "自動取得驗證碼",
+        "settings_2fa_compute_mode": "驗證碼計算方式",
+        "settings_2fa_mode_cloud": "雲端計算",
+        "settings_2fa_mode_local": "本地計算",
         "settings_realtime_exchange": "即時匯率設定",
         "settings_exchange_auto_refresh": "打開時自動刷新匯率",
 
@@ -990,6 +996,9 @@ const translations = {
         "tab_batch_timer": "Batch Timer",
         "settings_2fa_options": "2FA Settings",
         "settings_2fa_auto_fetch": "Auto-fetch verification codes",
+        "settings_2fa_compute_mode": "Code computation",
+        "settings_2fa_mode_cloud": "Cloud",
+        "settings_2fa_mode_local": "Local",
         "settings_realtime_exchange": "Real-time Exchange Rate",
         "settings_exchange_auto_refresh": "Auto-refresh when opened",
 

@@ -12,15 +12,27 @@ const webdavStatus = document.getElementById('webdav-status');
 
 // 加载 WebDAV 设置
 const loadWebDAVSettings = async () => {
-    const data = await new Promise(r => chrome.storage.sync.get(['webdav_config', 'webdav_auto_backup'], r));
-    if (data.webdav_config) {
-        if (webdavUrlInput) webdavUrlInput.value = data.webdav_config.url || '';
-        if (webdavUserInput) webdavUserInput.value = data.webdav_config.user || '';
-        if (webdavPassInput) webdavPassInput.value = data.webdav_config.pass || '';
+    const [localData, syncData] = await Promise.all([
+        new Promise(r => chrome.storage.local.get(['webdav_config'], r)),
+        new Promise(r => chrome.storage.sync.get(['webdav_config', 'webdav_auto_backup'], r))
+    ]);
+
+    // 旧版本把账密存在 sync，会随 Google 账号同步到云端和其它设备，读到就迁移到 local
+    let config = localData.webdav_config;
+    if (!config && syncData.webdav_config) {
+        config = syncData.webdav_config;
+        await chrome.storage.local.set({ 'webdav_config': config });
+    }
+    if (syncData.webdav_config) await chrome.storage.sync.remove('webdav_config');
+
+    if (config) {
+        if (webdavUrlInput) webdavUrlInput.value = config.url || '';
+        if (webdavUserInput) webdavUserInput.value = config.user || '';
+        if (webdavPassInput) webdavPassInput.value = config.pass || '';
     }
     const autoBackupSelect = document.getElementById('webdav-auto-backup');
     if (autoBackupSelect) {
-        autoBackupSelect.value = data.webdav_auto_backup || 'off';
+        autoBackupSelect.value = syncData.webdav_auto_backup || 'off';
         
         // Add change listener
         autoBackupSelect.addEventListener('change', async () => {
@@ -44,7 +56,8 @@ if (webdavSaveBtn) {
         const config = { url, user, pass };
         
         // Save first
-        chrome.storage.sync.set({ 'webdav_config': config });
+        await chrome.storage.local.set({ 'webdav_config': config });
+        await chrome.storage.sync.remove('webdav_config');
         
         if (!url || !user || !pass) {
             showStatus(webdavStatus, meowI18n.t('webdav_missing_config'), 'error');
@@ -377,13 +390,16 @@ if (webdavRestoreBtn) {
                     // Clear and Set
                     await chrome.storage.sync.clear();
                     await chrome.storage.local.clear();
-                    
-                    if (data.sync) await chrome.storage.sync.set(data.sync);
+
+                    // 旧备份的 sync 分区里可能带着账密，恢复时不能再写回 sync
+                    const syncPayload = Object.assign({}, data.sync);
+                    delete syncPayload.webdav_config;
+                    if (Object.keys(syncPayload).length > 0) await chrome.storage.sync.set(syncPayload);
                     if (data.local) await chrome.storage.local.set(data.local);
-                    
+
                     // Preserve WebDAV Config
                     const currentConfig = { url: urlRaw, user: user, pass: pass };
-                    await chrome.storage.sync.set({ 'webdav_config': currentConfig });
+                    await chrome.storage.local.set({ 'webdav_config': currentConfig });
 
                     showStatus(webdavStatus, meowI18n.t('webdav_restore_success'), 'success');
                     setTimeout(() => {

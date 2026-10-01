@@ -3205,6 +3205,35 @@ input:checked+.slider:before {
     background: #f9fafb;
 }
 
+.fa-mode-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.fa-mode-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-left: 22px;
+}
+
+.fa-mode-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+    color: #4b5563;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.fa-mode-item input[type="radio"] {
+    accent-color: #16a34a;
+    cursor: pointer;
+}
+
 .danger-btn,
 .primary-btn {
     border: none;

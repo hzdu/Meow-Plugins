@@ -268,6 +268,68 @@ function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
+// 暂存板内容来自任意网页的右键选区，渲染进扩展页面前要按白名单清洗，
+// 否则网页能借 innerHTML 在扩展上下文里执行脚本（那里可读走 WebDAV 账密、API Key、2FA 密钥）。
+const HTML_ALLOWED_TAGS = new Set([
+    'A', 'ABBR', 'B', 'BLOCKQUOTE', 'BR', 'CODE', 'DD', 'DEL', 'DIV', 'DL', 'DT',
+    'EM', 'FIGCAPTION', 'FIGURE', 'FONT', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HR',
+    'I', 'IMG', 'INS', 'LI', 'MARK', 'OL', 'P', 'PRE', 'S', 'SAMP', 'SECTION',
+    'SMALL', 'SPAN', 'STRIKE', 'STRONG', 'SUB', 'SUP', 'TABLE', 'TBODY', 'TD',
+    'TFOOT', 'TH', 'THEAD', 'TR', 'U', 'UL', 'WBR',
+]);
+const HTML_ALLOWED_ATTRS = new Set([
+    'href', 'src', 'alt', 'title', 'width', 'height', 'style', 'colspan', 'rowspan', 'start',
+]);
+const HTML_DROP_SELECTOR = 'script,style,iframe,frame,frameset,object,embed,link,meta,base,'
+    + 'form,input,button,textarea,select,option,label,fieldset,legend,'
+    + 'svg,math,template,slot,noscript,xmp,plaintext,listing';
+const HTML_UNSAFE_STYLE = /(^|[;{])\s*(position|z-index|inset|top|right|bottom|left)\s*:|javascript:|vbscript:|expression\(|@import|url\(/i;
+
+// 相对路径不带协议，在扩展页里只会 404 不会外联；带协议的只放行这几个，data: 只认图片
+function isSafeHtmlUrl(value) {
+    const s = String(value || '').trim().toLowerCase();
+    if (s.startsWith('data:image/')) return true;
+    if (!/^[a-z][a-z0-9+.-]*:/.test(s)) return true;
+    return /^(https?:|mailto:|tel:|blob:)/.test(s);
+}
+
+function sanitizeNodes(node) {
+    Array.from(node.childNodes).forEach(child => {
+        if (child.nodeType === Node.COMMENT_NODE) { child.remove(); return; }
+        if (child.nodeType !== Node.ELEMENT_NODE) return;
+
+        if (!HTML_ALLOWED_TAGS.has(child.tagName)) {
+            // 未知标签只拆外壳、保留里面的内容，避免 <foo><img onerror=...> 绕过
+            sanitizeNodes(child);
+            while (child.firstChild) node.insertBefore(child.firstChild, child);
+            child.remove();
+            return;
+        }
+
+        Array.from(child.attributes).forEach(attr => {
+            const name = attr.name.toLowerCase();
+            const value = attr.value;
+            let keep = HTML_ALLOWED_ATTRS.has(name);
+            if (keep && (name === 'href' || name === 'src')) keep = isSafeHtmlUrl(value);
+            if (keep && name === 'style') keep = !HTML_UNSAFE_STYLE.test(value);
+            if (!keep) child.removeAttribute(attr.name);
+        });
+
+        if (child.tagName === 'A') {
+            child.setAttribute('target', '_blank');
+            child.setAttribute('rel', 'noopener noreferrer');
+        }
+        sanitizeNodes(child);
+    });
+}
+
+function sanitizeHtml(html) {
+    const doc = new DOMParser().parseFromString(String(html == null ? '' : html), 'text/html');
+    doc.body.querySelectorAll(HTML_DROP_SELECTOR).forEach(n => n.remove());
+    sanitizeNodes(doc.body);
+    return doc.body.innerHTML;
+}
+
 function showToast(msg) {
     toast.textContent = msg;
     toast.classList.remove('hidden');

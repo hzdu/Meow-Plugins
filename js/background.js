@@ -756,9 +756,17 @@ async function setupAutoBackupAlarm() {
 // 2. Perform Backup
 async function performWebDAVBackup() {
     try {
-        // Get Config
-        const data = await chrome.storage.sync.get(['webdav_config']);
-        const config = data.webdav_config;
+        // Get Config（账密存 local；读到旧版本残留在 sync 的配置时顺手迁移）
+        const cfgStore = await chrome.storage.local.get(['webdav_config']);
+        let config = cfgStore.webdav_config;
+        if (!config) {
+            const legacy = await chrome.storage.sync.get(['webdav_config']);
+            config = legacy.webdav_config;
+            if (config) {
+                await chrome.storage.local.set({ 'webdav_config': config });
+                await chrome.storage.sync.remove('webdav_config');
+            }
+        }
         
         if (!config || !config.url || !config.user || !config.pass) {
             console.warn('Auto backup skipped: Missing WebDAV config.');

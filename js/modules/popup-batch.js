@@ -565,9 +565,10 @@ function closeBatchModal() {
 
 // 2FA 初始化
 (async function init2FA() {
-    const localData = await chrome.storage.local.get(['meow_2fa_accounts', 'meow_2fa_auto_fetch']);
+    const localData = await chrome.storage.local.get(['meow_2fa_accounts', 'meow_2fa_auto_fetch', 'meow_2fa_compute_mode']);
     my2faAccounts = localData.meow_2fa_accounts || [];
     faAutoFetch = localData.meow_2fa_auto_fetch || false;
+    faComputeMode = localData.meow_2fa_compute_mode === 'local' ? 'local' : 'cloud';
 
     const autoFetchToggle = document.getElementById('settings-2fa-auto-fetch');
     if (autoFetchToggle) {
@@ -579,6 +580,17 @@ function closeBatchModal() {
             if (view2fa && !view2fa.classList.contains('hidden')) render2FA();
         });
     }
+
+    const modeRadios = document.querySelectorAll('input[name="settings-2fa-compute-mode"]');
+    modeRadios.forEach(radio => {
+        radio.checked = radio.value === faComputeMode;
+        radio.addEventListener('change', function() {
+            faComputeMode = this.value;
+            chrome.storage.local.set({ 'meow_2fa_compute_mode': faComputeMode });
+            const view2fa = document.getElementById('view-2fa');
+            if (view2fa && !view2fa.classList.contains('hidden')) render2FA();
+        });
+    });
 
     // 实时汇率自动刷新开关
     const exchangeAutoRefreshToggle = document.getElementById('settings-exchange-auto-refresh');

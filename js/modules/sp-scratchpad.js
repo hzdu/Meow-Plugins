@@ -34,7 +34,7 @@ function renderScratchList() {
         sorted.forEach(item => {
             const li = document.createElement('li');
             li.className = 'scratch-card';
-            li.innerHTML = '<div class="scratch-meta"><span>' + formatTime(item.time) + '</span><i class="fa-regular fa-xmark delete-btn" title="' + meowI18n.t('action_delete') + '"></i></div><div class="scratch-content">' + item.content + '</div>';
+            li.innerHTML = '<div class="scratch-meta"><span>' + formatTime(item.time) + '</span><i class="fa-regular fa-xmark delete-btn" title="' + meowI18n.t('action_delete') + '"></i></div><div class="scratch-content">' + sanitizeHtml(item.content) + '</div>';
             li.addEventListener('click', function(e) { if (e.target.closest('.delete-btn')) return; openScratchEditModal(item); });
             li.querySelector('.delete-btn').addEventListener('click', async function(e) { e.stopPropagation(); if(await showConfirmDialog({ message: meowI18n.t('msg_confirm_del'), type: 'danger' })) { myScratchList = myScratchList.filter(s => s.id !== item.id); saveData(); renderScratchList(); } });
             scratchList.appendChild(li);
@@ -44,7 +44,7 @@ function renderScratchList() {
 
 function openScratchEditModal(item) {
     currentScratchEditId = item.id;
-    scratchModalInput.innerHTML = item.content;
+    scratchModalInput.innerHTML = sanitizeHtml(item.content);
     scratchEditModal.classList.remove('hidden');
     setTimeout(() => { scratchModalInput.focus(); updateScratchImgSelection(); }, 100);
 }
@@ -56,7 +56,7 @@ function closeScratchEditModal() {
 
 if (scratchModalSaveBtn) {
     scratchModalSaveBtn.addEventListener('click', function() {
-        const newContent = scratchModalInput.innerHTML.trim(); if (!newContent) { showToast(meowI18n.t('msg_empty')); return; }
+        const newContent = sanitizeHtml(scratchModalInput.innerHTML).trim(); if (!newContent) { showToast(meowI18n.t('msg_empty')); return; }
         const index = myScratchList.findIndex(s => s.id === currentScratchEditId);
         if (index !== -1) { myScratchList[index].content = newContent; myScratchList[index].time = Date.now(); saveData(); renderScratchList(); showToast(meowI18n.t('msg_saved')); closeScratchEditModal(); }
     });
@@ -116,7 +116,7 @@ if (scratchModalCopyBtn) {
 closeTextViewModal.addEventListener('click', function() { textViewModal.classList.add('hidden'); textViewContent.innerHTML = ''; });
 
 scratchAddBtn.addEventListener('click', function() {
-    const html = scratchInput.innerHTML.trim(), text = scratchInput.innerText.trim();
+    const html = sanitizeHtml(scratchInput.innerHTML).trim(), text = scratchInput.innerText.trim();
     if (!text && html.indexOf('<img') === -1) { showToast(meowI18n.t('msg_empty')); return; }
     myScratchList.push({ id: Date.now(), content: html, time: Date.now() });
     scratchInput.innerHTML = ''; saveData(); renderScratchList(); showToast(meowI18n.t('msg_saved'));

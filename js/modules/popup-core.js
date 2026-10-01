@@ -325,6 +325,7 @@ let my2faAccounts = [];
 let editing2faId = null;
 let faRefreshIntervals = {};
 let faAutoFetch = false;
+let faComputeMode = 'cloud';
 let faDragSrcIndex = null;
 
 // AI Provider 数据

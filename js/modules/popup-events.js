@@ -491,12 +491,20 @@ if (restoreInput) {
                 await new Promise(r => chrome.storage.sync.clear(r));
                 await new Promise(r => chrome.storage.local.clear(r));
                 
-                if (payload.sync && Object.keys(payload.sync).length > 0) {
-                    await new Promise(r => chrome.storage.sync.set(payload.sync, r));
+                // 旧备份可能把 WebDAV 账密写在 sync 分区，恢复时挪进 local，不再随 Google 账号上云
+                const syncPayload = Object.assign({}, payload.sync);
+                const localPayload = Object.assign({}, payload.local);
+                if (syncPayload.webdav_config && !localPayload.webdav_config) {
+                    localPayload.webdav_config = syncPayload.webdav_config;
                 }
-                
-                if (payload.local && Object.keys(payload.local).length > 0) {
-                    await new Promise(r => chrome.storage.local.set(payload.local, r));
+                delete syncPayload.webdav_config;
+
+                if (Object.keys(syncPayload).length > 0) {
+                    await new Promise(r => chrome.storage.sync.set(syncPayload, r));
+                }
+
+                if (Object.keys(localPayload).length > 0) {
+                    await new Promise(r => chrome.storage.local.set(localPayload, r));
                 }
                 
                 showStatus(backupStatus, 'Restored! Refreshing...', 'success');
