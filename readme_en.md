@@ -4,7 +4,7 @@
 
 > This little guy doesn't just slack off — now it helps you run your daily life. Aside from not shedding fur, it's a master of calendars, bookkeeping, alarms, web doodling, and more.
 
-A feature-rich Chrome extension (Manifest V3) integrating calendar & to-dos, financial bookkeeping, habit tracking, web doodling, a toolbox, and nearly **30 functional modules** — your all-in-one browser assistant.
+A feature-rich Chrome extension integrating calendar & to-dos, financial bookkeeping, habit tracking, web doodling, a toolbox, and nearly **30 functional modules** — your all-in-one browser assistant.
 
 ---
 
