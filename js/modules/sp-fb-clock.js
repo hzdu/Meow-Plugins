@@ -30,6 +30,7 @@ const FBTZ_TARGET_ZONES = [
     { group: 'fbtz_g_apac', key: 'fbtz_z_tokyo', zone: 'Asia/Tokyo' },
     { group: 'fbtz_g_apac', key: 'fbtz_z_seoul', zone: 'Asia/Seoul' },
     { group: 'fbtz_g_apac', key: 'fbtz_z_sydney', zone: 'Australia/Sydney' },
+    { group: 'fbtz_g_apac', key: 'fbtz_z_brisbane', zone: 'Australia/Brisbane' },
     { group: 'fbtz_g_apac', key: 'fbtz_z_perth', zone: 'Australia/Perth' },
     { group: 'fbtz_g_apac', key: 'fbtz_z_auckland', zone: 'Pacific/Auckland' }
 ];
@@ -302,7 +303,7 @@ function fbtzParseZone(raw, nowMs) {
 // ================== Facebook 投放排期换算 UI ==================
 // 输入：FB 后台此刻（时区+日期+时间）、投放国家、该国当地开始时刻与第几天
 // 输出：FB 后台该填的日期 + 时间
-const FBTZ_STORE = { state: 'meow_fb_tz_state', presets: 'meow_fb_tz_presets', collapsed: 'meow_fb_tz_collapsed' };
+const FBTZ_STORE = { state: 'meow_fb_tz_state', collapsed: 'meow_fb_tz_collapsed' };
 
 const fbTz = {
     fb: { zone: '__custom__', custom: 'PDT' },
@@ -312,7 +313,6 @@ const fbTz = {
     targetTime: '07:00',
     dayOffset: 0,
     collapsed: false,
-    presets: [],
     last: null
 };
 
@@ -347,15 +347,6 @@ function fbTzSlotZone(slot, refMs) {
     return r;
 }
 
-// 同一个时区可能同时在两张表里：FB 侧要 (GMT±HH:MM) 账户写法，投放侧要城市名
-function fbTzSlotName(slot, asAccount) {
-    if (slot.zone === '__custom__') return slot.custom.trim() || meowI18n.t('fbtz_custom_zone');
-    const primary = asAccount ? FBTZ_ACCOUNT_ZONES : FBTZ_TARGET_ZONES;
-    const hit = primary.find(x => x.zone === slot.zone);
-    if (hit) return asAccount ? `${fbTzGmtPrefix(hit.zone, Date.now())} ${meowI18n.t(hit.key)}` : meowI18n.t(hit.key);
-    const other = (asAccount ? FBTZ_TARGET_ZONES : FBTZ_ACCOUNT_ZONES).find(x => x.zone === slot.zone);
-    return other ? meowI18n.t(other.key) : slot.zone;
-}
 
 // Meta 后台那种 (GMT+08:00) 前缀，按该时区当下真实偏移
 function fbTzGmtPrefix(zoneId, atMs) {
@@ -381,6 +372,17 @@ function fbTzZoneLabel(zone, atMs) {
     return abbr ? `${abbr} · ${off}` : off;
 }
 
+const FBTZ_MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// 说人话的日期：跨年才带年份，否则只写 10月7日 / Oct 7
+function fbTzDateHuman(stamp, refYear) {
+    const p = stamp.parts;
+    if (/^zh-/.test(meowI18n.lang)) {
+        return (p.y === refYear ? '' : `${p.y}年`) + `${p.m}月${p.d}日`;
+    }
+    return FBTZ_MONTHS_EN[p.m - 1] + ' ' + p.d + (p.y === refYear ? '' : ', ' + p.y);
+}
+
 function fbTzDayText(days) {
     const key = Math.abs(days) <= 2 ? `fbtz_day_${days < 0 ? 'm' : 'p'}${Math.abs(days)}` : (days < 0 ? 'fbtz_days_ago' : 'fbtz_days_later');
     let txt = meowI18n.t(key);
@@ -388,10 +390,6 @@ function fbTzDayText(days) {
     return txt;
 }
 
-function fbTzDayBadge(days) {
-    const cls = days === 0 ? 'today' : (days > 0 ? 'later' : 'earlier');
-    return `<span class="fb-tz-day ${cls}">${escapeHtml(fbTzDayText(days))}</span>`;
-}
 
 // ---------- 换算主流程 ----------
 function fbTzSolve() {
@@ -432,28 +430,56 @@ function fbTzNotes(r) {
     const lines = [];
     [r.fb, r.target].forEach(res => {
         if (!res || !res.ok) return;
+        const name = fbTzFriendly(res.zone, res.zoneInput);
         if (res.note === 'shift') {
-            lines.push(meowI18n.t('fbtz_note_shift', { input: res.zoneInput, zone: res.zone.id || '', abbr: fbtzZoneAbbr(res.zone, r.startMs) || '-' }));
+            lines.push(meowI18n.t('fbtz_note_shift', { input: res.zoneInput, abbr: fbtzZoneAbbr(res.zone, r.startMs) || '-', name }));
         } else if (res.note === 'now-not') {
-            lines.push(meowI18n.t('fbtz_note_unknown', { input: res.zoneInput, zone: res.zone.id || '' }));
+            lines.push(meowI18n.t('fbtz_note_unknown', { input: res.zoneInput, name }));
         }
     });
-    const near = fbtzDstNear(r.target.zone, r.startMs) || fbtzDstNear(r.fb.zone, r.startMs);
-    if (near) lines.push(meowI18n.t('fbtz_note_dst', { zone: near.zone, date: near.date, inDays: near.inDays }));
+    // 只有「此刻 → 投放开始」之间真的跨过了夏令时切换才说，否则纯属噪音
+    [r.fb, r.target].forEach(res => {
+        if (!res || !res.ok) return;
+        const before = fbtzZoneOffsetMinutes(res.zone, r.fbNowMs);
+        const after = fbtzZoneOffsetMinutes(res.zone, r.startMs);
+        if (before === after) return;
+        const near = fbtzDstNear(res.zone, Math.min(r.fbNowMs, r.startMs), Math.max(r.fbNowMs, r.startMs));
+        if (!near) return;
+        const key = after > before ? 'fbtz_note_cross_summer' : 'fbtz_note_cross_winter';
+        lines.push(meowI18n.t(key, {
+            name: fbTzFriendly(res.zone, res.zoneInput),
+            date: near.date,
+            n: Math.abs(after - before) / 60
+        }));
+    });
     return lines;
 }
 
-function fbtzDstNear(zone, ms) {
-    if (!zone || zone.kind !== 'iana') return null;
-    const base = fbtzZoneOffsetMinutes(zone, ms);
-    const day = 86400000;
-    for (let i = 1; i <= 45; i++) {
-        if (fbtzZoneOffsetMinutes(zone, ms + i * day) !== base) {
-            const at = fbtzPartsInZone(zone, ms + i * day);
-            return { zone: zone.id, date: `${at.y}-${fbtzPad2(at.m)}-${fbtzPad2(at.d)}`, inDays: i };
-        }
+// 在 [fromMs, toMs] 这段区间里，该时区哪天切换了夏令时/冬令时
+function fbtzDstNear(zone, fromMs, toMs) {
+    if (!zone || zone.kind !== 'iana' || toMs <= fromMs) return null;
+    const base = fbtzZoneOffsetMinutes(zone, fromMs);
+    if (fbtzZoneOffsetMinutes(zone, toMs) === base) return null;
+    // 二分找切换瞬间（偏移量在区间内单调跳一次），精确到分钟
+    let lo = fromMs, hi = toMs;
+    while (hi - lo > 60000) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (fbtzZoneOffsetMinutes(zone, mid) === base) lo = mid;
+        else hi = mid;
     }
-    return null;
+    const at = fbtzPartsInZone(zone, hi);
+    return { zone: zone.id, date: `${at.y}-${fbtzPad2(at.m)}-${fbtzPad2(at.d)}` };
+}
+
+// 句子里用时区的人话名字，不要 America/Los_Angeles 这种路径
+function fbTzFriendly(zone, raw) {
+    const id = zone.kind === 'iana' ? zone.id : String(raw || '').trim();
+    const hit = FBTZ_TARGET_ZONES.find(x => x.zone === id) || FBTZ_ACCOUNT_ZONES.find(x => x.zone === id);
+    if (!hit) return id || meowI18n.t('fbtz_custom_zone');
+    let name = meowI18n.t(hit.key);
+    // 中文标签是「洛杉矶 Los Angeles」这种双语格式，放进句子里只留中文
+    if (/^zh-/.test(meowI18n.lang)) name = name.split(' ')[0];
+    return name;
 }
 
 function fbTzErrorText(err) {
@@ -490,19 +516,21 @@ function fbTzRender() {
     else if (r.waitMs < 60000) whenLine = meowI18n.t('fbtz_right_now');
     else if (waitH < 1) whenLine = meowI18n.t('fbtz_in_minutes', { n: Math.round(r.waitMs / 60000) });
     else whenLine = meowI18n.t('fbtz_in_hours', { n: Math.round(waitH * 10) / 10 });
-    const copyText = `${r.answer.time} ${r.answer.date}${r.dayDiff !== 0 ? ' ' + fbTzDayText(r.dayDiff) : ''} (${fbTzSlotName(fbTz.target, false)} ${r.start.time} ${r.start.date})`;
-
+    const isZh = /^zh-/.test(meowI18n.lang);
+    const bracket = t => (isZh ? `（${t}）` : ` (${t})`);
     answer.className = 'fb-tz-answer';
     answer.innerHTML = `
         <div class="fb-tz-cap">${escapeHtml(meowI18n.t('fbtz_answer_fb'))}</div>
-        <div class="fb-tz-line1">
-            <span class="fb-tz-big">${escapeHtml(r.answer.time)}</span>
-            <span class="fb-tz-date">${escapeHtml(r.answer.date)} ${escapeHtml(r.answer.weekday)} ${fbTzDayBadge(r.dayDiff)}</span>
-            <button type="button" class="filter-btn fb-tz-copy" id="fb-tz-copy" data-copy="${escapeHtml(copyText)}">
-                <span class="mi fa-regular fa-copy" style="font-size:12px;vertical-align:middle;"></span> ${escapeHtml(meowI18n.t('fbtz_copy'))}
-            </button>
-        </div>
-        <div class="fb-tz-sub ${past ? 'is-past' : ''}">${escapeHtml(`${fbTzSlotName(fbTz.target, false)} ${r.start.date} ${r.start.time} · ${whenLine}`)}</div>`;
+        <div class="fb-tz-sentence">${escapeHtml(meowI18n.t('fbtz_answer_sentence', {
+            date: fbTzDateHuman(r.answer, r.fbNow.parts.y) + bracket(fbTzDayText(r.dayDiff)),
+            time: r.answer.time
+        }))}</div>
+        <div class="fb-tz-sub ${past ? 'is-past' : ''}">${escapeHtml(meowI18n.t('fbtz_run_at', {
+            name: fbTzFriendly(r.target.zone, fbTz.target.custom),
+            date: fbTzDateHuman(r.start, r.fbNow.parts.y),
+            time: r.start.time,
+            when: whenLine
+        }))}</div>`;
 
     fbTzRenderDays(r);
     fbTzRenderSides(r);
@@ -529,9 +557,7 @@ function fbTzRenderDays(r) {
 
 function fbTzRenderSides(r) {
     const fbAt = fbTz$('fb-tz-fb-at');
-    const tgAt = fbTz$('fb-tz-target-at');
     if (fbAt) fbAt.textContent = r ? fbTzZoneLabel(r.fb.zone, r.startMs) : '';
-    if (tgAt) tgAt.textContent = r ? `${meowI18n.t('fbtz_now_at')} ${r.start.time}` : '';
 }
 
 // 只留会算错时间的提醒（缩写歧义、临近夏令时切换）
@@ -648,61 +674,6 @@ function fbTzRefreshLabels() {
     fbTzRender();
 }
 
-// ---------- 方案 ----------
-function fbTzRenderPresets() {
-    const list = fbTz$('fb-tz-schemes');
-    if (!list) return;
-    if (!fbTz.presets.length) {
-        list.classList.add('hidden');
-        list.innerHTML = '';
-        return;
-    }
-    list.classList.remove('hidden');
-    list.innerHTML = fbTz.presets.map((s, i) => `
-        <div class="fb-tz-scheme">
-            <button type="button" class="fb-tz-scheme-use" data-i="${i}">${escapeHtml(s.name)}</button>
-            <button type="button" class="fb-tz-scheme-del" data-i="${i}" title="${escapeHtml(meowI18n.t('fbtz_scheme_del'))}"><span class="mi fa-solid fa-xmark" style="font-size:11px;"></span></button>
-        </div>`).join('');
-}
-
-function fbTzApplyPreset(s) {
-    if (!s) return;
-    fbTz.fb = Object.assign({ zone: '', custom: '' }, s.fb);
-    fbTz.target = Object.assign({ zone: '', custom: '' }, s.target);
-    fbTz.targetTime = s.targetTime || fbTz.targetTime;
-    fbTz.dayOffset = typeof s.dayOffset === 'number' ? s.dayOffset : 0;
-    fbTzFillFbNow();
-    fbTzSyncToDom();
-    fbTzRender();
-    fbTzSaveState();
-}
-
-function fbTzDefaultPresetName(r) {
-    const day = fbTz.dayOffset === 1 ? meowI18n.t('fbtz_tomorrow') : (fbTz.dayOffset === 2 ? meowI18n.t('fbtz_day_after') : '');
-    const to = `${fbTzSlotName(fbTz.target, false)} ${day}${fbTz.targetTime}`.replace(/\s+/g, ' ');
-    return `${to.trim()} → FB ${r ? r.answer.time : ''}`.replace(/\s+/g, ' ').trim();
-}
-
-async function fbTzSavePreset() {
-    const name = await showPromptDialog({
-        title: meowI18n.t('fbtz_scheme_save_title'),
-        placeholder: meowI18n.t('fbtz_scheme_ph'),
-        defaultValue: fbTzDefaultPresetName(fbTz.last)
-    });
-    if (!name) return;
-    fbTz.presets.unshift({
-        id: Date.now(), name,
-        fb: { zone: fbTz.fb.zone, custom: fbTz.fb.custom },
-        target: { zone: fbTz.target.zone, custom: fbTz.target.custom },
-        targetTime: fbTz.targetTime,
-        dayOffset: fbTz.dayOffset
-    });
-    if (fbTz.presets.length > 12) fbTz.presets.length = 12;
-    chrome.storage.local.set({ [FBTZ_STORE.presets]: fbTz.presets });
-    fbTzRenderPresets();
-    showToast(meowI18n.t('fbtz_scheme_saved'));
-}
-
 // 手动把「Facebook 后台现在」重新拉成此刻的真实时间
 function fbTzRefreshNow() {
     fbTzFillFbNow();
@@ -768,30 +739,7 @@ function fbTzInit() {
         if (e.target.closest('.fb-tz-head')) { fbTzSetCollapsed(!fbTz.collapsed, true); return; }
         const day = e.target.closest('[data-day]');
         if (day) { fbTz.dayOffset = +day.dataset.day; fbTzRender(); fbTzSaveState(); return; }
-        if (e.target.closest('#fb-tz-refresh')) { fbTzRefreshNow(); return; }
-        if (e.target.closest('#fb-tz-save')) { fbTzSavePreset(); return; }
-        const copy = e.target.closest('#fb-tz-copy');
-        if (copy) {
-            const txt = copy.dataset.copy || '';
-            if (!txt) return;
-            navigator.clipboard.writeText(txt)
-                .then(() => showToast(meowI18n.t('fbtz_copied')))
-                .catch(() => showToast(meowI18n.t('fbtz_copy_failed')));
-            return;
-        }
-        const use = e.target.closest('.fb-tz-scheme-use');
-        if (use) { fbTzApplyPreset(fbTz.presets[+use.dataset.i]); return; }
-        const del = e.target.closest('.fb-tz-scheme-del');
-        if (del) {
-            const s = fbTz.presets[+del.dataset.i];
-            if (!s) return;
-            showConfirmDialog({ message: meowI18n.t('fbtz_scheme_del_confirm', { name: s.name }), type: 'danger' }).then(ok => {
-                if (!ok) return;
-                fbTz.presets.splice(+del.dataset.i, 1);
-                chrome.storage.local.set({ [FBTZ_STORE.presets]: fbTz.presets });
-                fbTzRenderPresets();
-            });
-        }
+        if (e.target.closest('#fb-tz-refresh')) fbTzRefreshNow();
     });
 
     chrome.storage.local.get(Object.values(FBTZ_STORE), res => {
@@ -802,12 +750,10 @@ function fbTzInit() {
             fbTz.targetTime = st.targetTime || fbTz.targetTime;
             fbTz.dayOffset = typeof st.dayOffset === 'number' ? st.dayOffset : 0;
         }
-        fbTz.presets = Array.isArray(res[FBTZ_STORE.presets]) ? res[FBTZ_STORE.presets] : [];
         fbTzSetCollapsed(!!res[FBTZ_STORE.collapsed], false);
 
         fbTzFillFbNow();
         fbTzSyncToDom();
-        fbTzRenderPresets();
         fbTzRender();
     });
 }
