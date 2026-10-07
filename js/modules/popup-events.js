@@ -447,7 +447,7 @@ if (backupBtn) {
     backupBtn.addEventListener('click', async () => {
         try {
             const syncData = await new Promise(r => chrome.storage.sync.get(null, r));
-            const localData = await new Promise(r => chrome.storage.local.get(null, r));
+            const localData = scrubBackupLocal(await new Promise(r => chrome.storage.local.get(null, r)));
             
             const backupPayload = {
                 version: '2.7',

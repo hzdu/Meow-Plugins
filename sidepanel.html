@@ -194,6 +194,61 @@
                     <div class="world-clock-list" id="world-clock-list">
                         <!-- JS 动态生成 -->
                     </div>
+
+                    <div class="fb-tz-card" id="fb-tz-card">
+                        <div class="fb-tz-head">
+                            <span class="mi fa-solid fa-right-left fb-tz-head-icon"></span>
+                            <span class="fb-tz-title" data-i18n="fbtz_title">投放时间换算</span>
+                            <span class="mi toggle-icon fa-regular fa-chevron-down"></span>
+                        </div>
+                        <div class="fb-tz-body">
+                            <div class="fb-tz-side" data-role="fb">
+                                <div class="fb-tz-side-head">
+                                    <span class="fb-tz-role" data-i18n="fbtz_fb_now">Facebook 后台现在</span>
+                                    <span class="fb-tz-at" id="fb-tz-fb-at"></span>
+                                    <button type="button" class="fb-tz-refresh" id="fb-tz-refresh" data-i18n-title="fbtz_refresh" title="取此刻真实时间">
+                                        <span class="mi fa-regular fa-clock-rotate-left"></span>
+                                    </button>
+                                </div>
+                                <div class="fb-tz-zone">
+                                    <select class="converter-select full-select fb-tz-zone-select" id="fb-tz-fb-select"></select>
+                                    <input type="text" class="converter-input full-border fb-tz-zone-custom hidden" id="fb-tz-fb-custom" list="fb-tz-zone-list" autocomplete="off" spellcheck="false" data-i18n-ph="fbtz_ph_zone" placeholder="PDT / America/Los_Angeles / UTC+8">
+                                </div>
+                                <div class="fb-tz-dt">
+                                    <input type="date" id="fb-tz-fb-date" class="converter-input full-border" data-i18n-title="fbtz_tip_fb_date" title="后台里显示的那天">
+                                    <input type="time" id="fb-tz-fb-time" class="converter-input full-border" step="60" data-i18n-title="fbtz_tip_fb_time" title="后台里显示的那刻">
+                                </div>
+                            </div>
+
+                            <div class="fb-tz-side" data-role="target">
+                                <div class="fb-tz-side-head">
+                                    <span class="fb-tz-role" data-i18n="fbtz_deliver_to">投放到</span>
+                                    <span class="fb-tz-at" id="fb-tz-target-at"></span>
+                                </div>
+                                <div class="fb-tz-zone">
+                                    <select class="converter-select full-select fb-tz-zone-select" id="fb-tz-target-select"></select>
+                                    <input type="text" class="converter-input full-border fb-tz-zone-custom hidden" id="fb-tz-target-custom" list="fb-tz-zone-list" autocomplete="off" spellcheck="false" data-i18n-ph="fbtz_ph_zone" placeholder="PDT / America/Los_Angeles / UTC+8">
+                                    <input type="time" id="fb-tz-target-time" class="converter-input full-border fb-tz-time" step="60" data-i18n-title="fbtz_tip_target_time" title="目标国当地几点开始">
+                                </div>
+                                <div class="fb-tz-quick" id="fb-tz-days">
+                                    <button type="button" class="filter-btn" data-day="0"></button>
+                                    <button type="button" class="filter-btn" data-day="1"></button>
+                                    <button type="button" class="filter-btn" data-day="2"></button>
+                                </div>
+                            </div>
+
+                            <div class="fb-tz-answer is-empty" id="fb-tz-answer"></div>
+
+                            <datalist id="fb-tz-zone-list"></datalist>
+
+                            <div class="fb-tz-notes" id="fb-tz-notes"></div>
+
+                            <div class="fb-tz-actions">
+                                <button type="button" class="filter-btn" id="fb-tz-save" data-i18n="fbtz_scheme_save">保存方案</button>
+                            </div>
+                            <div class="fb-tz-schemes hidden" id="fb-tz-schemes"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -459,9 +514,9 @@
                 <div class="tool-card collapsed" data-tool-id="tool-uuid">
                     <h3><span class="mi fa-regular fa-key" style="font-size: 16px; color: #f43f5e;"></span> <span data-i18n="tool_uuid_title">UUID 生成</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
-                        <input type="text" id="uuid-output" class="converter-input full-border" style="width:100%;margin-bottom:8px;font-family:monospace;font-size:13px;text-align:center;background:#f8fafc;" readonly>
+                        <textarea id="uuid-output" class="converter-input full-border" style="width:100%;height:132px;margin-bottom:8px;font-family:monospace;font-size:12px;line-height:1.6;background:#f8fafc;resize:vertical;" readonly></textarea>
                         <div style="display:flex;gap:8px;">
-                            <button id="btn-uuid-generate" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_generate">生成</button>
+                            <button id="btn-uuid-generate" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_generate">生成 5 个</button>
                             <button id="btn-uuid-copy" class="filter-btn" style="flex:1;background:#f1f5f9;" data-i18n="action_copy">复制</button>
                         </div>
                     </div>
@@ -555,12 +610,13 @@
                 <div class="ai-filter-row" id="reg-filter-row">
                     <div style="position:relative;flex:1;">
                         <span class="mi fa-regular fa-xmark" id="reg-search-back" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:18px;color:#64748b;cursor:pointer;z-index:1;"></span>
-                        <input type="text" id="reg-filter-input" class="ai-filter-input" placeholder="搜索昵称 / 微信 / 电话 / 硬件码 / 注册码..." style="width:100%;padding:2px 28px 2px 30px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">
+                        <input type="text" id="reg-filter-input" class="ai-filter-input" placeholder="搜索联系方式 / 用户名 / 硬件码 / 注册码..." style="width:100%;padding:2px 28px 2px 30px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">
                         <span class="mi ai-filter-clear fa-regular fa-xmark" id="reg-filter-clear" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:#9ca3af;"></span>
                     </div>
                 </div>
                 </div>
                 <div id="reg-count-bar" class="srv-count-bar">共 0 条注册码</div>
+                <div id="reg-source-banner" class="reg-source-banner" style="display:none;"></div>
             </div>
                 <div id="reg-list" class="srv-list"></div>
                 <div id="reg-empty" class="empty-state">
@@ -574,52 +630,64 @@
 
             <!-- 注册码编辑弹窗 -->
             <div id="reg-modal" class="modal hidden">
-                <div class="modal-content" style="width: 90%; max-height: 92vh;">
+                <div class="modal-content" style="width: 90%; max-height: 96vh;">
                     <div class="modal-header">
                         <h3 id="reg-modal-title">添加注册码</h3>
                         <span class="mi close-modal fa-regular fa-xmark" id="close-reg-modal"></span>
                     </div>
                     <div class="modal-body">
                         <div class="srv-form-grid">
-                            <div class="form-group">
+                            <div class="form-group" style="grid-column: 1 / -1;">
                                 <label>软件名称</label>
                                 <select id="reg-software-input" class="converter-input full-border">
                                     <option value="">未选择软件</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label>购买人昵称</label>
-                                <input type="text" id="reg-nickname-input" class="converter-input full-border" placeholder="例如：张三">
-                            </div>
-                            <div class="form-group">
-                                <label>微信号</label>
-                                <div class="srv-input-wrap">
-                                    <input type="text" id="reg-wechat-input" class="converter-input full-border" placeholder="微信号">
-                                    <button class="srv-icopy-btn" data-copy-target="reg-wechat-input" title="复制微信号"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>联系方式</label>
+                                <div class="reg-contact-row">
+                                    <select id="reg-contact-type-input" class="converter-input full-border">
+                                        <option value="nickname">昵称</option>
+                                        <option value="wechat">微信号</option>
+                                        <option value="phone">电话</option>
+                                        <option value="qq">QQ</option>
+                                        <option value="email">邮箱</option>
+                                        <option value="whatsapp">WhatsApp</option>
+                                        <option value="other">其它</option>
+                                    </select>
+                                    <div class="srv-input-wrap reg-contact-input-wrap">
+                                        <input type="text" id="reg-contact-input" class="converter-input full-border" placeholder="联系方式">
+                                        <button class="srv-icopy-btn" data-copy-target="reg-contact-input" title="复制联系方式"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>电话号码</label>
-                                <div class="srv-input-wrap">
-                                    <input type="text" id="reg-phone-input" class="converter-input full-border" placeholder="电话号码">
-                                    <button class="srv-icopy-btn" data-copy-target="reg-phone-input" title="复制电话"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
-                                </div>
+                                <label>授权数量</label>
+                                <input type="number" id="reg-quota-input" class="converter-input full-border" placeholder="席位数" min="0" step="1">
                             </div>
                             <div class="form-group">
+                                <label>销售金额</label>
+                                <input type="number" id="reg-price-input" class="converter-input full-border" placeholder="0.00 元" min="0" step="0.01">
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>注册用户名</label>
+                                <input type="text" id="reg-username-input" class="converter-input full-border" placeholder="软件里注册时填写的用户名">
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
                                 <label>硬件码</label>
                                 <div class="srv-input-wrap">
-                                    <input type="text" id="reg-hwid-input" class="converter-input full-border" placeholder="硬件码" style="font-family:monospace;">
+                                    <textarea id="reg-hwid-input" class="converter-input full-border" rows="3" placeholder="硬件码" style="font-family:monospace;"></textarea>
                                     <button class="srv-icopy-btn" data-copy-target="reg-hwid-input" title="复制硬件码"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="grid-column: 1 / -1;">
                                 <label>注册码</label>
                                 <div class="srv-input-wrap">
-                                    <input type="text" id="reg-code-input" class="converter-input full-border" placeholder="注册码" style="font-family:monospace;">
+                                    <textarea id="reg-code-input" class="converter-input full-border" rows="7" placeholder="注册码" style="font-family:monospace;"></textarea>
                                     <button class="srv-icopy-btn" data-copy-target="reg-code-input" title="复制注册码"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
                                 </div>
                             </div>
-                            <div class="form-group" style="grid-column: 1 / -1;">
+                            <div class="form-group stack" style="grid-column: 1 / -1;">
                                 <label>付款周期（自动计算到期时间）</label>
                                 <div class="reg-plan-row">
                                     <button type="button" class="reg-plan-btn" data-months="1">月付</button>
@@ -636,13 +704,9 @@
                                 <label>到期时间</label>
                                 <input type="date" id="reg-expiry-input" class="converter-input full-border">
                             </div>
-                            <div class="form-group">
-                                <label>销售金额（元）</label>
-                                <input type="number" id="reg-price-input" class="converter-input full-border" placeholder="0.00" min="0" step="0.01">
-                            </div>
                             <div class="form-group" style="grid-column: 1 / -1;">
                                 <label>备注</label>
-                                <textarea id="reg-note-input" class="converter-input full-border" rows="2" placeholder="可选备注信息"></textarea>
+                                <textarea id="reg-note-input" class="converter-input full-border" rows="5" placeholder="可选备注信息"></textarea>
                             </div>
                         </div>
                     </div>
@@ -669,6 +733,91 @@
                         <div style="margin-top:8px;font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:4px;">
                             <span class="mi fa-regular fa-circle-info" style="font-size:13px;"></span> 拖拽左侧手柄可排序
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据源配置弹窗 -->
+            <div id="reg-source-modal" class="modal hidden">
+                <div class="modal-content" style="width: 92%; max-height: 92vh;">
+                    <div class="modal-header">
+                        <h3 id="reg-source-modal-title">数据源配置</h3>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-reg-source-modal"></span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>管理方式</label>
+                            <div class="reg-plan-row">
+                                <button type="button" class="reg-plan-btn reg-src-type-btn" data-src-type="local">本地管理</button>
+                                <button type="button" class="reg-plan-btn reg-src-type-btn" data-src-type="api">通过 API 管理</button>
+                            </div>
+                        </div>
+
+                        <div id="reg-src-local-note" class="reg-src-note">
+                            <span class="mi fa-regular fa-box-archive" style="font-size:12px;"></span>
+                            注册码保存在本机浏览器存储中，不经过任何服务器。
+                        </div>
+
+                        <div id="reg-src-api-area" class="hidden">
+                            <div class="form-group">
+                                <label>API 地址</label>
+                                <input type="text" id="reg-src-base-input" class="converter-input full-border" placeholder="https://你的域名/license/codes" style="font-family:monospace;">
+                            </div>
+                            <div class="form-group">
+                                <label>API Token</label>
+                                <div class="srv-input-wrap">
+                                    <input type="password" id="reg-src-token-input" class="converter-input full-border" placeholder="留空则不发送鉴权头" style="font-family:monospace;">
+                                    <button type="button" class="mi srv-icopy-btn fa-regular fa-eye" id="reg-src-token-toggle" title="显示 Token"></button>
+                                </div>
+                                <div class="reg-src-hint" id="reg-src-token-hint"></div>
+                            </div>
+                            <details class="reg-src-fold">
+                                <summary>请求配置</summary>
+                                <div id="reg-src-ops" class="reg-src-ops"></div>
+                                <div class="form-group" style="margin-top:6px;">
+                                    <label>服务器主键字段</label>
+                                    <input type="text" id="reg-src-id-input" class="converter-input full-border" placeholder="id">
+                                </div>
+                                <div class="form-group" style="margin-top:6px;">
+                                    <label>列表数据路径</label>
+                                    <input type="text" id="reg-src-path-input" class="converter-input full-border" placeholder="留空自动探测，如 data.list">
+                                </div>
+                                <div class="form-group" style="margin-top:6px;">
+                                    <label>请求体编码</label>
+                                    <select id="reg-src-encoding-input" class="converter-input full-border">
+                                        <option value="json">JSON（application/json）</option>
+                                        <option value="form">表单（PHP $_POST 只认这个）</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin-top:6px;">
+                                    <label>Token 位置</label>
+                                    <select id="reg-src-authin-input" class="converter-input full-border">
+                                        <option value="header">请求头 Authorization: Bearer</option>
+                                        <option value="body">请求体字段（不进 URL，避免落访问日志）</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin-top:6px;">
+                                    <label>Token 字段名</label>
+                                    <input type="text" id="reg-src-authfield-input" class="converter-input full-border" placeholder="token">
+                                </div>
+                                <div class="form-group" style="margin-top:6px;">
+                                    <label>删除时附加参数</label>
+                                    <input type="text" id="reg-src-delextra-input" class="converter-input full-border" placeholder="未填写（不附加任何参数）">
+                                    <div class="reg-src-hint">新增/修改/删除共用同一个端点时<b>必须填</b>，例如 <code>del=1</code>；不填服务器就认不出这是删除请求，会拿其它字段去校验并报错。灰字只是空值提示，不会自动生效。</div>
+                                </div>
+                                <div class="reg-src-hint">路径以 API 地址为基准拼接（<code>https://host/api</code> + <code>/list.php</code>），<code>{id}</code> 会替换为记录主键；留空即用默认值。</div>
+                            </details>
+
+                            <details class="reg-src-fold">
+                                <summary>字段映射</summary>
+                                <div id="reg-src-map" class="reg-src-ops"></div>
+                                <div class="reg-src-hint">填服务器用的字段名（如 <code>license_key</code>）；<b>留空表示服务器没这一列</b>，该字段存在本机并按主键关联。</div>
+                            </details>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px; margin-top:4px;">
+                        <button type="button" id="reg-src-test-btn" class="reg-src-test-btn">测试连接</button>
+                        <button id="reg-src-save-btn" class="add-btn">保存</button>
                     </div>
                 </div>
             </div>
@@ -1251,5 +1400,6 @@
     <script src="js/modules/sp-hot.js"></script>
     <script src="js/modules/sp-editor.js"></script>
     <script src="js/modules/sp-clock.js"></script>
+    <script src="js/modules/sp-fb-clock.js"></script>
 </body>
 </html>

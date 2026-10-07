@@ -153,11 +153,15 @@ const getAuthFixed = (user, pass) => 'Basic ' + btoa(user + ':' + pass);
 // 备份文件是外部可写的，恢复时不能让它改写"扩展往哪发请求、带什么凭证"。
 // 否则拿到 WebDAV 写权限就能把 baseUrl 指向攻击者服务器，
 // 之后每次 AI 分析都会把记账/日程数据发出去。
-const NEVER_RESTORE_KEYS = ['webdav_config'];   // 端点与账密：恢复后一律以当前表单为准
+// webdav_config 是端点与账密，恢复后一律以当前表单为准；
+// meow_regcode_api_cache 是从各软件服务器拉下来的客户数据缓存，重新读取即可，
+// 恢复旧缓存只会盖掉本机更新的状态——两者都不算丢数据，不进跳过清单。
+const NEVER_RESTORE_KEYS = ['webdav_config', 'meow_regcode_api_cache'];
 const CONFIRM_RESTORE_KEYS = [                  // 用户明确同意才接受
     'meow_ai_setting',
     'meow_ai_providers',
-    'meow_ipinfo_key'
+    'meow_ipinfo_key',
+    'meow_regcode_sources'                      // 注册码软件的服务器地址、字段映射与 Token
 ];
 
 function findConfirmableRestoreKeys(data) {
@@ -199,7 +203,7 @@ if (webdavBackupBtn) {
         try {
             // 1. Prepare Data
             const syncData = await new Promise(r => chrome.storage.sync.get(null, r));
-            const localData = await new Promise(r => chrome.storage.local.get(null, r));
+            const localData = scrubBackupLocal(await new Promise(r => chrome.storage.local.get(null, r)));
             
             const backupPayload = {
                 version: '2.7',

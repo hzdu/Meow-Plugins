@@ -1,5 +1,10 @@
 // js/background.js - 后台服务脚本 (修正右键菜单版)
 
+// 与 popup / sidepanel 共用同一份备份脱密实现，避免两边各写一遍越走越远。
+// 必须用 getURL：importScripts 的相对路径是按本脚本所在目录（js/）解析的，
+// 写 'js/utils.js' 会去找 js/js/utils.js，直接 404 导致 SW 注册失败。
+importScripts(chrome.runtime.getURL('js/utils.js'));
+
 // === 变量：跟踪当前窗口 ID ===
 let currentWindowId = chrome.windows.WINDOW_ID_NONE;
 
@@ -777,7 +782,7 @@ async function performWebDAVBackup() {
         
         // Prepare Data
         const syncData = await new Promise(r => chrome.storage.sync.get(null, r));
-        const localData = await new Promise(r => chrome.storage.local.get(null, r));
+        const localData = scrubBackupLocal(await new Promise(r => chrome.storage.local.get(null, r)));
         
         const backupPayload = {
             version: '2.7',

@@ -108,34 +108,20 @@
     border-color: #92400e;
 }
 
-/* 联系人行 */
-.reg-contact-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-    font-size: 11px;
-    margin-top: 6px;
-}
-
-.reg-contact-ic {
-    flex-shrink: 0;
-}
-
-.reg-contact-text {
-    color: #64748b;
-    word-break: break-all;
-}
-
 /* 展开内容：硬件码/注册码等 */
 .reg-hw-val {
     font-family: 'Roboto Mono', monospace;
+    /* 硬件码是多行输入，卡片里要按原样换行显示 */
+    white-space: pre-wrap;
+    word-break: break-all;
+    text-align: right;
 }
 
 .reg-code-val-inline {
     font-family: 'Roboto Mono', monospace;
     color: #6d28d9 !important;
     font-weight: 600;
+    white-space: pre-wrap;
 }
 
 .reg-card-actions {
@@ -258,8 +244,9 @@
     flex: 1;
     padding: 0 12px 10px;
     overflow-y: auto;
-    min-height: 0;
-    max-height: 60vh;
+    min-height: 74vh;
+    /* 侧边栏窄高、字段多，上限给足，短窗口里也别提前截断 */
+    max-height: 86vh;
 }
 
 #reg-modal .modal-body::-webkit-scrollbar {
@@ -271,9 +258,29 @@
     border-radius: 2px;
 }
 
+/* 标签在左、控件在右的一行式表单；控件高度约 30px，标签用同样行高对齐基线 */
 #reg-modal .form-group {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: start;
+    column-gap: 6px;
+    row-gap: 4px;
+}
+
+#reg-modal .form-group > label {
+    grid-column: 1;
+    line-height: 30px;
+}
+
+#reg-modal .form-group > :not(label) {
+    grid-column: 2;
+}
+
+/* 长标签（付款周期那种带说明的）留在控件上方 */
+#reg-modal .form-group.stack {
     display: flex;
     flex-direction: column;
+    align-items: stretch; /* 否则继承上面的 start，按钮行会缩成内容宽 */
     gap: 4px;
 }
 
@@ -312,6 +319,30 @@
     appearance: auto;
 }
 
+#reg-modal .srv-input-wrap textarea {
+    padding-right: 32px;
+    line-height: 1.5;
+}
+
+#reg-modal .srv-input-wrap:has(textarea) .srv-icopy-btn {
+    top: 6px;
+    transform: none;
+}
+
+#reg-modal .srv-input-wrap:has(textarea) .srv-icopy-btn:active {
+    transform: scale(0.9);
+}
+
+/* 删除 / 保存各占一半：两者必须同为 border-box 且等内边距，
+   否则 .cancel-btn 的 8px 16px 与 .add-btn 的 8px 会让两列宽度差 16px */
+#reg-modal .modal-footer .cancel-btn,
+#reg-modal .modal-footer .add-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 8px;
+}
+
 /* 付款周期按钮行（月付/季付/半年付/年付） */
 .reg-plan-row {
     display: flex;
@@ -323,9 +354,9 @@
     flex: 1;
     min-width: 0;
     padding: 6px 0;
-    border: 1px solid #c7d2fe;
-    background: #eef2ff;
-    color: #4338ca;
+    border: 1px solid #e2e8f0;
+    background: #f1f5f9;
+    color: #475569;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 500;
@@ -336,8 +367,20 @@
 }
 
 .reg-plan-btn:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+    color: #334155;
+}
+
+.reg-plan-btn.selected {
     background: #6366f1;
     border-color: #6366f1;
+    color: #fff;
+}
+
+.reg-plan-btn.selected:hover {
+    background: #4f46e5;
+    border-color: #4f46e5;
     color: #fff;
 }
 
@@ -347,13 +390,22 @@
 
 .dark .reg-plan-btn,
 .theme-dark .reg-plan-btn {
-    background: #312e81;
-    border-color: #4338ca;
-    color: #c7d2fe;
+    background: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
 }
 
 .dark .reg-plan-btn:hover,
 .theme-dark .reg-plan-btn:hover {
+    background: #334155;
+    border-color: #475569;
+    color: #e2e8f0;
+}
+
+.dark .reg-plan-btn.selected,
+.theme-dark .reg-plan-btn.selected,
+.dark .reg-plan-btn.selected:hover,
+.theme-dark .reg-plan-btn.selected:hover {
     background: #6366f1;
     border-color: #6366f1;
     color: #fff;
@@ -411,4 +463,427 @@
 .dark #reg-cat-modal .srv-cat-list-name,
 .theme-dark #reg-cat-modal .srv-cat-list-name {
     color: #e2e8f0;
+}
+/* === 数据源（本地 / API）=== */
+/* 侧栏 34px 竖排 tab 放不下第二个图标，API 软件用右上角小圆点标记 */
+#reg-sidebar .srv-cat-tab {
+    position: relative;
+}
+
+.reg-cat-src-dot {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6366f1;
+}
+
+.dark .reg-cat-src-dot,
+.theme-dark .reg-cat-src-dot {
+    background: #818cf8;
+}
+
+/* 分类管理列表里的数据源标记 */
+.reg-src-chip {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 500;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1px 7px;
+    line-height: 1.4;
+}
+
+.reg-src-chip-api {
+    color: #4338ca;
+    border-color: #c7d2fe;
+    background: #eef2ff;
+}
+
+.dark .reg-src-chip,
+.theme-dark .reg-src-chip {
+    color: #94a3b8;
+    border-color: #334155;
+}
+
+.dark .reg-src-chip-api,
+.theme-dark .reg-src-chip-api {
+    color: #c7d2fe;
+    border-color: #4338ca;
+    background: #312e81;
+}
+
+/* 列表上方的数据源状态横幅 */
+.reg-source-banner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 3px 8px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+.reg-source-banner .mi {
+    color: #6366f1;
+}
+
+.reg-src-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reg-source-banner.reg-src-error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #b91c1c;
+}
+
+.reg-source-banner.reg-src-error .mi {
+    color: #ef4444;
+}
+
+.reg-source-banner.reg-src-loading {
+    color: #4338ca;
+    border-color: #c7d2fe;
+    background: #eef2ff;
+}
+
+.reg-src-refresh {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 7px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #fff;
+    color: #475569;
+    font-size: 11px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.reg-src-refresh:hover {
+    border-color: #6366f1;
+    color: #4338ca;
+}
+
+.dark .reg-source-banner,
+.theme-dark .reg-source-banner {
+    background: #0f172a;
+    border-color: #334155;
+    color: #94a3b8;
+}
+
+.dark .reg-source-banner.reg-src-error,
+.theme-dark .reg-source-banner.reg-src-error {
+    background: #450a0a;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+}
+
+.dark .reg-source-banner.reg-src-loading,
+.theme-dark .reg-source-banner.reg-src-loading {
+    background: #312e81;
+    border-color: #4338ca;
+    color: #c7d2fe;
+}
+
+.dark .reg-src-refresh,
+.theme-dark .reg-src-refresh {
+    background: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+}
+
+/* 数据源配置弹窗 */
+#reg-source-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+}
+
+#reg-source-modal .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    padding: 0 12px 10px;
+    overflow-y: auto;
+    min-height: 0;
+    max-height: 66vh;
+}
+
+#reg-source-modal .modal-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+#reg-source-modal .modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}
+
+#reg-source-modal .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#reg-source-modal .form-group label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #475569;
+}
+
+#reg-source-modal .form-group input,
+#reg-source-modal .form-group select {
+    padding: 6px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    background: #fff;
+    color: #334155;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#reg-source-modal .form-group input:focus,
+#reg-source-modal .form-group select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+/* 测试连接 / 保存 各占一半：两者必须同为 border-box 且内边距、字号、圆角一致，
+   否则 1px 边框会让两个按钮差 2px 高 */
+#reg-source-modal .modal-footer .add-btn,
+#reg-source-modal .modal-footer .reg-src-test-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 8px;
+    font-size: 13px;
+    border-radius: 6px;
+}
+
+/* 保存按钮原本没有边框，测试按钮有 1px：盒模型不一致时 flex: 1 1 0 会分差 2px，
+   补一条透明边框让两个盒子完全同尺寸 */
+#reg-source-modal .modal-footer .add-btn {
+    border: 1px solid transparent;
+}
+
+.reg-src-note {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.reg-src-hint {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+.reg-src-hint code {
+    font-family: 'Roboto Mono', monospace;
+    background: #f1f5f9;
+    padding: 0 3px;
+    border-radius: 3px;
+    color: #64748b;
+}
+
+.reg-src-test-btn {
+    border: 1px solid #c7d2fe;
+    background: #eef2ff;
+    color: #4338ca;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.reg-src-test-btn:hover {
+    background: #e0e7ff;
+    border-color: #a5b4fc;
+}
+
+.reg-src-test-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.reg-src-fold {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0 8px;
+}
+
+.reg-src-fold summary {
+    list-style: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #475569;
+    padding: 7px 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.reg-src-fold summary::-webkit-details-marker {
+    display: none;
+}
+
+.reg-src-fold summary::before {
+    content: '\002B';
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.reg-src-fold[open] summary::before {
+    content: '\002212';
+}
+
+.reg-src-fold[open] {
+    padding-bottom: 8px;
+}
+
+.reg-src-ops {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.reg-src-op-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.reg-src-op-label {
+    flex: 0 0 86px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.3;
+}
+
+/* 本地字段名标在标签下，免得用占位符冒充"已填好的值" */
+.reg-src-key {
+    display: block;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    color: #a8a29e;
+}
+
+.dark .reg-src-key,
+.theme-dark .reg-src-key {
+    color: #64748b;
+}
+
+.reg-src-op-row .reg-src-op-method {
+    flex: 0 0 76px;
+    width: auto;
+    font-size: 12px;
+    padding: 4px 6px;
+}
+
+.reg-src-op-row .reg-src-op-path,
+.reg-src-op-row .reg-src-map-input {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    padding: 4px 6px;
+    font-family: 'Roboto Mono', monospace;
+}
+
+/* 暗色：数据源配置弹窗 */
+.dark #reg-source-modal .modal-content,
+.theme-dark #reg-source-modal .modal-content {
+    background: #1e293b;
+}
+
+.dark #reg-source-modal .form-group label,
+.theme-dark #reg-source-modal .form-group label {
+    color: #94a3b8;
+}
+
+.dark #reg-source-modal .form-group input,
+.dark #reg-source-modal .form-group select,
+.theme-dark #reg-source-modal .form-group input,
+.theme-dark #reg-source-modal .form-group select {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+.dark #reg-source-modal .form-group input:focus,
+.dark #reg-source-modal .form-group select:focus,
+.theme-dark #reg-source-modal .form-group input:focus,
+.theme-dark #reg-source-modal .form-group select:focus {
+    border-color: #6366f1;
+}
+
+.dark .reg-src-note,
+.theme-dark .reg-src-note {
+    background: #0f172a;
+    color: #94a3b8;
+}
+
+.dark .reg-src-hint code,
+.theme-dark .reg-src-hint code {
+    background: #0f172a;
+    color: #94a3b8;
+}
+
+.dark .reg-src-test-btn,
+.theme-dark .reg-src-test-btn {
+    background: #312e81;
+    border-color: #4338ca;
+    color: #c7d2fe;
+}
+
+.dark .reg-src-fold,
+.theme-dark .reg-src-fold {
+    border-color: #334155;
+}
+
+.dark .reg-src-fold summary,
+.theme-dark .reg-src-fold summary {
+    color: #cbd5e1;
+}
+
+/* 联系方式：类型下拉 + 输入框同一行 */
+.reg-contact-row {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+}
+
+.reg-contact-row select {
+    /* WhatsApp 文字 60px + 内边距 16 + 边框 2 + 原生下拉箭头 ≈19，88px 会被裁成 "WhatsAp" */
+    flex: 0 0 100px;
+    width: auto;
+}
+
+.reg-contact-input-wrap {
+    flex: 1;
+    min-width: 0;
 }

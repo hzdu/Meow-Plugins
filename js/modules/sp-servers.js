@@ -276,10 +276,8 @@ function renderServers() {
         card.querySelector('.srv-card-header').addEventListener('click', function(e) {
             if (e.target.closest('.srv-card-actions, .srv-ws-del-btn, .srv-ws-edit-btn, .srv-ws-link, .srv-provider-link, .srv-copy-btn, .srv-ws-add-btn')) return;
             const body = card.querySelector('.srv-card-body');
-            const toggle = card.querySelector('.srv-card-toggle');
             const isExpanded = card.classList.toggle('expanded');
             body.style.display = isExpanded ? '' : 'none';
-            toggle.textContent = isExpanded ? 'expand_less' : 'expand_more';
         });
 
         // 单行点击复制
@@ -357,7 +355,7 @@ function renderServers() {
                 if (!details) return;
                 const isExpanded = details.style.display !== 'none';
                 details.style.display = isExpanded ? 'none' : '';
-                if (toggle) toggle.textContent = isExpanded ? 'expand_more' : 'expand_less';
+                if (toggle) toggle.classList.toggle('expanded', !isExpanded);
             });
         });
 

@@ -201,7 +201,8 @@ function setupConverterLogic() {
                 return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
             });
         };
-        btnUuidGenerate.onclick = () => { uuidOutput.value = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : generateUUID(); };
+        const newUUID = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : generateUUID();
+        btnUuidGenerate.onclick = () => { uuidOutput.value = Array.from({ length: 5 }, newUUID).join('\n'); };
         btnUuidCopy.onclick = () => { if (!uuidOutput.value) btnUuidGenerate.onclick(); copyToClipboard(uuidOutput.value, btnUuidCopy); };
     }
     if (btnIpQuery && ipResultArea) {

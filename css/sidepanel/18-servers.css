@@ -336,7 +336,7 @@
 }
 
 .srv-card-toggle {
-    font-size: 18px;
+    font-size: 14px;
     color: #94a3b8;
     transition: transform 0.3s ease;
     transform: rotate(0deg);
@@ -733,6 +733,10 @@
 .srv-ws-toggle {
     transition: transform 0.2s;
     flex-shrink: 0;
+}
+
+.srv-ws-toggle.expanded {
+    transform: rotate(180deg);
 }
 
 .srv-ws-details {
