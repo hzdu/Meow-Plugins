@@ -577,7 +577,7 @@ function openAiProviderModelSelect(found) {
     if (aiProviderModelSelectSearchInput) aiProviderModelSelectSearchInput.value = '';
     if (aiProviderModelSelectSource) {
         const existingCount = aiModelSelectEntries.filter(function(en) { return en.existing; }).length;
-        const tip = '已在 Model 的默认勾选（保留）；新获取的默认不勾选，勾选后才添加；取消勾选已有项会从 Model 中移除';
+        const tip = '保存后 Model 字段将被替换为勾选的模型；未勾选的（含不在本次获取结果中的旧模型）会被清除';
         aiProviderModelSelectSource.title = tip;
         aiProviderModelSelectSource.textContent = existingCount > 0
             ? '共 ' + found.length + ' 个，其中 ' + existingCount + ' 个已在 Model'
@@ -662,28 +662,17 @@ function closeAiProviderModelSelect() {
     aiModelSelectSearch = '';
 }
 
-// 应用勾选：取消勾选的已有模型从字段移除，勾选的新模型追加
+// 应用勾选：勾选项即 Model 字段最终内容（全量替换，不在本次获取结果中的旧模型会被清除）
 function confirmAiProviderModelSelectAdd() {
     if (!aiProviderModelInput) return;
     // 从数据读取勾选状态（含被过滤隐藏的项）
-    const checkedSet = new Set(aiModelSelectEntries.filter(function(en) { return en.checked; }).map(function(en) { return en.id; }));
+    const result = aiModelSelectEntries.filter(function(en) { return en.checked; }).map(function(en) { return en.id; });
+    const resultSet = new Set(result);
 
-    // 原始 Model 行（保留未在获取结果里的手写项）
     const original = (aiProviderModelInput.value || '').split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
-    const result = [];
-    let removedCount = 0;
-    original.forEach(function(m) {
-        const entry = aiModelSelectEntries.find(function(en) { return en.existing && en.id === m; });
-        if (entry && !checkedSet.has(entry.id)) { removedCount++; return; }
-        result.push(m);
-    });
-
-    // 追加勾选的新模型
-    let addedCount = 0;
-    aiModelSelectEntries.forEach(function(en) {
-        if (en.existing) return;
-        if (checkedSet.has(en.id) && result.indexOf(en.id) === -1) { result.push(en.id); addedCount++; }
-    });
+    const originalSet = new Set(original);
+    const addedCount = result.filter(function(id) { return !originalSet.has(id); }).length;
+    const removedCount = original.filter(function(m) { return !resultSet.has(m); }).length;
 
     aiProviderModelInput.value = result.join('\n');
     closeAiProviderModelSelect();
