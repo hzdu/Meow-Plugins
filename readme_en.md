@@ -22,10 +22,10 @@ A feature-rich Chrome extension integrating calendar & to-dos, financial bookkee
 ### 💰 Financial Management
 | Feature | Description |
 |---------|-------------|
-| **Ledger** | Daily income/expense records, monthly income/expense/balance summary, set beginning-of-month balance |
+| **Ledger** | Daily income/expense records, monthly income/expense/balance summary, set beginning-of-month balance, income can be drawn from a fixed-asset deposit, deposits can be put into a chosen fixed asset |
 | **Account Relationship Graph** | Visualized financial relationship analysis |
 | **Financial Planning** | Planned spending (essential/non-essential + planned income), recurring monthly tasks, completion status tracking |
-| **Fixed Assets** | Manage real estate, storefronts, vehicles and other assets, rental income records |
+| **Fixed Assets** | Manage real estate, storefronts, vehicles and deposits, with deposit balances and rental income records |
 
 ### 🖌️ Web Tools
 | Feature | Description |

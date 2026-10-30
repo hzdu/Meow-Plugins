@@ -23,12 +23,16 @@ const AI_PROMPTS = {
             const payMap = { full: '全款', installment: '分期' };
             const usageMap = { 'self-use': '自用', 'rental': '出租' };
             assetsText = '\n\n【固定资产】\n' + assets.map((item, i) => {
+                const note = item.note ? `（${item.note}）` : '';
+                if (item.type === 'deposit') {
+                    const amount = (parseFloat(item.amount) || 0).toFixed(2);
+                    return `${i + 1}. 存款: ${item.name || ''} [余额¥${amount}]${note}`;
+                }
                 const typeLabel = typeMap[item.type] || '其他';
                 const payLabel = payMap[item.payment] || '全款';
                 const usageLabel = usageMap[item.usage] || '自用';
                 const qty = parseInt(item.quantity) || 1;
                 const rent = (item.usage === 'rental' && item.rent) ? ` [月租¥${parseFloat(item.rent).toFixed(2)}]` : '';
-                const note = item.note ? `（${item.note}）` : '';
                 return `${i + 1}. ${typeLabel}: ${item.name || ''} ×${qty} [${payLabel}] [${usageLabel}]${rent}${note}`;
             }).join('\n');
         }
@@ -144,16 +148,20 @@ function dateDetailPrompt(dateKey, todos, financeItems, lang, preExpenses, asset
 
     let assetsText = '';
     if (Array.isArray(assets) && assets.length > 0) {
-        const typeMap = { property: '房产', shop: '门店', vehicle: '车辆', other: '其他' };
+        const typeMap = { property: '房产', shop: '门店', vehicle: '车辆', other: '其他', deposit: '存款' };
         const payMap = { full: '全款', installment: '分期' };
         const usageMap = { 'self-use': '自用', 'rental': '出租' };
         assetsText = '\n\n【固定资产】\n' + assets.map((item, i) => {
+            const note = item.note ? `（${item.note}）` : '';
+            if (item.type === 'deposit') {
+                const amount = (parseFloat(item.amount) || 0).toFixed(2);
+                return `${i + 1}. 存款: ${item.name || ''} [余额¥${amount}]${note}`;
+            }
             const typeLabel = typeMap[item.type] || '其他';
             const payLabel = payMap[item.payment] || '全款';
             const usageLabel = usageMap[item.usage] || '自用';
             const qty = parseInt(item.quantity) || 1;
             const rent = (item.usage === 'rental' && item.rent) ? ` [月租¥${parseFloat(item.rent).toFixed(2)}]` : '';
-            const note = item.note ? `（${item.note}）` : '';
             return `${i + 1}. ${typeLabel}: ${item.name || ''} ×${qty} [${payLabel}] [${usageLabel}]${rent}${note}`;
         }).join('\n');
     }

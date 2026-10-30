@@ -3,10 +3,10 @@
 
 // ================== 通用工具函数 ==================
 // 依次请求多个地址，返回第一个成功且格式正确的纯文本 IP
-const fetchTextOnce = async (urls) => {
+const fetchTextOnce = async (urls, timeoutMs = 0) => {
     for (const url of urls) {
         try {
-            const resp = await fetch(url);
+            const resp = await fetch(url, timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : undefined);
             if (resp.ok) {
                 const t = (await resp.text()).trim();
                 if (t && /^[\da-f:.]+$/i.test(t)) return t;
@@ -15,6 +15,30 @@ const fetchTextOnce = async (urls) => {
     }
     return null;
 };
+
+// IPv6 出口探测：多源并行，谁先返回用谁；没有 IPv6 出口时最多等 V6_PROBE_TIMEOUT
+const V6_PROBE_TIMEOUT = 4000;
+const fetchPublicV6 = () => new Promise((resolve) => {
+    const tasks = [
+        'https://api-ipv6.ip.sb/ip',
+        'https://ipv6.icanhazip.com',
+        'https://v6.ident.me',
+        'https://ipv6.lookup.test-ipv6.com/ip/'
+    ].map(url => () => fetchTextOnce([url], V6_PROBE_TIMEOUT));
+    // Cloudflare trace 用 IPv6 字面量地址，强制走 IPv6，双栈网络下不会被 DNS 拉回 IPv4
+    tasks.push(async () => {
+        const resp = await fetch('https://[2606:4700:4700::1111]/cdn-cgi/trace', { signal: AbortSignal.timeout(V6_PROBE_TIMEOUT) });
+        if (!resp.ok) return null;
+        const m = (await resp.text()).match(/^ip=([\da-f:.]+)$/im);
+        return m && m[1].includes(':') ? m[1] : null;
+    });
+    let pending = tasks.length;
+    tasks.forEach(run => {
+        Promise.resolve().then(run).then(v => { if (v) resolve(v); }).catch(() => {}).finally(() => {
+            if (--pending === 0) resolve(null);
+        });
+    });
+});
 
 // 查询 IP 所在地（pconline 中文查询，ipinfo 兜底）
 let ipinfoApiKey = '';
@@ -206,6 +230,51 @@ function setupConverterLogic() {
         btnUuidCopy.onclick = () => { if (!uuidOutput.value) btnUuidGenerate.onclick(); copyToClipboard(uuidOutput.value, btnUuidCopy); };
     }
     if (btnIpQuery && ipResultArea) {
+        // 海外次要地址展示：IPv4 / IPv6 出口都并行探测，
+        // 主地址只显示 011102 返回的那一个，另一族地址在此补充，避免缺失
+        let intlQuerySeq = 0;
+        const isV4Str = (s) => !!s && /^\d{1,3}(\.\d{1,3}){3}$/.test(s);
+        const isV6Str = (s) => !!s && s.includes(':');
+        const V6_ADDR_COLOR = '#8b5cf6';
+        const V6_EMPTY_COLOR = '#94a3b8';
+        const setIntlRow = (elId, wrapId, val) => {
+            const el = document.getElementById(elId);
+            const wrap = document.getElementById(wrapId);
+            if (!el || !wrap) return;
+            if (val) { el.textContent = val; wrap.style.display = 'flex'; }
+            else { el.textContent = '--'; wrap.style.display = 'none'; }
+        };
+        // 探不到 IPv6 时保留该行并写明原因，避免看起来像"漏显示"
+        const setIpv6Row = (elId, wrapId, val, mainIsV6) => {
+            const el = document.getElementById(elId);
+            const wrap = document.getElementById(wrapId);
+            if (!el || !wrap) return;
+            const copyBtn = wrap.querySelector('.ip-copy-btn');
+            if (val) {
+                el.textContent = val;
+                el.style.color = V6_ADDR_COLOR;
+                if (copyBtn) copyBtn.style.display = '';
+            } else if (mainIsV6) {
+                el.textContent = '--';
+                wrap.style.display = 'none';
+                return;
+            } else {
+                el.textContent = meowI18n.t('ip_v6_unavailable');
+                el.style.color = V6_EMPTY_COLOR;
+                if (copyBtn) copyBtn.style.display = 'none';
+            }
+            wrap.style.display = 'flex';
+        };
+        const showIntlSecondary = (v4, v6, mainIp) => {
+            setIntlRow('ip-intl-ipv4', 'ip-intl-ipv4-wrapper', (isV4Str(v4) && v4 !== mainIp) ? v4 : null);
+            setIpv6Row('ip-intl-ipv6', 'ip-intl-ipv6-wrapper', (isV6Str(v6) && v6 !== mainIp) ? v6 : null, isV6Str(mainIp));
+        };
+        const clearIntlSecondary = () => {
+            setIntlRow('ip-intl-ipv4', 'ip-intl-ipv4-wrapper', null);
+            const v6Wrap = document.getElementById('ip-intl-ipv6-wrapper');
+            if (v6Wrap) v6Wrap.style.display = 'none';
+        };
+
         // Helper to update UI with IP data
         const updateIpUi = (ip, country, city, isp, riskText, riskColor) => {
             document.getElementById('ip-intl-addr').textContent = ip;
@@ -230,6 +299,7 @@ function setupConverterLogic() {
                 if (cache && cache.ip) {
                     // Use cached data
                     updateIpUi(cache.ip, cache.country, cache.city, cache.isp, cache.riskHtml, cache.riskColor);
+                    showIntlSecondary(cache.ipv4, cache.ipv6, cache.ip);
                 } else {
                     // No cache (fresh install?), auto query
                     if (!btnIpQuery.textContent.includes('...')) {
@@ -244,6 +314,13 @@ function setupConverterLogic() {
             ipResultArea.classList.remove('hidden');
             ipRiskVal.textContent = '--';
             linkScamalytics.style.display = 'none';
+            // 清空海外次要行，等待本次探测结果
+            const seq = ++intlQuerySeq;
+            clearIntlSecondary();
+
+            // 公共出口探针：国内 / 海外两组复用，避免同一地址重复请求
+            const publicV4Promise = fetchTextOnce(['https://api-ipv4.ip.sb/ip', 'https://ipv4.icanhazip.com', 'https://api.ipify.org'], V6_PROBE_TIMEOUT);
+            const publicV6Promise = fetchPublicV6();
 
             // 国内 (CN)：IPv4 / IPv6 同时展示
             (async () => {
@@ -263,13 +340,11 @@ function setupConverterLogic() {
                 const [ipip, myip4, v4, v6] = await Promise.all([
                     proxyIpip('https://myip.ipip.net/json'),
                     proxyIpip('https://myip4.ipip.net/json'),
-                    fetchTextOnce(['https://api-ipv4.ip.sb/ip', 'https://ipv4.icanhazip.com', 'https://api.ipify.org']),
-                    fetchTextOnce(['https://api-ipv6.ip.sb/ip', 'https://ipv6.icanhazip.com'])
+                    publicV4Promise,
+                    publicV6Promise
                 ]);
 
                 const cnAddr = document.getElementById('ip-cn-addr');
-                const cnIpv6El = document.getElementById('ip-cn-ipv6');
-                const cnIpv6Wrap = document.getElementById('ip-cn-ipv6-wrapper');
                 const isV4 = (ip) => ip && /^\d{1,3}(\.\d{1,3}){3}$/.test(ip);
                 const isV6 = (ip) => ip && ip.includes(':');
 
@@ -283,15 +358,7 @@ function setupConverterLogic() {
                 let ipv6Val = null;
                 if (isV6(ipipIp) && ipipIp !== mainIp) ipv6Val = ipipIp;
                 else if (v6 && v6 !== mainIp) ipv6Val = v6;
-                if (cnIpv6El && cnIpv6Wrap) {
-                    if (ipv6Val) {
-                        cnIpv6El.textContent = ipv6Val;
-                        cnIpv6Wrap.style.display = 'flex';
-                    } else {
-                        cnIpv6El.textContent = '--';
-                        cnIpv6Wrap.style.display = 'none';
-                    }
-                }
+                setIpv6Row('ip-cn-ipv6', 'ip-cn-ipv6-wrapper', ipv6Val, isV6(mainIp));
 
                 // 所在地：优先 ipip 地区库（省份/城市/运营商）
                 if (ipip && ipip.location) {
@@ -314,7 +381,12 @@ function setupConverterLogic() {
 
             try {
                 // New API Source: https://ip.011102.xyz/
-                const ipRes = await fetch('https://ip.011102.xyz/');
+                // 海外出口需同时探测 IPv4 / IPv6（011102 只返回其一，另一族在此补充展示）
+                const [ipRes, intlV4, intlV6] = await Promise.all([
+                    fetch('https://ip.011102.xyz/'),
+                    publicV4Promise,
+                    publicV6Promise
+                ]);
                 const ipData = await ipRes.json();
 
                 if (ipData && ipData.IP) {
@@ -326,9 +398,12 @@ function setupConverterLogic() {
                     const riskColor = '';
 
                     updateIpUi(ip, country, city, isp, riskText, riskColor);
+                    if (seq === intlQuerySeq) showIntlSecondary(intlV4, intlV6, ip);
 
+                    const cacheV4 = (intlV4 && intlV4 !== ip) ? intlV4 : null;
+                    const cacheV6 = (intlV6 && intlV6 !== ip) ? intlV6 : null;
                     chrome.storage.local.set({
-                        meow_ip_cache: { ip, country, city, isp, riskHtml: riskText, riskColor, timestamp: Date.now() }
+                        meow_ip_cache: { ip, country, city, isp, ipv4: cacheV4, ipv6: cacheV6, riskHtml: riskText, riskColor, timestamp: Date.now() }
                     });
                     return; // Done
                 }
@@ -395,6 +470,7 @@ function setupConverterLogic() {
                 }
             } catch (e) {
                 document.getElementById('ip-intl-addr').textContent = 'Error';
+                showIntlSecondary(null, null, null);
                 console.error("Meow IP Check Error:", e);
             }
             // Reset button text happens in updateIpUi or on error case
@@ -509,8 +585,12 @@ btnIpQuery.innerHTML = '<span class="mi fa-regular fa-arrows-rotate" style="font
     }
     if (btnCopyCnIp) btnCopyCnIp.onclick = () => { const ip = document.getElementById('ip-cn-addr').innerText; if (ip && ip !== '--' && ip !== 'Error') copyToClipboard(ip); };
     const btnCopyCnIpV6 = document.getElementById('btn-copy-cn-ipv6');
-    if (btnCopyCnIpV6) btnCopyCnIpV6.onclick = () => { const ip = document.getElementById('ip-cn-ipv6').innerText; if (ip && ip !== '--' && ip !== 'Error') copyToClipboard(ip); };
+    if (btnCopyCnIpV6) btnCopyCnIpV6.onclick = () => { const ip = document.getElementById('ip-cn-ipv6').innerText; if (ip && ip.includes(':')) copyToClipboard(ip); };
     if (btnCopyIntlIp) btnCopyIntlIp.onclick = () => { const ip = document.getElementById('ip-intl-addr').innerText; if (ip && ip !== '--' && ip !== 'Error') copyToClipboard(ip); };
+    const btnCopyIntlIpV4 = document.getElementById('btn-copy-intl-ipv4');
+    if (btnCopyIntlIpV4) btnCopyIntlIpV4.onclick = () => { const ip = document.getElementById('ip-intl-ipv4').innerText; if (ip && ip !== '--' && ip !== 'Error') copyToClipboard(ip); };
+    const btnCopyIntlIpV6 = document.getElementById('btn-copy-intl-ipv6');
+    if (btnCopyIntlIpV6) btnCopyIntlIpV6.onclick = () => { const ip = document.getElementById('ip-intl-ipv6').innerText; if (ip && ip.includes(':')) copyToClipboard(ip); };
 
     // Fuel Price Tool
     const fuelRegionInput = document.getElementById('fuel-region-input');
@@ -753,6 +833,8 @@ btnIpQuery.innerHTML = '<span class="mi fa-regular fa-arrows-rotate" style="font
         exchangeRefreshBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             delete exchangeRatesCache[exchangeFromSelect.value];
+            // 与 popup 的汇率刷新键保持同一套动画（popup-exchange.js 同款写法），
+            // 用户对比后点名要这个行为，不要再"优化"成 WAAPI 单向一圈。
             exchangeRefreshBtn.style.transform = 'rotate(360deg)';
             setTimeout(() => { exchangeRefreshBtn.style.transform = ''; }, 400);
             doExchangeConvert();
@@ -845,7 +927,10 @@ btnIpQuery.innerHTML = '<span class="mi fa-regular fa-arrows-rotate" style="font
 // ================== 工具卡片折叠/展开 ==================
 function setupToolCardToggle() {
     document.querySelectorAll('.tool-card h3').forEach(h => {
-        h.onclick = function() {
+        h.onclick = function(e) {
+            // MV3 CSP 禁止内联事件处理器，外链点击的拦截改在这里做：
+            // 点到 h3 里的链接（如「打开站长工具」）时不折叠/展开卡片
+            if (e.target && typeof e.target.closest === 'function' && e.target.closest('a')) return;
             const card = h.parentElement;
             const isCollapsed = card.classList.contains('collapsed');
             // 先收起所有面板

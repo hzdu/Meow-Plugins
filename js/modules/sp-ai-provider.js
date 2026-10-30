@@ -80,7 +80,7 @@ function renderAIProviders() {
                 <div class="ai-card-actions">
                     <i class="fa-regular fa-play ai-apply-btn" title="应用到 AI Setting" style="font-size:13px;color:#8b5cf6;"></i>
                     ${hasNote ? `<i class="fa-regular fa-file-lines ai-note-btn" title="查看备注"></i>` : ''}
-                    ${officialLink ? `<a class="ai-official-link" href="${officialLink}" target="_blank" title="打开官网" onclick="event.stopPropagation()"><i class="fa-regular fa-window-restore"></i></a>` : ''}
+                    ${officialLink ? `<a class="ai-official-link" href="${officialLink}" target="_blank" title="打开官网"><i class="fa-regular fa-window-restore"></i></a>` : ''}
                     <i class="fa-regular fa-pen-to-square ai-edit-btn" data-id="${provider.id}"></i>
                     <i class="fa-regular fa-xmark ai-del-btn" data-id="${provider.id}"></i>
                 </div>
@@ -440,10 +440,10 @@ function buildModelsEndpointCandidates(rawUrl, apiType) {
     if (/\/models?$/i.test(b)) return [b];
     // 去掉可能粘贴的完整请求端点
     b = b.replace(/\/(chat\/completions|messages)$/i, '');
-    // 去掉末尾 /v1，统一按 /v1/models 补全，避免重复
-    const root = b.replace(/\/v1$/i, '');
-    const list = [root + '/v1/models'];
-    if (apiType !== 'anthropic') list.push(root + '/models');
+    // 末尾已有版本段（/v1、/v2…）时按同版本补 /models，否则按 /v1 补，避免拼出 /v2/v1/models
+    const hasVersion = /\/v\d+[a-z0-9.]*$/i.test(b);
+    const list = [hasVersion ? b + '/models' : b + '/v1/models'];
+    if (!hasVersion && apiType !== 'anthropic') list.push(b + '/models');
     return [...new Set(list)];
 }
 

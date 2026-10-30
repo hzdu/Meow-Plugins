@@ -216,7 +216,7 @@ function renderServers() {
                         <span class="mi srv-ws-toggle fa-regular fa-chevron-down" style="font-size:14px;color:#94a3b8;cursor:pointer;"></span>
                         <span class="mi fa-regular fa-globe" style="font-size:12px;color:#10b981;"></span>
                         <span class="srv-copy-row" data-copy="${escapeHtml(ws.domain || '')}" title="点击复制域名" style="cursor:pointer;">${escapeHtml(ws.domain || '(未设置域名)')}</span>
-                        ${ws.adminUrl ? `<a class="srv-ws-link" href="${escapeHtml(ws.adminUrl)}" target="_blank" onclick="event.stopPropagation()" title="打开后台"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:12px;color:#0891b2;"></span></a>` : ''}
+                        ${ws.adminUrl ? `<a class="srv-ws-link" href="${escapeHtml(ws.adminUrl)}" target="_blank" title="打开后台"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:12px;color:#0891b2;"></span></a>` : ''}
                     </div>
                     <div class="srv-ws-item-actions">
                         <button class="srv-copy-btn" data-copy-type="website" data-widx="${wi}" title="一键复制网站信息"><span class="mi fa-regular fa-copy" style="font-size:13px;"></span>复制</button>
@@ -235,7 +235,7 @@ function renderServers() {
                 <span class="srv-card-name${srv.isCharged ? (srv.paid ? ' srv-card-name-paid' : ' srv-card-name-unpaid') : ''}"${srv.isCharged && !srv.paid ? ' title="已收费但未收款"' : ''}>${escapeHtml(displayName)}</span>
                 <span class="srv-card-badge">${escapeHtml(srv.os || '')}</span>
                 <div class="srv-card-actions">
-                    ${srv.providerUrl ? `<a class="srv-provider-link" href="${escapeHtml(srv.providerUrl)}" target="_blank" onclick="event.stopPropagation()" title="打开供应商"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:16px;color:#cbd5e1;"></span></a>` : ''}
+                    ${srv.providerUrl ? `<a class="srv-provider-link" href="${escapeHtml(srv.providerUrl)}" target="_blank" title="打开供应商"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:16px;color:#cbd5e1;"></span></a>` : ''}
                     <span class="mi srv-edit-btn fa-regular fa-pen-to-square" data-id="${srv.id}" title="编辑"></span>
                     <i class="fa-regular fa-xmark srv-del-btn" data-id="${srv.id}" title="删除"></i>
                 </div>

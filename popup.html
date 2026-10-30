@@ -214,15 +214,6 @@
                         <span class="amount" id="summary-expense">-0.00</span>
                     </div>
                 </div>
-                <div class="fin-deposit-toggle-row">
-                    <label class="fin-deposit-toggle">
-                        <input type="checkbox" id="deposit-in-balance-toggle">
-                        <span class="fin-toggle-track">
-                            <span class="fin-toggle-thumb"></span>
-                        </span>
-                        <span class="fin-deposit-toggle-label" data-i18n="deposit_in_balance">将存款计入余额</span>
-                    </label>
-                </div>
                 <div class="fin-input-container">
                     <div class="fin-row-top">
                         <select id="fin-type" class="fin-select">
@@ -231,6 +222,10 @@
                             <option value="deposit" data-i18n="deposit">存款</option>
                         </select>
                         <input type="number" id="fin-amount" class="fin-input-amount" placeholder="金额">
+                    </div>
+                    <div class="fin-from-deposit-row hidden" id="fin-from-deposit-row">
+                        <span class="material-icons fin-from-deposit-icon">savings</span>
+                        <select id="fin-from-deposit" class="fin-select fin-from-deposit-select"></select>
                     </div>
                     <div class="fin-row-bottom">
                         <div class="fin-note-wrapper">
@@ -751,20 +746,25 @@
                                     <option value="shop" data-i18n="assets_type_shop">门店</option>
                                     <option value="vehicle" data-i18n="assets_type_vehicle">车辆</option>
                                     <option value="other" data-i18n="assets_type_other">其他</option>
+                                    <option value="deposit" data-i18n="assets_type_deposit">存款</option>
                                 </select>
                             </div>
-                            <div class="ai-modal-col">
+                            <div class="ai-modal-col ai-modal-full hidden" id="assets-amount-col">
+                                <label class="sub-label" data-i18n="assets_amount">金额</label>
+                                <input type="number" id="assets-amount-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="¥ 0.00" step="0.01" min="0">
+                            </div>
+                            <div class="ai-modal-col" id="assets-quantity-col">
                                 <label class="sub-label" data-i18n="assets_quantity">数量</label>
                                 <input type="number" id="assets-quantity-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="1" min="1" step="1">
                             </div>
-                            <div class="ai-modal-col">
+                            <div class="ai-modal-col" id="assets-payment-col">
                                 <label class="sub-label" data-i18n="assets_payment">付款方式</label>
                                 <select id="assets-payment-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;">
                                     <option value="full" data-i18n="assets_payment_full">全款</option>
                                     <option value="installment" data-i18n="assets_payment_installment">分期</option>
                                 </select>
                             </div>
-                            <div class="ai-modal-col">
+                            <div class="ai-modal-col" id="assets-usage-col">
                                 <label class="sub-label" data-i18n="assets_usage">使用状态</label>
                                 <select id="assets-usage-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;">
                                     <option value="self-use" data-i18n="assets_usage_self">自用</option>

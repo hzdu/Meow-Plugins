@@ -8,20 +8,40 @@ const loadAndRenderFinanceList = async (dateKey) => {
     exitFinEditMode(); 
 };
 
-// === 存款计入余额开关 ===
-const loadDepositInBalanceSetting = async () => {
-    const data = await getStorageData('meow_deposit_in_balance');
-    depositInBalance = data === true; // 默认关闭，仅当明确存为 true 时才开启
-    if (depositInBalanceToggle) depositInBalanceToggle.checked = depositInBalance;
+// === 收入「从存款划入」/ 存款「存入固定资产」 ===
+const formatDepositBalance = (v) => `¥${(parseFloat(v) || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
+
+// 刷新存款账户下拉；nextId 传 undefined 时保留当前选中项
+const refreshFinDepositOptions = (nextId) => {
+    if (!finFromDepositRow || !finFromDepositSelect) return;
+    const deposits = typeof getDepositAssets === 'function' ? getDepositAssets() : [];
+    const isIncome = finType.value === 'income';
+    const isDeposit = finType.value === 'deposit';
+    const show = (isIncome || isDeposit) && deposits.length > 0;
+    finFromDepositRow.classList.toggle('hidden', !show);
+    if (!show) { finFromDepositSelect.innerHTML = ''; return; }
+
+    const keep = nextId === undefined ? (finFromDepositSelect.value || '') : nextId;
+    finFromDepositSelect.innerHTML = '';
+    const noneText = isDeposit
+        ? (meowI18n.t('fin_to_deposit_none') || '不存入固定资产')
+        : (meowI18n.t('fin_from_deposit_none') || '不从存款划入');
+    finFromDepositSelect.appendChild(new Option(noneText, ''));
+    deposits.forEach(a => {
+        finFromDepositSelect.appendChild(new Option(`${a.name} · ${formatDepositBalance(a.amount)}`, a.id));
+    });
+    finFromDepositSelect.value = deposits.some(a => a.id === keep) ? keep : '';
 };
 
-if (depositInBalanceToggle) {
-    depositInBalanceToggle.addEventListener('change', () => {
-        depositInBalance = depositInBalanceToggle.checked;
-        chrome.storage.sync.set({ 'meow_deposit_in_balance': depositInBalance });
-        renderFinanceView();
-        renderCalendar();
-    });
+const revertFinDepositEffect = (item) => {
+    if (!item) return;
+    if (item.fromDepositId && item.depositDeducted) adjustDepositAmount(item.fromDepositId, item.depositDeducted);
+    if (item.toDepositId && item.depositAdded) adjustDepositAmount(item.toDepositId, -item.depositAdded);
+};
+
+if (finType) {
+    // 类型切换时重置选择，避免「划入来源」被带到「存入账户」上
+    finType.addEventListener('change', () => refreshFinDepositOptions(''));
 }
 
 const renderFinanceView = () => {
@@ -49,14 +69,20 @@ const renderFinanceView = () => {
             });
 
             const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
+            // 存款没写备注时标题就是「存款」，meta 行不再重复类型，只留账户标签
+            const metaLabel = (item.type === 'deposit' && !item.note) ? '' : typeLabel;
             const valClass = item.type === 'income' ? 'inc' : item.type === 'deposit' ? 'dep' : 'exp';
-            const valSign = item.type === 'income' ? '+' : '-';
+            const valSign = getFinAmountSign(item.type);
             const tagsHtml = item.tags ? item.tags.map(t => `<span class="fin-item-tag" style="background-color:${t.color}">${t.text}</span>`).join('') : '';
             const tagsRow = tagsHtml ? `<div class="fin-tags-row">${tagsHtml}</div>` : '';
+            const depositName = item.fromDepositName || item.toDepositName;
+            const fromChip = depositName
+                ? `<span class="fin-from-chip"><span class="material-icons">savings</span>${escapeHtml(depositName)}</span>`
+                : '';
             const hasLinks = !!(item.id && finLinks.some(l => l.from.id === item.id || l.to.id === item.id));
-            li.innerHTML = `<div class="fin-info"><span class="fin-note">${escapeHtml(item.note || 'No note')}</span><span class="fin-meta">${typeLabel}</span>${tagsRow}</div><div style="display:flex;align-items:center;gap:5px;"><span class="fin-val ${valClass}">${valSign}${val.toFixed(2)}</span><span class="material-icons fin-link-btn ${hasLinks?'has-links':''}" title="账本关联">hub</span><span class="material-icons edit-btn">edit</span><span class="material-icons delete-btn">close</span></div>`;
+            li.innerHTML = `<div class="fin-info"><span class="fin-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</span><span class="fin-meta">${metaLabel}${fromChip}</span>${tagsRow}</div><div style="display:flex;align-items:center;gap:5px;"><span class="fin-val ${valClass}">${valSign}${val.toFixed(2)}</span><span class="material-icons fin-link-btn ${hasLinks?'has-links':''}" title="账本关联">hub</span><span class="material-icons edit-btn">edit</span><span class="material-icons delete-btn">close</span></div>`;
             
-            li.querySelector(".delete-btn").onclick = () => { if(editingFinIndex===index)exitFinEditMode(); const delId = item.id; currentFinList.splice(index,1); saveFinanceData(); if (delId) cleanupFinLinks(delId); };
+            li.querySelector(".delete-btn").onclick = () => { if(editingFinIndex===index)exitFinEditMode(); const delId = item.id; revertFinDepositEffect(item); currentFinList.splice(index,1); saveFinanceData(); if (delId) cleanupFinLinks(delId); refreshFinDepositOptions(''); };
             li.querySelector(".edit-btn").onclick = () => enterFinEditMode(index, item);
             li.querySelector(".fin-link-btn").onclick = () => openFinLinkModal(index, item);
             finList.appendChild(li);
@@ -68,26 +94,95 @@ const renderFinanceView = () => {
 
 const enterFinEditMode = (index, item) => {
     editingFinIndex = index; finType.value = item.type; finAmount.value = item.amount; finNote.value = item.note;
+    refreshFinDepositOptions(item.fromDepositId || item.toDepositId || '');
     addFinBtn.innerHTML = "save"; cancelFinBtn.classList.remove("hidden"); finInputRow.classList.add("editing"); finAmount.focus();
     renderFinanceView();
 };
 const exitFinEditMode = () => {
     editingFinIndex = -1; finAmount.value = ""; finNote.value = "";
     addFinBtn.innerHTML = "check"; cancelFinBtn.classList.add("hidden"); finInputRow.classList.remove("editing");
+    refreshFinDepositOptions('');
     renderFinanceView();
 };
 const addFinance = () => {
     const amount = parseFloat(finAmount.value); const note = finNote.value.trim(); const type = finType.value;
     if (!isNaN(amount) && amount > 0) {
+        const old = editingFinIndex > -1 ? (currentFinList[editingFinIndex] || {}) : null;
+        const pickedId = (finFromDepositRow && !finFromDepositRow.classList.contains('hidden') && finFromDepositSelect)
+            ? finFromDepositSelect.value
+            : '';
+
+        // 收入可指定从某个存款账户划入
+        let fromDepositId = '', fromDepositName = '', depositDeducted = 0;
+        if (type === 'income' && pickedId) {
+            fromDepositId = pickedId;
+            const asset = typeof getDepositAssetById === 'function' ? getDepositAssetById(fromDepositId) : null;
+            if (!asset) {
+                showToast(meowI18n.t('fin_msg_deposit_missing') || '存款账户不存在');
+                return;
+            }
+            // 编辑同一账户时，上次划出的额度先算回可用余额再校验
+            const refundable = (old && old.fromDepositId === fromDepositId) ? (old.depositDeducted || 0) : 0;
+            const available = Math.round(((parseFloat(asset.amount) || 0) + refundable) * 100) / 100;
+            if (amount > available) {
+                showToast(`${meowI18n.t('fin_msg_deposit_insufficient') || '存款余额不足'} · ${formatDepositBalance(available)}`);
+                return;
+            }
+            fromDepositName = asset.name;
+            depositDeducted = amount;
+        }
+
+        // 存款可指定存入哪个固定资产账户
+        let toDepositId = '', toDepositName = '', depositAdded = 0;
+        if (type === 'deposit' && pickedId) {
+            toDepositId = pickedId;
+            const asset = typeof getDepositAssetById === 'function' ? getDepositAssetById(toDepositId) : null;
+            if (!asset) {
+                showToast(meowI18n.t('fin_msg_deposit_missing') || '存款账户不存在');
+                return;
+            }
+            toDepositName = asset.name;
+            depositAdded = amount;
+        }
+
         if (editingFinIndex > -1) { 
-            const old = currentFinList[editingFinIndex] || {};
+            revertFinDepositEffect(old);
             const updated = { type, amount, note };
             if (old.id) updated.id = old.id;
             if (old.tags) updated.tags = old.tags;
+            if (fromDepositId) {
+                updated.fromDepositId = fromDepositId;
+                updated.fromDepositName = fromDepositName;
+                updated.depositDeducted = depositDeducted;
+            }
+            if (toDepositId) {
+                updated.toDepositId = toDepositId;
+                updated.toDepositName = toDepositName;
+                updated.depositAdded = depositAdded;
+            }
             currentFinList[editingFinIndex] = updated;
+            if (fromDepositId) adjustDepositAmount(fromDepositId, -depositDeducted);
+            if (toDepositId) adjustDepositAmount(toDepositId, depositAdded);
             exitFinEditMode(); 
         } 
-        else { currentFinList.push({ type, amount, note, id: genFinId() }); finAmount.value = ""; finNote.value = ""; }
+        else {
+            const item = { type, amount, note, id: genFinId() };
+            if (fromDepositId) {
+                item.fromDepositId = fromDepositId;
+                item.fromDepositName = fromDepositName;
+                item.depositDeducted = depositDeducted;
+            }
+            if (toDepositId) {
+                item.toDepositId = toDepositId;
+                item.toDepositName = toDepositName;
+                item.depositAdded = depositAdded;
+            }
+            currentFinList.push(item);
+            if (fromDepositId) adjustDepositAmount(fromDepositId, -depositDeducted);
+            if (toDepositId) adjustDepositAmount(toDepositId, depositAdded);
+            finAmount.value = ""; finNote.value = "";
+            refreshFinDepositOptions('');
+        }
         saveFinanceData();
         updateFinNoteHistory(note);
         finAmount.focus();
@@ -262,8 +357,8 @@ const renderFinLinkCurrent = async () => {
     const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
     finLinkCurrentNode.innerHTML = `
         <div class="fin-link-node-row">
-            <span class="fin-link-node-note">${escapeHtml(item.note || 'No note')}</span>
-            <span class="fin-link-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</span>
+            <span class="fin-link-node-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</span>
+            <span class="fin-link-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</span>
         </div>
         <div class="fin-link-node-meta">${typeLabel} · ${dateKey}</div>
     `;
@@ -289,10 +384,10 @@ const renderFinLinkCurrent = async () => {
         div.className = 'fin-link-linked-item';
         if (otherItem) {
             const oVal = parseFloat(otherItem.amount);
-            const oSign = otherItem.type === 'income' ? '+' : '-';
+            const oSign = getFinAmountSign(otherItem.type);
             div.innerHTML = `
                 <div class="fin-link-linked-info">
-                    <span class="fin-link-linked-note">${escapeHtml(otherItem.note || 'No note')}</span>
+                    <span class="fin-link-linked-note">${escapeHtml(getFinItemTitle(otherItem, 'No note'))}</span>
                     <span class="fin-link-linked-meta">${other.dateKey} · ${oSign}${oVal.toFixed(2)}</span>
                 </div>
                 <span class="material-icons fin-link-linked-del">close</span>
@@ -344,8 +439,8 @@ const renderFinLinkList = async () => {
         node.setAttribute('data-date', finLinkSourceDate);
         node.innerHTML = `
             <div class="fin-link-node-row">
-                <span class="fin-link-node-note">${escapeHtml(item.note || 'No note')}</span>
-                <span class="fin-link-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</span>
+                <span class="fin-link-node-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</span>
+                <span class="fin-link-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</span>
             </div>
             <div class="fin-link-node-meta">${typeLabel}${linked ? ' · 已关联' : ''}</div>
         `;
@@ -676,8 +771,8 @@ const renderFinLinkGraph = async () => {
         el.className = 'fin-link-graph-node' + (isCurrent ? ' current' : '') + (depth > 0 ? ` depth-${Math.min(depth, 3)}` : '');
         el.setAttribute('data-id', node.id);
         el.innerHTML = `
-            <div class="fin-link-graph-node-note">${escapeHtml(item.note || 'No note')}</div>
-            <div class="fin-link-graph-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</div>
+            <div class="fin-link-graph-node-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</div>
+            <div class="fin-link-graph-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</div>
             <div class="fin-link-graph-node-date">${dateKey}</div>
             ${depth > 0 ? `<div class="fin-link-graph-node-depth">${depth}</div>` : ''}
             <div class="fin-link-graph-anchor anchor-top" data-anchor="top">+</div>
@@ -1128,8 +1223,8 @@ const openGraphLinkPanel = async (fromId, fromDateKey, item) => {
     const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
     if (finLinkGraphPanelSource) {
         finLinkGraphPanelSource.innerHTML = `
-            <div class="fin-link-graph-panel-source-note">${escapeHtml(item.note || 'No note')}</div>
-            <div class="fin-link-graph-panel-source-meta">${typeLabel} · ${fromDateKey} · ${item.type==='income'?'+':'-'}${val.toFixed(2)}</div>
+            <div class="fin-link-graph-panel-source-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</div>
+            <div class="fin-link-graph-panel-source-meta">${typeLabel} · ${fromDateKey} · ${getFinAmountSign(item.type)}${val.toFixed(2)}</div>
         `;
     }
 
@@ -1198,8 +1293,8 @@ const renderGraphPanelList = async () => {
         el.className = 'fin-link-graph-panel-item' + (linked ? ' linked' : '') + (isSelf ? ' self' : '');
         el.innerHTML = `
             <div class="fin-link-graph-panel-item-row">
-                <span class="fin-link-graph-panel-item-note">${escapeHtml(item.note || 'No note')}</span>
-                <span class="fin-link-graph-panel-item-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${item.type==='income'?'+':'-'}${val.toFixed(2)}</span>
+                <span class="fin-link-graph-panel-item-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</span>
+                <span class="fin-link-graph-panel-item-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</span>
             </div>
             <div class="fin-link-graph-panel-item-meta">${typeLabel}${linked ? ' · 已关联' : ''}${isSelf ? ' · 当前节点' : ''}</div>
         `;

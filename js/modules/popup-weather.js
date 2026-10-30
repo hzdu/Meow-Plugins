@@ -230,8 +230,10 @@ async function fetchForecast() {
         weatherFutureList.innerHTML = `
             <div style="text-align:center; padding:20px; color:#ef4444; font-size:13px;">
                 <span class="material-icons" style="font-size:20px; vertical-align:middle;">error_outline</span> 获取预报失败
-                <div style="margin-top:8px;"><button class="weather-retry" onclick="fetchForecast()">重试</button></div>
+                <div style="margin-top:8px;"><button class="weather-retry">重试</button></div>
             </div>`;
+        const retryBtn = weatherFutureList.querySelector('.weather-retry');
+        if (retryBtn) retryBtn.addEventListener('click', fetchForecast);
     }
 }
 

@@ -127,8 +127,8 @@ const openDateDetail = async (dateKey) => {
             div.className = 'date-detail-item';
             const tagsHtml = item.tags ? item.tags.map(t => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t.color};margin-right:4px;"></span>`).join('') : '';
             div.innerHTML = `
-                <span class="item-name">${tagsHtml}${escapeHtml(item.note || '')}</span>
-                <span class="item-amount ${valClass}">${isInc ? '+' : '-'}${val.toFixed(2)}</span>
+                <span class="item-name">${tagsHtml}${escapeHtml(getFinItemTitle(item, ''))}</span>
+                <span class="item-amount ${valClass}">${getFinAmountSign(item.type)}${val.toFixed(2)}</span>
             `;
             dateDetailFinanceList.appendChild(div);
         });
@@ -504,15 +504,7 @@ async function fetchDateDetailAISummary() {
     const lang = window.meowI18n ? (meowI18n.lang || 'zh-CN') : 'zh-CN';
     const prompt = dateDetailPrompt(dateDetailCurrentKey, todoItems, finItems, lang, allPeItems, assetsData, cdItems, finLinksMap);
 
-    let apiUrl;
-    const trimmedUrl = baseUrl.replace(/\/+$/, '');
-    if (/\/chat\/completions$/i.test(trimmedUrl)) {
-        apiUrl = trimmedUrl;
-    } else if (/\/v1$/i.test(trimmedUrl)) {
-        apiUrl = `${trimmedUrl}/chat/completions`;
-    } else {
-        apiUrl = `${trimmedUrl}/v1/chat/completions`;
-    }
+    const apiUrl = resolveChatCompletionsUrl(baseUrl);
 
     const response = await fetch(apiUrl, {
         method: 'POST',
@@ -637,15 +629,7 @@ async function sendDateDetailChat(userText) {
     }
     dateDetailChatHistory.push({ role: 'user', content: userText });
 
-    let apiUrl;
-    const trimmedUrl = baseUrl.replace(/\/+$/, '');
-    if (/\/chat\/completions$/i.test(trimmedUrl)) {
-        apiUrl = trimmedUrl;
-    } else if (/\/v1$/i.test(trimmedUrl)) {
-        apiUrl = `${trimmedUrl}/chat/completions`;
-    } else {
-        apiUrl = `${trimmedUrl}/v1/chat/completions`;
-    }
+    const apiUrl = resolveChatCompletionsUrl(baseUrl);
 
     const response = await fetch(apiUrl, {
         method: 'POST',
@@ -797,7 +781,7 @@ const initChartData = async () => {
     const dailyIncome = new Array(lastDateOfMonth).fill(0);
     const dailyExpense = new Array(lastDateOfMonth).fill(0);
     const days = Array.from({length: lastDateOfMonth}, (_, i) => i + 1);
-    let totalIncome = 0, totalExpense = 0, totalDeposit = 0;
+    let totalIncome = 0, totalExpense = 0;
 
     for (let i = 1; i <= lastDateOfMonth; i++) {
         const dateKey = `fin_${currYear}-${currMonth + 1}-${i}`;
@@ -809,7 +793,7 @@ const initChartData = async () => {
                     dailyIncome[i - 1] += val;
                     totalIncome += val;
                 } else if (item.type === 'deposit') {
-                    totalDeposit += val;
+                    /* 存款不计入收支 */
                 } else {
                     dailyExpense[i - 1] += val;
                     totalExpense += val;
@@ -823,8 +807,7 @@ const initChartData = async () => {
         income: dailyIncome,
         expense: dailyExpense,
         totalIncome,
-        totalExpense,
-        totalDeposit
+        totalExpense
     };
 };
 
@@ -855,8 +838,8 @@ const showDetailPanel = async (dayIndex) => {
             div.className = 'detail-item';
             div.innerHTML = `
                 <div class="detail-row-top">
-                    <span class="detail-note" title="${escapeHtml(item.note)}">${escapeHtml(item.note || '无备注')}</span>
-                    <span class="detail-amount ${valClass}">${isInc ? '+' : '-'}${val}</span>
+                    <span class="detail-note" title="${escapeHtml(getFinItemTitle(item, ''))}">${escapeHtml(getFinItemTitle(item, '无备注'))}</span>
+                    <span class="detail-amount ${valClass}">${getFinAmountSign(item.type)}${val}</span>
                 </div>
                 <div class="detail-row-bottom">
                     ${typeLabel}
@@ -1145,9 +1128,8 @@ const openFinanceChart = async () => {
     // 更新汇总栏
     const summaryBar = document.getElementById('chart-summary-bar');
     if (summaryBar) {
-        const { totalIncome, totalExpense, totalDeposit } = chartState.data;
-        let balance = totalIncome - totalExpense;
-        if (!depositInBalance) balance -= (totalDeposit || 0);
+        const { totalIncome, totalExpense } = chartState.data;
+        const balance = totalIncome - totalExpense;
         summaryBar.innerHTML = `
             <div class="chart-summary-item"><span class="label">总收入</span><span class="value inc">¥${totalIncome.toFixed(2)}</span></div>
             <div class="chart-summary-item"><span class="label">总支出</span><span class="value exp">¥${totalExpense.toFixed(2)}</span></div>
@@ -1591,15 +1573,7 @@ async function fetchFinanceAISummary() {
 
     const prompt = AI_PROMPTS.financeSummary(currYear, currMonth, allItems, totalIncome, totalExpense, lang, assetsData, linksForAI);
 
-    let apiUrl;
-    const trimmedUrl = baseUrl.replace(/\/+$/, '');
-    if (/\/chat\/completions$/i.test(trimmedUrl)) {
-        apiUrl = trimmedUrl;
-    } else if (/\/v1$/i.test(trimmedUrl)) {
-        apiUrl = `${trimmedUrl}/chat/completions`;
-    } else {
-        apiUrl = `${trimmedUrl}/v1/chat/completions`;
-    }
+    const apiUrl = resolveChatCompletionsUrl(baseUrl);
 
     const response = await fetch(apiUrl, {
         method: 'POST',
@@ -1710,15 +1684,7 @@ async function sendFinanceChat(userText) {
     }
     financeChatHistory.push({ role: 'user', content: userText });
 
-    let apiUrl;
-    const trimmedUrl = baseUrl.replace(/\/+$/, '');
-    if (/\/chat\/completions$/i.test(trimmedUrl)) {
-        apiUrl = trimmedUrl;
-    } else if (/\/v1$/i.test(trimmedUrl)) {
-        apiUrl = `${trimmedUrl}/chat/completions`;
-    } else {
-        apiUrl = `${trimmedUrl}/v1/chat/completions`;
-    }
+    const apiUrl = resolveChatCompletionsUrl(baseUrl);
 
     const response = await fetch(apiUrl, {
         method: 'POST',

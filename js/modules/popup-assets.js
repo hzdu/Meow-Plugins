@@ -11,8 +11,13 @@ const closeAssetsModal = document.getElementById('close-assets-modal');
 const assetsNameInput = document.getElementById('assets-name-input');
 const assetsTypeInput = document.getElementById('assets-type-input');
 const assetsQuantityInput = document.getElementById('assets-quantity-input');
+const assetsQuantityCol = document.getElementById('assets-quantity-col');
 const assetsPaymentInput = document.getElementById('assets-payment-input');
+const assetsPaymentCol = document.getElementById('assets-payment-col');
 const assetsUsageInput = document.getElementById('assets-usage-input');
+const assetsUsageCol = document.getElementById('assets-usage-col');
+const assetsAmountCol = document.getElementById('assets-amount-col');
+const assetsAmountInput = document.getElementById('assets-amount-input');
 const assetsRentCol = document.getElementById('assets-rent-col');
 const assetsRentInput = document.getElementById('assets-rent-input');
 const assetsNoteInput = document.getElementById('assets-note-input');
@@ -31,8 +36,49 @@ const ASSETS_TYPES = {
     property: { icon: 'home', color: '#0ea5e9', unit: 'assets_unit_property', label: 'assets_type_property' },
     shop:     { icon: 'store', color: '#f59e0b', unit: 'assets_unit_shop', label: 'assets_type_shop' },
     vehicle:  { icon: 'directions_car', color: '#10b981', unit: 'assets_unit_vehicle', label: 'assets_type_vehicle' },
-    other:    { icon: 'inventory_2', color: '#6b7280', unit: 'assets_unit_other', label: 'assets_type_other' }
+    other:    { icon: 'inventory_2', color: '#6b7280', unit: 'assets_unit_other', label: 'assets_type_other' },
+    deposit:  { icon: 'savings', color: '#6366f1', unit: 'assets_unit_deposit', label: 'assets_type_deposit', money: true }
 };
+
+function isMoneyAssetType(type) {
+    return !!(ASSETS_TYPES[type] && ASSETS_TYPES[type].money);
+}
+
+// 供财务账本调用：列出所有存款账户
+function getDepositAssets() {
+    return myAssets.filter(a => isMoneyAssetType(a.type));
+}
+
+function getDepositAssetById(id) {
+    return myAssets.find(a => a.id === id && isMoneyAssetType(a.type)) || null;
+}
+
+// 供财务账本调用：调整存款余额（delta 为正=退回，为负=划出）
+function adjustDepositAmount(assetId, delta) {
+    const asset = getDepositAssetById(assetId);
+    if (!asset) return false;
+    const next = Math.round(((parseFloat(asset.amount) || 0) + delta) * 100) / 100;
+    asset.amount = next.toFixed(2);
+    chrome.storage.sync.set({ 'meow_assets': myAssets });
+    renderAssetsView();
+    return true;
+}
+
+// 金额紧凑显示：≥1亿用亿，≥1万用万
+function formatAssetAmount(value) {
+    const v = parseFloat(value);
+    if (!isFinite(v) || v <= 0) return '¥0';
+    const trim = n => n.toFixed(2).replace(/\.?0+$/, '');
+    if (v >= 1e8) return `¥${trim(v / 1e8)}亿`;
+    if (v >= 1e4) return `¥${trim(v / 1e4)}万`;
+    return `¥${v.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
+}
+
+// 金额完整显示（千分位），用于汇总小计
+function formatAssetAmountFull(value) {
+    const v = parseFloat(value) || 0;
+    return `¥${v.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
+}
 
 const ASSETS_PAYMENTS = {
     full:       { icon: 'check_circle', color: '#10b981', label: 'assets_payment_full' },
@@ -202,11 +248,15 @@ function generateAssetId() {
 function renderAssetsSummary() {
     if (!assetsSummary) return;
     const typeCounts = {};
+    const typeSums = {};
     let totalCount = 0;
     myAssets.forEach(a => {
         const q = parseInt(a.quantity) || 1;
         typeCounts[a.type] = (typeCounts[a.type] || 0) + q;
         totalCount += q;
+        if (isMoneyAssetType(a.type)) {
+            typeSums[a.type] = (typeSums[a.type] || 0) + (parseFloat(a.amount) || 0);
+        }
     });
 
     let html = '';
@@ -214,10 +264,23 @@ function renderAssetsSummary() {
         const cfg = ASSETS_TYPES[type];
         const count = typeCounts[type] || 0;
         const unit = meowI18n.t(cfg.unit) || '';
+        const label = meowI18n.t(cfg.label) || '';
+        if (cfg.money) {
+            // 存款独占整行：左侧类型，右侧合计
+            html += `
+                <div class="assets-summary-card assets-summary-card-money" style="background:${cfg.color}1a;">
+                    <span class="assets-summary-money-label" style="color:${cfg.color};">
+                        <span class="material-icons" style="font-size:14px;">${cfg.icon}</span>${label}
+                    </span>
+                    <span class="assets-summary-text" style="color:${cfg.color};">${formatAssetAmountFull(typeSums[type] || 0)}</span>
+                </div>
+            `;
+            return;
+        }
         html += `
             <div class="assets-summary-card" style="background:${cfg.color}1a;">
                 <span class="material-icons" style="font-size:14px;color:${cfg.color};">${cfg.icon}</span>
-                <span class="assets-summary-text" style="color:${cfg.color};">${meowI18n.t(cfg.label) || ''}${count}${unit}</span>
+                <span class="assets-summary-text" style="color:${cfg.color};">${label}${count}${unit}</span>
             </div>
         `;
     });
@@ -246,6 +309,24 @@ function renderAssetsView() {
         const pay = ASSETS_PAYMENTS[asset.payment] || ASSETS_PAYMENTS.full;
         const usage = ASSETS_USAGE[asset.usage] || ASSETS_USAGE['self-use'];
         const qty = parseInt(asset.quantity) || 1;
+        const money = !!cfg.money;
+
+        // 存款：右上角显示余额，隐藏付款方式/数量/使用状态
+        const topBadge = money
+            ? `<span class="assets-item-payment" style="color:${cfg.color};background:${cfg.color}1a;">
+                    <span class="material-icons" style="font-size:12px;">payments</span>
+                    ${formatAssetAmount(asset.amount)}
+                </span>`
+            : `<span class="assets-item-payment" style="color:${pay.color};background:${pay.color}1a;">
+                    <span class="material-icons" style="font-size:12px;">${pay.icon}</span>
+                    ${meowI18n.t(pay.label) || pay.label}
+                </span>`;
+        const metaExtras = money ? '' : `
+                    <span class="assets-item-qty">×${qty}</span>
+                    <span class="assets-item-usage" style="color:${usage.color};">
+                        <span class="material-icons" style="font-size:12px;">${usage.icon}</span>
+                        ${meowI18n.t(usage.label) || usage.label}
+                    </span>`;
 
         const li = document.createElement('li');
         li.className = 'assets-item';
@@ -257,19 +338,12 @@ function renderAssetsView() {
             <div class="assets-item-body">
                 <div class="assets-item-top">
                     <span class="assets-item-name">${escapeHtml(asset.name)}</span>
-                    <span class="assets-item-payment" style="color:${pay.color};background:${pay.color}1a;">
-                        <span class="material-icons" style="font-size:12px;">${pay.icon}</span>
-                        ${meowI18n.t(pay.label) || pay.label}
-                    </span>
+                    ${topBadge}
                 </div>
                 <div class="assets-item-meta">
                     <span class="assets-item-type" style="color:${cfg.color};">${meowI18n.t(cfg.label) || cfg.label}</span>
-                    <span class="assets-item-qty">×${qty}</span>
-                    <span class="assets-item-usage" style="color:${usage.color};">
-                        <span class="material-icons" style="font-size:12px;">${usage.icon}</span>
-                        ${meowI18n.t(usage.label) || usage.label}
-                    </span>
-                    ${asset.usage === 'rental' && asset.rent ? `<span class="assets-item-rent" style="color:#f59e0b;"><span class="material-icons" style="font-size:12px;">payments</span>¥${parseFloat(asset.rent).toFixed(0)}/月</span>` : ''}
+                    ${metaExtras}
+                    ${!money && asset.usage === 'rental' && asset.rent ? `<span class="assets-item-rent" style="color:#f59e0b;"><span class="material-icons" style="font-size:12px;">payments</span>¥${parseFloat(asset.rent).toFixed(0)}/月</span>` : ''}
                     ${asset.note ? `<span class="assets-item-note">${escapeHtml(asset.note)}</span>` : ''}
                 </div>
             </div>
@@ -290,6 +364,19 @@ function renderAssetsView() {
     });
 }
 
+// === 类型切换 → 存款显示金额，隐藏数量/付款/使用状态/租金 ===
+function syncAssetTypeFields(type) {
+    const money = isMoneyAssetType(type);
+    if (assetsQuantityCol) assetsQuantityCol.classList.toggle('hidden', money);
+    if (assetsPaymentCol) assetsPaymentCol.classList.toggle('hidden', money);
+    if (assetsUsageCol) assetsUsageCol.classList.toggle('hidden', money);
+    if (assetsAmountCol) assetsAmountCol.classList.toggle('hidden', !money);
+    if (assetsRentCol) {
+        const showRent = !money && !!(assetsUsageInput && assetsUsageInput.value === 'rental');
+        assetsRentCol.classList.toggle('hidden', !showRent);
+    }
+}
+
 // === 打开弹窗 ===
 function openAssetsModal(id = null) {
     editingAssetId = id;
@@ -304,7 +391,8 @@ function openAssetsModal(id = null) {
         assetsPaymentInput.value = asset.payment || 'full';
         assetsUsageInput.value = asset.usage || 'self-use';
         assetsRentInput.value = asset.rent || '';
-        if (assetsRentCol) assetsRentCol.classList.toggle('hidden', (asset.usage || 'self-use') !== 'rental');
+        if (assetsAmountInput) assetsAmountInput.value = asset.amount || '';
+        syncAssetTypeFields(asset.type || 'other');
         assetsNoteInput.value = asset.note || '';
         assetsDeleteBtn.classList.remove('hidden');
     } else {
@@ -316,7 +404,8 @@ function openAssetsModal(id = null) {
         assetsPaymentInput.value = 'full';
         assetsUsageInput.value = 'self-use';
         assetsRentInput.value = '';
-        if (assetsRentCol) assetsRentCol.classList.add('hidden');
+        if (assetsAmountInput) assetsAmountInput.value = '';
+        syncAssetTypeFields('property');
         assetsNoteInput.value = '';
         assetsDeleteBtn.classList.add('hidden');
     }
@@ -345,13 +434,23 @@ async function handleAssetsSave() {
     }
 
     const qty = parseInt(assetsQuantityInput.value) || 1;
+    const type = assetsTypeInput.value;
+    const money = isMoneyAssetType(type);
+    const amountVal = parseFloat(assetsAmountInput ? assetsAmountInput.value : '') || 0;
+    if (money && amountVal <= 0) {
+        showToast(meowI18n.t('assets_msg_amount_required') || '请输入金额');
+        if (assetsAmountInput) assetsAmountInput.focus();
+        return;
+    }
+
     const assetData = {
         name: name,
-        type: assetsTypeInput.value,
-        quantity: Math.max(1, qty),
-        payment: assetsPaymentInput.value,
-        usage: assetsUsageInput.value,
-        rent: assetsUsageInput.value === 'rental' ? (assetsRentInput.value || '') : '',
+        type: type,
+        quantity: money ? 1 : Math.max(1, qty),
+        payment: money ? 'full' : assetsPaymentInput.value,
+        usage: money ? 'self-use' : assetsUsageInput.value,
+        rent: !money && assetsUsageInput.value === 'rental' ? (assetsRentInput.value || '') : '',
+        amount: money ? amountVal.toFixed(2) : '',
         note: assetsNoteInput.value.trim()
     };
 
@@ -412,6 +511,16 @@ async function handleAssetsDelete() {
         closeAssetsModalFn();
         showToast(meowI18n.t('assets_msg_deleted') || '已删除');
     }
+}
+
+// === 类型切换 → 更新表单字段 ===
+if (assetsTypeInput) {
+    assetsTypeInput.addEventListener('change', () => {
+        syncAssetTypeFields(assetsTypeInput.value);
+        if (isMoneyAssetType(assetsTypeInput.value)) {
+            setTimeout(() => { if (assetsAmountInput) assetsAmountInput.focus(); }, 50);
+        }
+    });
 }
 
 // === 使用状态切换 → 显示/隐藏租金输入 ===

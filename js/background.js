@@ -474,7 +474,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true, data: text });
       })
       .catch(err => {
-        console.error('Proxy Fetch Error:', url, err);
+        // 直连源失败（分流/网络原因）属预期内错误，调用方已兜底，降级为 warn 避免误导排查
+        console.warn('Proxy fetch failed (handled by caller):', url, err.message);
         sendResponse({ success: false, error: err.message });
       });
     return true; // 保持异步响应通道开启

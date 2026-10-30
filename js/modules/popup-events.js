@@ -42,6 +42,7 @@ tabBtns.forEach(btn => btn.addEventListener("click", () => {
     if (btn.dataset.tab === '2fa') render2FA();
     if (btn.dataset.tab === 'ai-provider') renderAIProviders();
     if (btn.dataset.tab === 'assets') renderAssetsView();
+    if (btn.dataset.tab === 'finance') refreshFinDepositOptions();
 }));
 
 if (toggleBtn) {
@@ -250,6 +251,7 @@ finAmount.addEventListener('keydown', (e) => {
             finType.value = 'income';
             finAmount.value = String(finAmount.value).replace(/^[+-]+/, '');
             finLastPlusTime = 0;
+            refreshFinDepositOptions('');
             finType.style.borderColor = '#10b981';
             setTimeout(() => finType.style.borderColor = '', 600);
         } else {
@@ -262,6 +264,7 @@ finAmount.addEventListener('keydown', (e) => {
             finType.value = 'expense';
             finAmount.value = String(finAmount.value).replace(/^[+-]+/, '');
             finLastMinusTime = 0;
+            refreshFinDepositOptions('');
             finType.style.borderColor = '#ef4444';
             setTimeout(() => finType.style.borderColor = '', 600);
         } else {
@@ -274,6 +277,7 @@ finAmount.addEventListener('keydown', (e) => {
             finType.value = 'deposit';
             finAmount.value = String(finAmount.value).replace(/^[+-]+/, '');
             finLastStarTime = 0;
+            refreshFinDepositOptions('');
             finType.style.borderColor = '#8b5cf6';
             // 自动填写备注
             if (!finNote.value.trim()) {

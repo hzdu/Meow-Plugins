@@ -248,7 +248,7 @@
 
             <div id="view-tools" class="view-content">
                 <div class="tool-card collapsed" data-tool-id="tool-ip">
-                    <h3><span class="mi fa-regular fa-globe" style="font-size: 16px; color: #4f46e5;"></span> <span data-i18n="tool_ip_title">IP 信息</span> <a href="https://tool.chinaz.com" target="_blank" rel="noopener noreferrer" title="打开站长工具" class="tool-external-link" style="color:#6366f1;" onclick="event.stopPropagation();"><span class="mi fa-solid fa-link" style="font-size: 10px; vertical-align: middle;"></span></a> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
+                    <h3><span class="mi fa-regular fa-globe" style="font-size: 16px; color: #4f46e5;"></span> <span data-i18n="tool_ip_title">IP 信息</span> <a href="https://tool.chinaz.com" target="_blank" rel="noopener noreferrer" title="打开站长工具" class="tool-external-link" style="color:#6366f1;"><span class="mi fa-solid fa-link" style="font-size: 10px; vertical-align: middle;"></span></a> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
                             <label class="sub-label" data-i18n="tool_ipinfo_key" style="flex-shrink:0;margin-bottom:0;">IPINFO密钥</label>
@@ -277,6 +277,8 @@
                             <div class="ip-group">
                                 <div class="ip-group-title"><span class="mi fa-regular fa-globe" style="font-size: 12px; color: #3b82f6;"></span> <span data-i18n="ip_intl_title">海外 (Global)</span></div>
                                 <div class="ip-addr-wrapper"><div class="ip-addr" id="ip-intl-addr">--</div><span class="mi ip-copy-btn fa-regular fa-copy" id="btn-copy-intl-ip"></span></div>
+                                <div class="ip-addr-wrapper" id="ip-intl-ipv4-wrapper" style="display:none;"><div class="ip-addr" id="ip-intl-ipv4" style="font-size:11px;color:#0ea5e9;">--</div><span class="mi ip-copy-btn fa-regular fa-copy" id="btn-copy-intl-ipv4"></span></div>
+                                <div class="ip-addr-wrapper" id="ip-intl-ipv6-wrapper" style="display:none;"><div class="ip-addr" id="ip-intl-ipv6" style="font-size:11px;color:#8b5cf6;">--</div><span class="mi ip-copy-btn fa-regular fa-copy" id="btn-copy-intl-ipv6"></span></div>
                                 <div class="ip-row"><span class="ip-label" data-i18n="ip_country">国家</span><span class="ip-val" id="ip-intl-country">--</span></div>
                                 <div class="ip-row"><span class="ip-label" data-i18n="ip_city">城市</span><span class="ip-val" id="ip-intl-city">--</span></div>
                                 <div class="ip-row"><span class="ip-label" data-i18n="ip_isp">运营商</span><span class="ip-val" id="ip-intl-isp">--</span></div>
@@ -301,7 +303,7 @@
                     </div>
                 </div>
                 <div class="tool-card collapsed" data-tool-id="tool-exchange">
-                    <h3><span class="mi fa-regular fa-money-bill-transfer" style="font-size: 16px; color: #0891b2;"></span> <span data-i18n="tool_exchange_title">实时汇率</span> <span class="mi fa-solid fa-arrows-rotate" id="exchange-refresh-btn" data-i18n-title="exchange_refresh" title="刷新汇率" style="font-size: 10px; cursor: pointer; color: #0891b2; transition: all 0.3s;"></span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
+                    <h3><span class="mi fa-regular fa-money-bill-transfer" style="font-size: 16px; color: #0891b2;"></span> <span data-i18n="tool_exchange_title">实时汇率</span> <span class="mi fa-solid fa-arrow-rotate-right" id="exchange-refresh-btn" data-i18n-title="exchange_refresh" title="刷新汇率" style="font-size: 8px; cursor: pointer; color: #0891b2; transition: all 0.3s;"></span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
                     <div class="tool-body">
                         <div class="exchange-input-row">
                             <input type="number" id="exchange-amount" class="converter-input full-border" style="flex: 1;" value="1" min="0" placeholder="金额" data-i18n-ph="exchange_ph_amount">
