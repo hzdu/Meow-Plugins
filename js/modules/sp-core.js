@@ -762,6 +762,7 @@ async function initSidepanel() {
 
     try {
         setupConverterLogic();
+        setupStringTool();
         setupToolCardToggle();
         setupToolCardDrag();
         setupToolCopyButtons();

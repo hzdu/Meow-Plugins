@@ -74,6 +74,36 @@
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
+/* 拖拽跟随层：被拖卡片脱离文档流，紧贴指针移动。
+   用 fixed 可避免容器滚动与相邻卡片让位对它的影响；
+   transition 必须置 none，否则 .tool-card 的 all .2s 会让跟随明显滞后。 */
+.tool-card.dragging-follow {
+    position: fixed;
+    z-index: 1200;
+    margin: 0;
+    pointer-events: none;
+    border-color: #c7d2fe;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+    opacity: 0.97;
+    transition: none;
+    transform: scale(1.012);
+}
+
+.tool-card.dragging-follow h3 {
+    cursor: grabbing;
+}
+
+/* 占位块：拖拽过程中撑出的空位，高度由 JS 按被拖卡片高度写入，
+   它的位置即松手后的落点。 */
+.tool-drop-placeholder {
+    margin-bottom: 12px;
+    border: 1.5px dashed #a5b4fc;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.06);
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
 .tool-card .tool-drag-handle {
     position: absolute;
     right: 28px;
@@ -351,4 +381,22 @@
 
 .delete-btn:hover {
     color: #ef4444;
+}
+
+/* === 字符串工具（长度 / 主域名 / 大小写） ===
+   大小写转换结果为多行文本，需覆盖 .result-box 的 flex 居中布局，
+   否则换行内容会被压成一行且顶部被裁切。 */
+.str-result-box {
+    display: block;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.5;
+    max-height: 96px;
+    overflow-y: auto;
+}
+
+/* 工具箱容器作为定位基准，让 card.offsetTop 相对它计算；
+   拖拽落点判断依赖这个基准把指针坐标换算到容器内。 */
+#view-tools {
+    position: relative;
 }

@@ -14,6 +14,41 @@
     color: #64748b;
 }
 
+.dark #srv-charge-filter-btn.filter-unpaid,
+.theme-dark #srv-charge-filter-btn.filter-unpaid {
+    background: #450a0a;
+    border-color: #7f1d1d;
+    color: #f87171;
+}
+
+.dark #srv-charge-filter-btn.filter-paid,
+.theme-dark #srv-charge-filter-btn.filter-paid {
+    background: #052e16;
+    border-color: #14532d;
+    color: #34d399;
+}
+
+.dark .srv-charge-menu,
+.theme-dark .srv-charge-menu {
+    background: #1e293b;
+    border-color: #475569;
+}
+
+.dark .srv-charge-menu-item,
+.theme-dark .srv-charge-menu-item {
+    color: #e2e8f0;
+}
+
+.dark .srv-charge-menu-item:hover,
+.theme-dark .srv-charge-menu-item:hover {
+    background: #334155;
+}
+
+.dark .srv-charge-menu-item.active,
+.theme-dark .srv-charge-menu-item.active {
+    background: #312e81;
+}
+
 .dark .srv-money-bar,
 .theme-dark .srv-money-bar {
     background: #0f172a;
@@ -41,6 +76,16 @@
 .dark .srv-card-name,
 .theme-dark .srv-card-name {
     color: #f1f5f9;
+}
+
+.dark .srv-title-copy-btn,
+.theme-dark .srv-title-copy-btn {
+    color: #475569;
+}
+
+.dark .srv-title-copy-btn:hover,
+.theme-dark .srv-title-copy-btn:hover {
+    color: #6366f1;
 }
 
 /* 收费但未收款的服务器标题红色提示 */
@@ -667,4 +712,134 @@ border-color: #16a34a;
 .theme-dark .srv-history-dd .srv-history-item:hover {
     background: #334155;
     color: #a5b4fc;
+}
+
+/* === 记事本 · 记事本管理 === */
+.dark #srv-commands-modal .modal-content,
+.theme-dark #srv-commands-modal .modal-content {
+    background: #1e293b;
+}
+
+.dark #srv-commands-modal .modal-header,
+.theme-dark #srv-commands-modal .modal-header {
+    border-bottom-color: #334155;
+}
+
+.dark #srv-commands-modal .modal-header h3,
+.theme-dark #srv-commands-modal .modal-header h3 {
+    color: #e2e8f0;
+}
+
+.dark .srv-nb-select-btn,
+.theme-dark .srv-nb-select-btn {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+.dark .srv-nb-select-btn:hover,
+.theme-dark .srv-nb-select-btn:hover {
+    background: #1e1b4b;
+    border-color: #6366f1;
+}
+
+.dark .srv-nb-select-btn[aria-expanded="true"],
+.theme-dark .srv-nb-select-btn[aria-expanded="true"] {
+    background: #1e1b4b;
+    border-color: #6366f1;
+}
+
+.dark .srv-nb-current-name.srv-nb-placeholder,
+.theme-dark .srv-nb-current-name.srv-nb-placeholder {
+    color: #64748b;
+}
+
+.dark .srv-nb-icon-btn,
+.theme-dark .srv-nb-icon-btn {
+    background: #0f172a;
+    border-color: #334155;
+    color: #94a3b8;
+}
+
+.dark .srv-nb-icon-btn:hover,
+.theme-dark .srv-nb-icon-btn:hover {
+    background: #1e1b4b;
+    border-color: #6366f1;
+    color: #a5b4fc;
+}
+
+.dark .srv-nb-icon-btn:disabled:hover,
+.theme-dark .srv-nb-icon-btn:disabled:hover {
+    background: #0f172a;
+    border-color: #334155;
+    color: #94a3b8;
+}
+
+.dark .srv-nb-icon-btn.srv-nb-del-btn:hover,
+.theme-dark .srv-nb-icon-btn.srv-nb-del-btn:hover {
+    background: #450a0a;
+    border-color: #7f1d1d;
+    color: #f87171;
+}
+
+.dark .srv-nb-textarea,
+.theme-dark .srv-nb-textarea {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+.dark .srv-nb-textarea:focus,
+.theme-dark .srv-nb-textarea:focus {
+    border-color: #6366f1;
+}
+
+.dark .srv-nb-textarea::placeholder,
+.theme-dark .srv-nb-textarea::placeholder {
+    color: #475569;
+}
+
+.dark .srv-nb-empty,
+.theme-dark .srv-nb-empty {
+    border-color: #334155;
+    color: #64748b;
+}
+
+.dark .srv-nb-empty .mi,
+.theme-dark .srv-nb-empty .mi {
+    color: #334155;
+}
+
+.dark .srv-nb-footer,
+.theme-dark .srv-nb-footer {
+    color: #64748b;
+}
+
+.dark .srv-nb-menu,
+.theme-dark .srv-nb-menu {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.dark .srv-nb-menu-item,
+.theme-dark .srv-nb-menu-item {
+    color: #cbd5e1;
+}
+
+.dark .srv-nb-menu-item:hover,
+.theme-dark .srv-nb-menu-item:hover {
+    background: #334155;
+}
+
+.dark .srv-nb-menu-item.active,
+.theme-dark .srv-nb-menu-item.active {
+    background: #312e81;
+    color: #a5b4fc;
+}
+
+.dark .srv-nb-menu-count,
+.theme-dark .srv-nb-menu-count,
+.dark .srv-nb-menu-empty,
+.theme-dark .srv-nb-menu-empty {
+    color: #64748b;
 }

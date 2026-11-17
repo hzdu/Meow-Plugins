@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>字符串工具 · 预览</title>
+<link rel="stylesheet" href="../css/sidepanel.css">
+<style>
+    body { margin: 0; padding: 16px; background: #eef2f7; font-family: 'Segoe UI', system-ui, sans-serif; }
+    .preview-shell { width: 380px; background: #fff; border-radius: 10px; padding: 10px; box-shadow: 0 8px 24px rgba(15, 23, 42, .12); }
+    .tool-card { border: 1px solid #e2e8f0; border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="preview-shell">
+    <div id="view-tools" class="view-content">
+        <div class="tool-card" data-tool-id="tool-string">
+            <h3><span class="mi fa-solid fa-arrow-down-a-z" style="font-size: 16px; color: #7c3aed;"></span> <span data-i18n="tool_str_title">字符串工具</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
+            <div class="tool-body">
+                <textarea id="str-tool-input" class="converter-input full-border" style="width:100%;height:72px;margin-bottom:10px;font-family:monospace;font-size:12px;line-height:1.5;resize:vertical;" placeholder="输入或粘贴任意字符串 / 网址..." data-i18n-ph="tool_str_ph"></textarea>
+
+                <div style="margin-bottom:10px;">
+                    <label class="sub-label" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                        <span data-i18n="tool_str_length">字符长度</span>
+                        <span id="str-len-detail" style="font-size:10px;color:#cbd5e1;"></span>
+                    </label>
+                    <div class="srv-input-wrap">
+                        <div id="str-len-output" class="result-box" style="margin-top:0;"><span style="color:#cbd5e1;" data-copy-skip="1" data-i18n="tool_str_hint">结果显示于此</span></div>
+                        <button type="button" class="tool-icopy-btn" data-copy-target="str-len-output" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:10px;">
+                    <label class="sub-label" data-i18n="tool_str_domain">主域名</label>
+                    <div class="srv-input-wrap">
+                        <div id="str-domain-output" class="result-box" style="margin-top:0;"><span style="color:#cbd5e1;" data-copy-skip="1" data-i18n="tool_str_hint">结果显示于此</span></div>
+                        <button type="button" class="tool-icopy-btn" data-copy-target="str-domain-output" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:10px;">
+                    <label class="sub-label" data-i18n="tool_str_upper">全大写</label>
+                    <div class="srv-input-wrap">
+                        <div id="str-upper-output" class="result-box str-result-box" style="margin-top:0;"><span style="color:#cbd5e1;" data-copy-skip="1" data-i18n="tool_str_hint">结果显示于此</span></div>
+                        <button type="button" class="tool-icopy-btn" data-copy-target="str-upper-output" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="sub-label" data-i18n="tool_str_lower">全小写</label>
+                    <div class="srv-input-wrap">
+                        <div id="str-lower-output" class="result-box str-result-box" style="margin-top:0;"><span style="color:#cbd5e1;" data-copy-skip="1" data-i18n="tool_str_hint">结果显示于此</span></div>
+                        <button type="button" class="tool-icopy-btn" data-copy-target="str-lower-output" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 最小 chrome API 垫片，供 i18n.js / sp-tools.js 在普通网页中运行
+    window.chrome = window.chrome || {
+        storage: {
+            local: { get: (k, cb) => cb && cb({}), set: (o, cb) => cb && cb() },
+            sync: { get: (k, cb) => cb && cb({}), set: (o, cb) => cb && cb() },
+            onChanged: { addListener: () => {} }
+        }
+    };
+    function showToast(msg) { console.log('toast:', msg); }
+</script>
+<script src="../js/i18n.js"></script>
+<script src="../js/modules/sp-tools.js"></script>
+<script>
+    meowI18n.lang = 'zh-CN';
+    meowI18n.updatePage();
+    setupToolCopyButtons();
+    setupStringTool();
+
+    // 支持 ?q=xxx 预填输入框，便于无头截图核对渲染结果
+    const q = new URLSearchParams(location.search).get('q');
+    if (q) {
+        const ta = document.getElementById('str-tool-input');
+        ta.value = q;
+        ta.dispatchEvent(new Event('input'));
+    }
+</script>
+</body>
+</html>

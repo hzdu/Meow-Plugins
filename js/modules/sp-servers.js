@@ -15,6 +15,8 @@ let srvWebsiteStandalone = false; // 从卡片直接编辑网站时为 true（�
 // 分类管理
 let srvCategories = []; // [{ id: string, name: string }]
 let srvActiveCategoryId = ''; // '' = 全部
+let srvChargeFilter = ''; // '' = 全部, unpaid = 收费未收款, paid = 收费已收款
+let srvVisibleServers = []; // 最近一次渲染后可见的服务器，供「复制筛选结果」使用
 
 // 协议显示标签
 const SRV_PROTOCOL_LABELS = {
@@ -31,6 +33,15 @@ const SRV_PANEL_LABELS = {
     cyberpanel: 'Cyberpanel',
     cloudpanel: 'CloudPanel',
     other: '其它'
+};
+
+// 操作系统图标（Font Awesome brands + 官方品牌色）
+const SRV_OS_ICONS = {
+    Windows: { icon: 'fa-brands fa-windows', color: '#0078d4' },
+    Ubuntu: { icon: 'fa-brands fa-ubuntu', color: '#e95420' },
+    Debian: { icon: 'fa-brands fa-debian', color: '#d70a53' },
+    CentOS: { icon: 'fa-brands fa-centos', color: '#932571' },
+    Other: { icon: 'fa-regular fa-ellipsis', color: '#94a3b8' }
 };
 
 // 数据库类型标签
@@ -148,12 +159,217 @@ function renderSrvCatTabs() {
     });
 }
 
+// === 面板账号密码一键填充 ===
+function srvWaitTabComplete(tabId, timeoutMs = 20000, waitForLoading = false) {
+    return new Promise(async resolve => {
+        let settled = false;
+        let sawLoading = !waitForLoading;
+        function done() {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            chrome.tabs.onUpdated.removeListener(listener);
+            resolve();
+        }
+        function listener(id, changeInfo) {
+            if (id !== tabId) return;
+            if (changeInfo.status === 'loading') sawLoading = true;
+            else if (changeInfo.status === 'complete' && sawLoading) done();
+        }
+        const timer = setTimeout(done, timeoutMs);
+        chrome.tabs.onUpdated.addListener(listener);
+        try {
+            const tab = await chrome.tabs.get(tabId);
+            if (tab && tab.status === 'complete' && sawLoading) done();
+        } catch (e) { done(); }
+    });
+}
+
+// 在 CloudPanel 登录页内执行：把界面语言切为简体中文（提交 locale 表单会触发页面重载）
+function srvSetCloudPanelLocale(locale) {
+    const form = document.forms['localeSelector'];
+    const sel = form ? form.querySelector('select[name="locale"]') : document.querySelector('select#localeSelector');
+    if (!sel || !sel.form) return 'no-form';
+    if (sel.value === locale) return 'already';
+    sel.value = locale;
+    sel.form.submit();
+    return 'switching';
+}
+
+// 在面板登录页内执行：定位账号/密码输入框并填入（兼容 CyberPanel/CloudPanel），返回是否成功
+function srvFillPanelLogin(username, password, autoLogin) {
+    const isVisible = el => !!el && el.offsetParent !== null && !el.disabled;
+    const setNativeValue = (el, value) => {
+        const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+        Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, value);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const passEl = Array.from(document.querySelectorAll('input[type="password"]')).filter(isVisible)[0];
+    if (!passEl) return false;
+    let userEl = document.querySelector('#id_username'); // CyberPanel（Django 表单）
+    if (!isVisible(userEl)) {
+        // 通用：密码框前最后一个可见的文本类输入（CloudPanel 的 React 表单）
+        userEl = Array.from(document.querySelectorAll('input'))
+            .filter(el => el !== passEl && isVisible(el)
+                && /^(text|email|tel|search)$/i.test(el.type || 'text')
+                && (el.compareDocumentPosition(passEl) & Node.DOCUMENT_POSITION_FOLLOWING))
+            .pop();
+    }
+    let filled = false;
+    if (username && userEl) { setNativeValue(userEl, username); filled = true; }
+    if (password) { setNativeValue(passEl, password); filled = true; }
+    if (filled && autoLogin) {
+        const form = passEl.form;
+        const btn = form && form.querySelector('button[type="submit"], input[type="submit"]');
+        if (btn) btn.click();
+        else if (form) form.submit();
+    }
+    if (filled && userEl && !autoLogin) userEl.focus();
+    return filled;
+}
+
+async function openPanelAndAutofill(srv) {
+    let url = (srv.panelUrl || '').trim();
+    if (!url) { showToast('面板地址为空'); return; }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    const tab = await chrome.tabs.create({ url, active: true });
+    showToast('正在打开面板，页面加载后自动填充…');
+    await srvWaitTabComplete(tab.id);
+    if (srv.panelType === 'cloudpanel') {
+        // CloudPanel 登录页先切简体中文（表单提交会重载页面），再等中文页加载完
+        try {
+            const r = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: srvSetCloudPanelLocale,
+                args: ['zh_HANS']
+            });
+            if (r && r[0] && r[0].result === 'switching') {
+                await srvWaitTabComplete(tab.id, 20000, true);
+            }
+        } catch (e) { /* 页面跳转中或非登录页，忽略 */ }
+    }
+    for (let i = 0; i < 15; i++) {
+        try {
+            const results = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: srvFillPanelLogin,
+                args: [srv.panelUser || '', srv.panelPass || '', !!srv.autoLogin]
+            });
+            if (results && results[0] && results[0].result) {
+                showToast(srv.autoLogin ? '已填充并自动提交登录' : '已填充面板账号密码');
+                return;
+            }
+        } catch (e) { /* 页面仍在跳转，继续重试 */ }
+        await new Promise(r => setTimeout(r, 800));
+    }
+    showToast('未找到登录表单，请手动填写');
+}
+
+// === 收费状态筛选 ===
+const SRV_CHARGE_FILTERS = [
+    { value: '', label: '全部', color: '' },
+    { value: 'unpaid', label: '收费未收款', color: '#ef4444' },
+    { value: 'paid', label: '收费已收款', color: '#10b981' }
+];
+
+function updateSrvFilterButtons() {
+    const btn = document.getElementById('srv-charge-filter-btn');
+    if (!btn) return;
+    btn.classList.toggle('filter-unpaid', srvChargeFilter === 'unpaid');
+    btn.classList.toggle('filter-paid', srvChargeFilter === 'paid');
+    const current = SRV_CHARGE_FILTERS.find(f => f.value === srvChargeFilter);
+    btn.title = srvChargeFilter ? `筛选：${current.label}` : '收费状态筛选';
+
+    const copyBtn = document.getElementById('srv-copy-filtered-btn');
+    if (copyBtn) {
+        copyBtn.classList.toggle('disabled', !srvChargeFilter);
+        copyBtn.title = srvChargeFilter ? '复制筛选结果' : '请先选择收费状态筛选';
+    }
+}
+
+function openSrvChargeFilterMenu() {
+    const existing = document.querySelector('.srv-charge-menu');
+    if (existing) { existing.remove(); return; }
+
+    const menu = document.createElement('div');
+    menu.className = 'srv-charge-menu';
+    menu.innerHTML = SRV_CHARGE_FILTERS.map(f => {
+        const active = f.value === srvChargeFilter;
+        return `<div class="srv-charge-menu-item${active ? ' active' : ''}" data-value="${f.value}">
+            <span class="mi fa-regular fa-check" style="font-size:12px;${active ? '' : 'visibility:hidden;'}"></span>
+            <span${f.color ? ` style="color:${f.color};"` : ''}>${f.label}</span>
+        </div>`;
+    }).join('');
+
+    menu.addEventListener('click', function(e) {
+        const item = e.target.closest('.srv-charge-menu-item');
+        if (!item) return;
+        srvChargeFilter = item.dataset.value;
+        chrome.storage.local.set({ 'meow_server_charge_filter': srvChargeFilter });
+        menu.remove();
+        renderServers();
+    });
+
+    document.body.appendChild(menu);
+    const rect = document.getElementById('srv-charge-filter-btn').getBoundingClientRect();
+    menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+    menu.style.top = (rect.bottom + 4) + 'px';
+
+    setTimeout(() => {
+        document.addEventListener('click', function onOutside() {
+            menu.remove();
+            document.removeEventListener('click', onOutside);
+            document.removeEventListener('keydown', onEsc);
+        });
+        function onEsc(e) {
+            if (e.key !== 'Escape') return;
+            menu.remove();
+            document.removeEventListener('click', onOutside);
+            document.removeEventListener('keydown', onEsc);
+        }
+        document.addEventListener('keydown', onEsc);
+    }, 0);
+}
+
+// === 复制筛选结果（只含收费服务器下的网站域名）===
+function copySrvFilteredWebsites() {
+    if (!srvChargeFilter) return;
+    const domains = [];
+    let total = 0;
+    let skipped = 0;
+    srvVisibleServers.forEach(srv => {
+        if (!srv.isCharged) return;
+        const srvDomains = (srv.websites || []).map(w => (w.domain || '').trim()).filter(Boolean);
+        if (srvDomains.length === 0) { skipped++; return; }
+        domains.push(...srvDomains);
+        total += parseFloat(srv.chargeFee) || 0;
+    });
+
+    if (domains.length === 0) {
+        showToast('当前筛选结果没有可复制的网站');
+        return;
+    }
+
+    const text = domains.map((d, i) => `${i + 1}、${d}`).join('\n')
+        + '\n' + '-'.repeat(36)
+        + `\n共${domains.length}个网站，合计：${Math.round(total * 100) / 100}元。`;
+    copyToClipboard(text);
+    showToast(skipped > 0
+        ? `已复制 ${domains.length} 个网站（${skipped} 台收费服务器未登记网站，未计入）`
+        : `已复制 ${domains.length} 个网站`);
+}
+
 // === 服务器列表渲染 ===
 function renderServers() {
     const srvList = document.getElementById('srv-list');
     const srvEmpty = document.getElementById('srv-empty');
     const srvCountBar = document.getElementById('srv-count-bar');
     if (!srvList || !srvEmpty) return;
+    updateSrvFilterButtons();
+    srvVisibleServers = [];
+    // 记住重渲染前处于展开状态的卡片（开关等操作会写存储触发 onChanged 全量重建，否则卡片会收起）
+    const expandedIds = new Set(Array.from(srvList.querySelectorAll('.srv-card.expanded')).map(c => c.dataset.id));
     srvList.innerHTML = '';
 
     const filterInput = document.getElementById('srv-filter-input');
@@ -169,6 +385,7 @@ function renderServers() {
     srvEmpty.classList.add('hidden');
 
     let visibleCount = 0;
+    let totalCharge = 0, totalPaid = 0;
 
     myServers.forEach((srv, index) => {
         // 分类过滤
@@ -189,14 +406,23 @@ function renderServers() {
 
         const passCategoryFilter = matchCategory;
 
+        let matchCharge = true;
+        if (srvChargeFilter === 'unpaid') {
+            matchCharge = !!srv.isCharged && !srv.paid;
+        } else if (srvChargeFilter === 'paid') {
+            matchCharge = !!srv.isCharged && !!srv.paid;
+        }
+
         const card = document.createElement('div');
         card.className = 'srv-card';
         card.dataset.id = srv.id;
 
-        const osIcon = srv.os === 'Windows' ? 'fa-window-maximize' : (srv.os === 'Other' ? 'fa-circle-question' : 'fa-terminal');
+        const osMeta = SRV_OS_ICONS[srv.os] || SRV_OS_ICONS.Other;
+        const catMeta = srvCategories.find(c => c.id === srv.categoryId);
         const protocolLabel = SRV_PROTOCOL_LABELS[srv.protocol] || srv.protocol || 'SSH';
         const wsCount = (srv.websites || []).length;
         const displayName = srv.title || srv.ip || '(未设置)';
+        const canPanelAutofill = (srv.panelType === 'cyberpanel' || srv.panelType === 'cloudpanel') && !!srv.panelUrl && !!(srv.panelUser || srv.panelPass);
 
         // 网站 HTML
         const websitesHtml = (srv.websites || []).map((ws, wi) => {
@@ -231,9 +457,12 @@ function renderServers() {
         card.innerHTML = `
             <div class="srv-card-header">
                 <span class="mi srv-card-toggle fa-regular fa-chevron-down"></span>
-                <span class="mi fa-regular ${osIcon}" style="font-size:16px;color:#6366f1;"></span>
-                <span class="srv-card-name${srv.isCharged ? (srv.paid ? ' srv-card-name-paid' : ' srv-card-name-unpaid') : ''}"${srv.isCharged && !srv.paid ? ' title="已收费但未收款"' : ''}>${escapeHtml(displayName)}</span>
-                <span class="srv-card-badge">${escapeHtml(srv.os || '')}</span>
+                <span class="mi ${osMeta.icon}" style="font-size:16px;color:${osMeta.color};"></span>
+                <span class="srv-card-title">
+                    <span class="srv-card-name${srv.isCharged ? (srv.paid ? ' srv-card-name-paid' : ' srv-card-name-unpaid') : ''}"${srv.isCharged && !srv.paid ? ' title="已收费但未收款"' : ''}>${escapeHtml(displayName)}</span>
+                    <button type="button" class="srv-title-copy-btn" title="复制标题"><span class="mi fa-regular fa-copy" style="font-size:12px;"></span></button>
+                </span>
+                ${catMeta ? `<span class="srv-card-badge">${escapeHtml(catMeta.name)}</span>` : ''}
                 <div class="srv-card-actions">
                     ${srv.providerUrl ? `<a class="srv-provider-link" href="${escapeHtml(srv.providerUrl)}" target="_blank" title="打开供应商"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:16px;color:#cbd5e1;"></span></a>` : ''}
                     <span class="mi srv-edit-btn fa-regular fa-pen-to-square" data-id="${srv.id}" title="编辑"></span>
@@ -256,7 +485,8 @@ function renderServers() {
                     <span class="srv-section-title"><span class="mi fa-regular fa-table-cells-large" style="font-size:13px;color:#6366f1;"></span> ${SRV_PANEL_LABELS[srv.panelType] || '管理面板'}</span>
                     <button class="srv-copy-btn" data-copy-type="panel" title="一键复制面板地址/账号/密码"><span class="mi fa-regular fa-copy" style="font-size:13px;"></span>复制</button>
                 </div>
-                ${srv.panelUrl ? `<div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(srv.panelUrl)}" title="点击复制"><span class="srv-info-label">面板地址</span><span class="srv-info-val" style="color:#0891b2;text-decoration:underline;">${escapeHtml(srv.panelUrl)}</span></div>` : ''}
+                ${canPanelAutofill ? `<div class="srv-info-row"><span class="srv-info-label">自动登录</span><label class="srv-wp-switch" title="填充账号密码后自动点击登录按钮"><input type="checkbox" class="srv-autologin-toggle"${srv.autoLogin ? ' checked' : ''}><span class="srv-wp-slider"></span></label></div>` : ''}
+                ${srv.panelUrl ? `<div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(srv.panelUrl)}" title="点击复制"><span class="srv-info-label">面板地址</span><span style="display:flex;align-items:center;gap:6px;justify-content:flex-end;min-width:0;"><span class="srv-info-val" style="color:#0891b2;text-decoration:underline;">${escapeHtml(srv.panelUrl)}</span>${canPanelAutofill ? `<button type="button" class="srv-autofill-btn" title="打开面板并自动填入账号密码"><span class="mi fa-regular fa-key" style="font-size:12px;"></span></button>` : ''}</span></div>` : ''}
                 <div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(srv.panelUser || '')}" title="点击复制"><span class="srv-info-label">面板账号</span><span class="srv-info-val">${escapeHtml(srv.panelUser || '--')}</span></div>
                 <div class="srv-info-row srv-copy-row" data-copy="${escapeHtml(srv.panelPass || '')}" title="点击复制"><span class="srv-info-label">面板密码</span><span class="srv-info-val srv-masked">${srv.panelPass ? '••••••••' : '--'}</span></div>
                 ` : ''}
@@ -288,6 +518,38 @@ function renderServers() {
                 if (val) copyToClipboard(val);
             });
         });
+
+        // 复制标题
+        card.querySelector('.srv-title-copy-btn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const title = (srv.title || '').trim();
+            if (!title) { showToast('标题为空'); return; }
+            copyToClipboard(title);
+        });
+
+        // 自动登录开关（仅 Cyberpanel/CloudPanel 且可填充时显示）
+        const autoLoginToggle = card.querySelector('.srv-autologin-toggle');
+        if (autoLoginToggle) {
+            autoLoginToggle.addEventListener('change', function() {
+                srv.autoLogin = this.checked;
+                saveServers();
+            });
+        }
+
+        // 面板地址「一键填充」图标：只跳转填充，不触发所在行的点击复制
+        const autofillBtn = card.querySelector('.srv-autofill-btn');
+        if (autofillBtn) {
+            autofillBtn.addEventListener('click', async function(e) {
+                e.stopPropagation();
+                if (this.disabled) return;
+                this.disabled = true;
+                try {
+                    await openPanelAndAutofill(srv);
+                } finally {
+                    this.disabled = false;
+                }
+            });
+        }
 
         // 一键复制按钮
         card.querySelectorAll('.srv-copy-btn').forEach(btn => {
@@ -420,8 +682,22 @@ function renderServers() {
             card.style.display = 'none';
         } else if (!passCategoryFilter) {
             card.style.display = 'none';
+        } else if (!matchCharge) {
+            card.style.display = 'none';
         } else {
             visibleCount++;
+            srvVisibleServers.push(srv);
+            if (srv.isCharged) {
+                const fee = parseFloat(srv.chargeFee) || 0;
+                totalCharge += fee;
+                if (srv.paid) totalPaid += fee;
+            }
+        }
+
+        if (expandedIds.has(String(srv.id))) {
+            card.classList.add('expanded');
+            const body = card.querySelector('.srv-card-body');
+            if (body) body.style.display = '';
         }
 
         srvList.appendChild(card);
@@ -441,7 +717,7 @@ function renderServers() {
         } else {
             catCount = totalCount;
         }
-        if (filterText && visibleCount < totalCount) {
+        if ((filterText || srvChargeFilter) && visibleCount < totalCount) {
             srvCountBar.textContent = `共 ${totalCount} 台服务器（显示 ${visibleCount} 台）`;
         } else if (srvActiveCategoryId) {
             const catName = srvCategories.find(c => c.id === srvActiveCategoryId)?.name || '未命名';
@@ -451,16 +727,9 @@ function renderServers() {
         }
     }
 
-    // 收费统计栏：共收费 / 已收 / 未收
+    // 收费统计栏：只统计当前筛选后可见的服务器
     const moneyBar = document.getElementById('srv-money-bar');
     if (moneyBar) {
-        let totalCharge = 0, totalPaid = 0;
-        myServers.forEach(s => {
-            if (!s.isCharged) return;
-            const fee = parseFloat(s.chargeFee) || 0;
-            totalCharge += fee;
-            if (s.paid) totalPaid += fee;
-        });
         if (totalCharge > 0) {
             const totalUnpaid = totalCharge - totalPaid;
             const fmtMoney = n => '¥' + (Math.round(n * 100) / 100).toString();
@@ -653,6 +922,32 @@ function populateWsTemplateSelect() {
     wrapper.style.display = (count > 0 && isAdding) ? 'flex' : 'none';
 }
 
+// 历史记录下拉（网站账号/密码、服务器密码共用）
+function populateSrvHistoryDD(ddId, values) {
+    const dd = document.getElementById(ddId);
+    if (!dd) return;
+    dd.innerHTML = '';
+    if (values.length === 0) {
+        dd.innerHTML = '<div class="srv-history-empty">暂无历史记录</div>';
+        return;
+    }
+    values.forEach(val => {
+        const item = document.createElement('div');
+        item.className = 'srv-history-item';
+        item.textContent = val;
+        item.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            const input = dd.parentElement.querySelector('input');
+            if (input) {
+                input.value = val;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            dd.classList.remove('show');
+        });
+        dd.appendChild(item);
+    });
+}
+
 // === 网站子弹窗 ===
 function openSrvWebsiteModal(editIdx) {
     editingWebsiteId = null;
@@ -717,35 +1012,10 @@ function openSrvWebsiteModal(editIdx) {
     )];
 
     // 填充自定义下拉
-    function populateHistoryDD(ddId, values) {
-        const dd = document.getElementById(ddId);
-        if (!dd) return;
-        dd.innerHTML = '';
-        if (values.length === 0) {
-            dd.innerHTML = '<div class="srv-history-empty">暂无历史记录</div>';
-            return;
-        }
-        values.forEach(val => {
-            const item = document.createElement('div');
-            item.className = 'srv-history-item';
-            item.textContent = val;
-            item.addEventListener('mousedown', function(e) {
-                e.preventDefault();
-                // 判断是账号还是密码输入框
-                const input = dd.parentElement.querySelector('input');
-                if (input) {
-                    input.value = val;
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-                dd.classList.remove('show');
-            });
-            dd.appendChild(item);
-        });
-    }
-    populateHistoryDD('srv-user-history-dd', userHistory);
-    populateHistoryDD('srv-pass-history-dd', passHistory);
+    populateSrvHistoryDD('srv-user-history-dd', userHistory);
+    populateSrvHistoryDD('srv-pass-history-dd', passHistory);
 
-    // 绑定额外的显示/隐藏事件（同一个弹窗只绑一次）
+    // 绑定显示/隐藏事件（同一个弹窗只绑一次）
     if (!adminUserInput.dataset.historyBound) {
         adminUserInput.dataset.historyBound = '1';
         adminUserInput.addEventListener('focus', function() {
@@ -755,12 +1025,6 @@ function openSrvWebsiteModal(editIdx) {
         adminPassInput.addEventListener('focus', function() {
             const dd = document.getElementById('srv-pass-history-dd');
             if (dd) dd.classList.add('show');
-        });
-        // 点击外部关闭
-        document.addEventListener('mousedown', function closeDd(e) {
-            if (!e.target.closest('.srv-input-wrap')) {
-                document.querySelectorAll('.srv-history-dd').forEach(dd => dd.classList.remove('show'));
-            }
         });
     }
 
@@ -796,6 +1060,7 @@ function exportServers() {
         panelUrl: s.panelUrl,
         panelUser: s.panelUser,
         panelPass: s.panelPass,
+        autoLogin: !!s.autoLogin,
         isCharged: s.isCharged,
         chargeFee: s.chargeFee,
         paid: s.paid,
@@ -853,6 +1118,7 @@ function importServers() {
                         panelUrl: s.panelUrl || '',
                         panelUser: s.panelUser || '',
                         panelPass: s.panelPass || '',
+                        autoLogin: !!s.autoLogin,
                         isCharged: !!s.isCharged,
                         chargeFee: (s.chargeFee !== undefined && s.chargeFee !== null && s.chargeFee !== '') ? s.chargeFee : 18,
                         paid: !!s.paid,
@@ -891,8 +1157,9 @@ function setupServerLogic() {
     // 加载数据
     (async () => {
         try {
-            const localData = await chrome.storage.local.get(['meow_servers']);
+            const localData = await chrome.storage.local.get(['meow_servers', 'meow_server_charge_filter']);
             myServers = localData.meow_servers || [];
+            srvChargeFilter = localData.meow_server_charge_filter || '';
         } catch (e) {
             console.error('Server load error:', e);
             myServers = [];
@@ -904,6 +1171,7 @@ function setupServerLogic() {
     (async () => {
         await loadSrvCategories();
         renderSrvCatTabs();
+        renderServers();
     })();
 
     // 添加按钮
@@ -1055,6 +1323,26 @@ function setupServerLogic() {
         saveServers();
         renderServers();
         closeSrvModal();
+    });
+
+    // 服务器密码历史下拉：聚焦时列出所有已保存服务器的密码
+    const srvPassInputEl = document.getElementById('srv-pass-input');
+    const srvPassHistoryDd = document.getElementById('srv-pass-history-dd-srv');
+    if (srvPassInputEl && srvPassHistoryDd) {
+        srvPassInputEl.addEventListener('focus', function() {
+            const passHistory = [...new Set(
+                myServers.map(s => s.password).filter(Boolean)
+            )];
+            populateSrvHistoryDD('srv-pass-history-dd-srv', passHistory);
+            srvPassHistoryDd.classList.add('show');
+        });
+    }
+
+    // 点击输入框外部时关闭历史下拉
+    document.addEventListener('mousedown', function(e) {
+        if (!e.target.closest('.srv-input-wrap')) {
+            document.querySelectorAll('.srv-history-dd').forEach(dd => dd.classList.remove('show'));
+        }
     });
 
     // 面板输入框复制按钮
@@ -1326,23 +1614,6 @@ function setupServerLogic() {
     // 过滤
     const filterInput = document.getElementById('srv-filter-input');
     const filterClear = document.getElementById('srv-filter-clear');
-    const srvControls = document.getElementById('srv-controls');
-    const srvSearchToggle = document.getElementById('srv-search-toggle');
-    const srvSearchBack = document.getElementById('srv-search-back');
-
-    // 点击搜索图标 → 展开全宽搜索栏
-    srvSearchToggle.addEventListener('click', function() {
-        srvControls.classList.add('search-active');
-        filterInput.focus();
-    });
-
-    // 点击返回箭头 → 收起搜索栏
-    srvSearchBack.addEventListener('click', function() {
-        srvControls.classList.remove('search-active');
-        filterInput.value = '';
-        filterClear.style.display = 'none';
-        renderServers();
-    });
 
     filterInput.addEventListener('input', function() {
         filterClear.style.display = this.value ? '' : 'none';
@@ -1356,66 +1627,272 @@ function setupServerLogic() {
         renderServers();
     });
 
-    // Escape 键收起搜索栏
+    // Escape 键清空搜索
     filterInput.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             filterInput.value = '';
             filterClear.style.display = 'none';
-            srvControls.classList.remove('search-active');
             renderServers();
         }
     });
 
-    // 失焦且内容为空时自动收起
-    filterInput.addEventListener('blur', function() {
-        if (!filterInput.value.trim()) {
-            srvControls.classList.remove('search-active');
-        }
-    });
+    // === 记事本：多记事本管理 ===
+    let srvNotebooks = [];          // [{ id, name, content, updatedAt }]
+    let srvActiveNotebookId = '';
+    let srvNotebookMenuEl = null;
 
-    // 常用命令模块：加载与保存
-    let srvCommandsCache = '';
-    async function loadSrvCommands() {
+    function genSrvNotebookId() {
+        return 'nb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    }
+    function saveSrvNotebooks() {
+        chrome.storage.local.set({ 'meow_srv_notebooks': srvNotebooks });
+    }
+    function getActiveSrvNotebook() {
+        return srvNotebooks.find(n => n.id === srvActiveNotebookId) || null;
+    }
+    function countSrvNotebookLines(content) {
+        return content ? content.split('\n').length : 0;
+    }
+    function persistActiveSrvNotebook() {
+        chrome.storage.local.set({ 'meow_srv_active_notebook': srvActiveNotebookId });
+    }
+
+    async function loadSrvNotebooks() {
         try {
-            const localData = await chrome.storage.local.get(['meow_srv_commands']);
-            srvCommandsCache = localData.meow_srv_commands || '';
-            const textarea = document.getElementById('srv-commands-textarea');
-            if (textarea) textarea.value = srvCommandsCache;
+            const data = await chrome.storage.local.get(['meow_srv_notebooks', 'meow_srv_active_notebook', 'meow_srv_commands']);
+            if (Array.isArray(data.meow_srv_notebooks)) {
+                srvNotebooks = data.meow_srv_notebooks
+                    .filter(n => n && typeof n === 'object')
+                    .map(n => ({
+                        id: String(n.id || genSrvNotebookId()),
+                        name: String(n.name || '未命名记事本'),
+                        content: typeof n.content === 'string' ? n.content : '',
+                        updatedAt: Number(n.updatedAt) || Date.now()
+                    }));
+            } else {
+                // 首次使用：把旧的单一记录迁移为「我的记事本」
+                const legacy = typeof data.meow_srv_commands === 'string' ? data.meow_srv_commands : '';
+                srvNotebooks = [{
+                    id: genSrvNotebookId(),
+                    name: '我的记事本',
+                    content: legacy,
+                    updatedAt: Date.now()
+                }];
+                saveSrvNotebooks();
+                if (legacy) chrome.storage.local.remove('meow_srv_commands');
+            }
+            const storedActive = data.meow_srv_active_notebook;
+            srvActiveNotebookId = srvNotebooks.some(n => n.id === storedActive)
+                ? storedActive
+                : (srvNotebooks[0] ? srvNotebooks[0].id : '');
+            renderSrvNotebook();
         } catch (e) {
-            console.error('加载常用命令失败:', e);
-            srvCommandsCache = '';
+            console.error('加载记事本失败:', e);
+            srvNotebooks = [];
+            srvActiveNotebookId = '';
+            renderSrvNotebook();
         }
     }
-    function saveSrvCommands() {
-        chrome.storage.local.set({ 'meow_srv_commands': srvCommandsCache });
+
+    function renderSrvNotebook() {
+        const nameEl = document.getElementById('srv-nb-current-name');
+        const textarea = document.getElementById('srv-commands-textarea');
+        const emptyEl = document.getElementById('srv-nb-empty');
+        const metaEl = document.getElementById('srv-nb-meta');
+        const selectBtn = document.getElementById('srv-nb-select-btn');
+        const renameBtn = document.getElementById('srv-nb-rename-btn');
+        const delBtn = document.getElementById('srv-nb-del-btn');
+        if (!nameEl || !textarea || !emptyEl || !metaEl) return;
+
+        const current = getActiveSrvNotebook();
+        const hasNotebook = !!current;
+        nameEl.textContent = hasNotebook ? current.name : '暂无记事本';
+        nameEl.classList.toggle('srv-nb-placeholder', !hasNotebook);
+        selectBtn.disabled = !hasNotebook;
+        renameBtn.disabled = !hasNotebook;
+        delBtn.disabled = !hasNotebook;
+        textarea.classList.toggle('hidden', !hasNotebook);
+        emptyEl.classList.toggle('hidden', hasNotebook);
+
+        if (hasNotebook) {
+            if (textarea.value !== current.content) textarea.value = current.content;
+            metaEl.textContent = countSrvNotebookLines(current.content) + ' 行';
+        } else {
+            textarea.value = '';
+            metaEl.textContent = '0 行';
+        }
+        closeSrvNotebookMenu();
     }
 
-    // 打开常用命令弹窗
-    function openSrvCommandsModal() {
-        loadSrvCommands();
+    function closeSrvNotebookMenu() {
+        if (srvNotebookMenuEl) {
+            srvNotebookMenuEl.remove();
+            srvNotebookMenuEl = null;
+        }
+        const btn = document.getElementById('srv-nb-select-btn');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('click', onDocClickSrvNotebookMenu);
+        document.removeEventListener('keydown', onDocKeySrvNotebookMenu);
+    }
+    function onDocClickSrvNotebookMenu(e) {
+        if (!srvNotebookMenuEl) return;
+        if (srvNotebookMenuEl.contains(e.target)) return;
+        if (e.target.closest && e.target.closest('#srv-nb-select-btn')) return;
+        closeSrvNotebookMenu();
+    }
+    function onDocKeySrvNotebookMenu(e) {
+        if (e.key === 'Escape' && srvNotebookMenuEl) {
+            e.stopPropagation();
+            closeSrvNotebookMenu();
+        }
+    }
+
+    function openSrvNotebookMenu() {
+        if (srvNotebookMenuEl) { closeSrvNotebookMenu(); return; }
+        if (srvNotebooks.length === 0) return;
+
+        const menu = document.createElement('div');
+        menu.className = 'srv-nb-menu';
+        menu.setAttribute('role', 'listbox');
+        menu.innerHTML = srvNotebooks.map(n => {
+            const active = n.id === srvActiveNotebookId;
+            return `<div class="srv-nb-menu-item${active ? ' active' : ''}" data-id="${escapeHtml(n.id)}" role="option" aria-selected="${active}">
+                <span class="mi fa-regular fa-check srv-nb-menu-check" style="${active ? '' : 'visibility:hidden;'}"></span>
+                <span class="srv-nb-menu-name">${escapeHtml(n.name)}</span>
+                <span class="srv-nb-menu-count">${countSrvNotebookLines(n.content)} 行</span>
+            </div>`;
+        }).join('');
+
+        menu.addEventListener('click', function(e) {
+            const item = e.target.closest('.srv-nb-menu-item');
+            if (!item) return;
+            selectSrvNotebook(item.dataset.id);
+        });
+
+        document.body.appendChild(menu);
+        const rect = document.getElementById('srv-nb-select-btn').getBoundingClientRect();
+        menu.style.width = Math.max(Math.min(rect.width, 320), 160) + 'px';
+        menu.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+        let top = rect.bottom + 4;
+        if (top + menu.offsetHeight > window.innerHeight - 8) {
+            top = Math.max(8, rect.top - menu.offsetHeight - 4);
+        }
+        menu.style.top = top + 'px';
+
+        const activeEl = menu.querySelector('.srv-nb-menu-item.active');
+        if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+
+        srvNotebookMenuEl = menu;
+        document.getElementById('srv-nb-select-btn').setAttribute('aria-expanded', 'true');
+        setTimeout(() => {
+            document.addEventListener('click', onDocClickSrvNotebookMenu);
+            document.addEventListener('keydown', onDocKeySrvNotebookMenu);
+        }, 0);
+    }
+
+    function selectSrvNotebook(id) {
+        if (!srvNotebooks.some(n => n.id === id)) return;
+        srvActiveNotebookId = id;
+        persistActiveSrvNotebook();
+        renderSrvNotebook();
+        const textarea = document.getElementById('srv-commands-textarea');
+        if (textarea) textarea.focus();
+    }
+
+    async function addSrvNotebook() {
+        const input = await showPromptDialog({ title: '新建记事本', placeholder: '输入记事本名称', confirmText: '创建' });
+        if (input === null) return;
+        const name = input.trim();
+        if (!name) { showToast('记事本名称不能为空'); return; }
+        if (srvNotebooks.some(n => n.name === name)) { showToast('已存在同名记事本'); return; }
+
+        const nb = { id: genSrvNotebookId(), name, content: '', updatedAt: Date.now() };
+        srvNotebooks.push(nb);
+        srvActiveNotebookId = nb.id;
+        saveSrvNotebooks();
+        persistActiveSrvNotebook();
+        renderSrvNotebook();
+        const textarea = document.getElementById('srv-commands-textarea');
+        if (textarea) textarea.focus();
+    }
+
+    async function renameSrvNotebook() {
+        const current = getActiveSrvNotebook();
+        if (!current) return;
+        const input = await showPromptDialog({ title: '重命名记事本', defaultValue: current.name, placeholder: '输入记事本名称', confirmText: '保存' });
+        if (input === null) return;
+        const name = input.trim();
+        if (!name) { showToast('记事本名称不能为空'); return; }
+        if (name === current.name) return;
+        if (srvNotebooks.some(n => n.id !== current.id && n.name === name)) { showToast('已存在同名记事本'); return; }
+
+        current.name = name;
+        current.updatedAt = Date.now();
+        saveSrvNotebooks();
+        renderSrvNotebook();
+        showToast('已重命名');
+    }
+
+    async function deleteSrvNotebook() {
+        const current = getActiveSrvNotebook();
+        if (!current) return;
+        if (!await showConfirmDialog({ message: `确定删除记事本「${current.name}」？其中的内容将一并删除。`, type: 'danger', confirmText: '删除' })) return;
+
+        const index = srvNotebooks.findIndex(n => n.id === current.id);
+        srvNotebooks.splice(index, 1);
+        if (srvNotebooks.length > 0) {
+            srvActiveNotebookId = srvNotebooks[Math.min(index, srvNotebooks.length - 1)].id;
+        } else {
+            srvActiveNotebookId = '';
+        }
+        saveSrvNotebooks();
+        persistActiveSrvNotebook();
+        renderSrvNotebook();
+        showToast('已删除');
+    }
+
+    // 打开记事本弹窗
+    async function openSrvCommandsModal() {
         document.getElementById('srv-commands-modal').classList.remove('hidden');
+        await loadSrvNotebooks();
         setTimeout(() => {
             const textarea = document.getElementById('srv-commands-textarea');
-            if (textarea) textarea.focus();
+            if (textarea && !textarea.classList.contains('hidden')) textarea.focus();
         }, 100);
     }
-    // 关闭常用命令弹窗
+    // 关闭记事本弹窗
     function closeSrvCommandsModal() {
+        closeSrvNotebookMenu();
         document.getElementById('srv-commands-modal').classList.add('hidden');
     }
 
-    // 按钮事件：打开常用命令弹窗
+    // 按钮事件：打开记事本弹窗
     document.getElementById('srv-commands-btn').addEventListener('click', openSrvCommandsModal);
+    // 收费状态筛选
+    document.getElementById('srv-charge-filter-btn').addEventListener('click', function() {
+        openSrvChargeFilterMenu();
+    });
+    document.getElementById('srv-copy-filtered-btn').addEventListener('click', copySrvFilteredWebsites);
 
-    // 关闭常用命令弹窗（仅通过关闭按钮关闭，点击遮罩不关闭且不丢失焦点）
+    // 关闭记事本弹窗（仅通过关闭按钮关闭，点击遮罩不关闭且不丢失焦点）
     document.getElementById('close-srv-commands-modal').addEventListener('click', closeSrvCommandsModal);
     const commandsModal = document.getElementById('srv-commands-modal');
     commandsModal.addEventListener('mousedown', function(e) { if (e.target === commandsModal) e.preventDefault(); });
 
-    // 监听 Textarea 输入并实时保存
+    // 记事本工具栏
+    document.getElementById('srv-nb-select-btn').addEventListener('click', openSrvNotebookMenu);
+    document.getElementById('srv-nb-add-btn').addEventListener('click', addSrvNotebook);
+    document.getElementById('srv-nb-rename-btn').addEventListener('click', renameSrvNotebook);
+    document.getElementById('srv-nb-del-btn').addEventListener('click', deleteSrvNotebook);
+
+    // 监听 Textarea 输入并实时保存到当前记事本
     document.getElementById('srv-commands-textarea').addEventListener('input', function() {
-        srvCommandsCache = this.value;
-        saveSrvCommands();
+        const current = getActiveSrvNotebook();
+        if (!current) return;
+        current.content = this.value;
+        current.updatedAt = Date.now();
+        saveSrvNotebooks();
+        document.getElementById('srv-nb-meta').textContent = countSrvNotebookLines(this.value) + ' 行';
     });
 
     // === 分类管理弹窗 ===
@@ -1461,6 +1938,7 @@ function setupServerLogic() {
                     saveSrvCategories();
                     renderSrvCatManageList();
                     renderSrvCatTabs();
+                    renderServers();
                 }
             });
 

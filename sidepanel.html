@@ -517,6 +517,47 @@
                         </div>
                     </div>
                 </div>
+                <div class="tool-card collapsed" data-tool-id="tool-string">
+                    <h3><span class="mi fa-solid fa-arrow-down-a-z" style="font-size: 16px; color: #7c3aed;"></span> <span data-i18n="tool_str_title">字符串工具</span> <span class="mi toggle-icon fa-regular fa-chevron-down"></span></h3>
+                    <div class="tool-body">
+                        <textarea id="str-tool-input" class="converter-input full-border" style="width:100%;height:72px;margin-bottom:10px;font-family:monospace;font-size:12px;line-height:1.5;resize:vertical;" placeholder="输入或粘贴任意字符串 / 网址..." data-i18n-ph="tool_str_ph"></textarea>
+
+                        <div style="margin-bottom:10px;">
+                            <label class="sub-label" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                                <span data-i18n="tool_str_length">字符长度</span>
+                                <span id="str-len-detail" style="font-size:10px;color:#cbd5e1;"></span>
+                            </label>
+                            <div class="srv-input-wrap">
+                                <div id="str-len-output" class="result-box" style="margin-top:0;"><span style="color:#cbd5e1;" data-copy-skip="1" data-i18n="tool_str_hint">结果显示于此</span></div>
+                                <button type="button" class="tool-icopy-btn" data-copy-target="str-len-output" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:10px;">
+                            <label class="sub-label" data-i18n="tool_str_domain">主域名</label>
+                            <div class="srv-input-wrap">
+                                <div id="str-domain-output" class="result-box" style="margin-top:0;"><span style="color:#cbd5e1;" data-copy-skip="1" data-i18n="tool_str_hint">结果显示于此</span></div>
+                                <button type="button" class="tool-icopy-btn" data-copy-target="str-domain-output" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:10px;">
+                            <label class="sub-label" data-i18n="tool_str_upper">全大写</label>
+                            <div class="srv-input-wrap">
+                                <div id="str-upper-output" class="result-box str-result-box" style="margin-top:0;"><span style="color:#cbd5e1;" data-copy-skip="1" data-i18n="tool_str_hint">结果显示于此</span></div>
+                                <button type="button" class="tool-icopy-btn" data-copy-target="str-upper-output" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="sub-label" data-i18n="tool_str_lower">全小写</label>
+                            <div class="srv-input-wrap">
+                                <div id="str-lower-output" class="result-box str-result-box" style="margin-top:0;"><span style="color:#cbd5e1;" data-copy-skip="1" data-i18n="tool_str_hint">结果显示于此</span></div>
+                                <button type="button" class="tool-icopy-btn" data-copy-target="str-lower-output" title="复制" data-i18n-title="action_copy"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- 编辑器视图：左侧竖向 Tab（JSON编辑器 / Markdown编辑器），由 js/modules/sp-editor.js 动态构建 -->
@@ -541,8 +582,14 @@
                     <div class="ctrl-btn" id="srv-add-btn" title="添加服务器">
                         <i class="fa-regular fa-plus" style="font-size:10px;"></i>
                     </div>
-                    <div class="ctrl-btn" id="srv-commands-btn" title="常用命令">
-                        <i class="fa-regular fa-terminal" style="font-size:10px;"></i>
+                    <div class="ctrl-btn" id="srv-commands-btn" title="记事本">
+                        <i class="fa-regular fa-book" style="font-size:10px;"></i>
+                    </div>
+                    <div class="ctrl-btn" id="srv-charge-filter-btn" title="收费状态筛选">
+                        <i class="fa-regular fa-filter" style="font-size:10px;"></i>
+                    </div>
+                    <div class="ctrl-btn" id="srv-copy-filtered-btn" title="复制筛选结果">
+                        <i class="fa-regular fa-copy" style="font-size:10px;"></i>
                     </div>
                     <div class="ctrl-btn" id="srv-export-btn" title="导出备份">
                         <i class="fa-regular fa-arrow-up-from-bracket" style="font-size:10px;"></i>
@@ -551,16 +598,12 @@
                         <i class="fa-regular fa-arrow-down-to-bracket" style="font-size:10px;"></i>
                     </div>
                 </div>
-                <div class="ctrl-btn" id="srv-search-toggle" title="搜索" style="flex-shrink:0;">
-                    <i class="fa-regular fa-magnifying-glass" style="font-size:10px;"></i>
                 </div>
                 <div class="ai-filter-row" id="srv-filter-row">
                     <div style="position:relative;flex:1;">
-                        <span class="mi fa-regular fa-xmark" id="srv-search-back" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:18px;color:#64748b;cursor:pointer;z-index:1;"></span>
                         <input type="text" id="srv-filter-input" class="ai-filter-input" placeholder="搜索 IP / 域名 / 用户名..." style="width:100%;padding:2px 28px 2px 30px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">
                         <span class="mi ai-filter-clear fa-regular fa-xmark" id="srv-filter-clear" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:#9ca3af;"></span>
                     </div>
-                </div>
                 </div>
                 <div id="srv-count-bar" class="srv-count-bar">共 0 台服务器</div>
             </div>
@@ -889,8 +932,9 @@
                                 <div class="form-group">
                                     <label>密码</label>
                                     <div class="srv-input-wrap">
-                                        <input type="text" id="srv-pass-input" class="converter-input full-border" placeholder="服务器密码">
+                                        <input type="text" id="srv-pass-input" class="converter-input full-border" placeholder="服务器密码" autocomplete="off">
                                         <button class="srv-icopy-btn" data-copy-target="srv-pass-input" title="复制密码"><span class="mi fa-regular fa-copy" style="font-size:14px;"></span></button>
+                                        <div class="srv-history-dd" id="srv-pass-history-dd-srv"></div>
                                     </div>
                                 </div>
                                 <div class="form-group" style="grid-column: 1 / -1;">
@@ -974,15 +1018,39 @@
                 </div>
             </div>
 
-            <!-- 常用命令弹窗 -->
+            <!-- 记事本弹窗（多记事本管理） -->
             <div id="srv-commands-modal" class="modal hidden">
-                <div class="modal-content" style="width: 95%; max-height: 92vh;">
+                <div class="modal-content">
                     <div class="modal-header">
-                        <h3>常用命令</h3>
+                        <h3>记事本</h3>
                         <span class="mi close-modal fa-regular fa-xmark" id="close-srv-commands-modal"></span>
                     </div>
-                    <div class="modal-body">
-                        <textarea id="srv-commands-textarea" placeholder="输入常用命令，每行一个命令..." style="width:100%;height:60vh;border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-size:12px;font-family:monospace;resize:vertical;outline:none;"></textarea>
+                    <div class="modal-body srv-nb-body">
+                        <div class="srv-nb-toolbar">
+                            <button type="button" id="srv-nb-select-btn" class="srv-nb-select-btn" aria-haspopup="listbox" aria-expanded="false">
+                                <span class="mi fa-regular fa-book srv-nb-book-icon"></span>
+                                <span id="srv-nb-current-name" class="srv-nb-current-name">记事本</span>
+                                <span class="mi fa-regular fa-chevron-down srv-nb-chevron"></span>
+                            </button>
+                            <button type="button" id="srv-nb-add-btn" class="srv-nb-icon-btn" title="新建记事本">
+                                <span class="mi fa-regular fa-plus"></span>
+                            </button>
+                            <button type="button" id="srv-nb-rename-btn" class="srv-nb-icon-btn" title="重命名当前记事本">
+                                <span class="mi fa-regular fa-pen-to-square"></span>
+                            </button>
+                            <button type="button" id="srv-nb-del-btn" class="srv-nb-icon-btn srv-nb-del-btn" title="删除当前记事本">
+                                <span class="mi fa-regular fa-trash-can"></span>
+                            </button>
+                        </div>
+                        <textarea id="srv-commands-textarea" class="srv-nb-textarea" placeholder="输入内容，每行一条..." spellcheck="false"></textarea>
+                        <div id="srv-nb-empty" class="srv-nb-empty hidden">
+                            <span class="mi fa-regular fa-book"></span>
+                            <p>还没有记事本<br>点击上方 ＋ 新建一个</p>
+                        </div>
+                        <div class="srv-nb-footer">
+                            <span id="srv-nb-meta">0 行</span>
+                            <span class="srv-nb-autosave">内容自动保存</span>
+                        </div>
                     </div>
                 </div>
             </div>

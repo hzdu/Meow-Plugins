@@ -1052,68 +1052,399 @@ function setupToolCardDrag() {
         return header.closest('.tool-card');
     }
 
+    // ===== 拖拽排序：占位块撑开空位，其它卡片平滑让位 =====
+    // 交互模型：拖拽期间被拖卡片脱离文档流、紧贴指针移动；它原来的位置由一个
+    // 等高的占位块顶替，占位块随指针逐格移动，实时指示"松手后落到哪"。
+    // 其它卡片则通过 FLIP 位移补间滑向新位置，形成上移/下移让开的观感。
+    let dragCard = null;      // 正在拖拽的卡片
+    let placeholder = null;   // 撑开空位的占位块
+    let srcIndex = null;      // 拖拽起点索引
+    let grabOffsetX = 0;      // 按下点相对卡片左上角的偏移
+    let grabOffsetY = 0;
+
+    // 让跟随卡片贴在指针位置
+    function followPointer(x, y) {
+        if (!dragCard) return;
+        dragCard.style.left = (x - grabOffsetX) + 'px';
+        dragCard.style.top = (y - grabOffsetY) + 'px';
+    }
+
+    // 记录除被拖卡片外的纵向布局位置。
+    // 这里刻意用 offsetTop 而非 getBoundingClientRect：offsetTop 反映的是
+    // 布局位置，不受 transform 影响，因此让位动画尚未结束时再次测量
+    // 也不会把动画中的位移算进去，避免误差累积。
+    function snapshotTops() {
+        const tops = new Map();
+        container.querySelectorAll('.tool-card').forEach(card => {
+            if (card === dragCard) return;
+            tops.set(card, card.offsetTop);
+        });
+        return tops;
+    }
+
+    // FLIP：先让卡片瞬移到新布局位置并施加反向位移，再过渡回 0，形成滑入效果
+    function animateLetWay(prevTops) {
+        container.querySelectorAll('.tool-card').forEach(card => {
+            if (card === dragCard) return;
+            const before = prevTops.get(card);
+            if (before === undefined) return;
+            const dy = before - card.offsetTop;
+            if (!dy) return;
+            card.style.transition = 'none';
+            card.style.transform = 'translateY(' + dy + 'px)';
+            void card.offsetWidth; // 强制重排，确保反向位移先生效
+            card.style.transition = 'transform .18s cubic-bezier(.2, .8, .2, 1)';
+            card.style.transform = '';
+        });
+    }
+
+    // 取占位块前后真正参与排序的卡片。
+    // 必须跳过被拖卡片：它已改为 fixed，offsetTop 变成视口坐标（与其它卡片
+    // 相对容器的 offsetTop 不同基准），且视觉上不占位，不能作为落点参照。
+    function siblingCard(dir) {
+        let node = placeholder;
+        while ((node = dir > 0 ? node.nextElementSibling : node.previousElementSibling)) {
+            if (node === dragCard) continue;
+            if (node.classList && node.classList.contains('tool-card')) return node;
+        }
+        return null;
+    }
+
+    // 让占位块上移/下移一格（dir = 1 下移，-1 上移）
+    function shiftPlaceholder(dir) {
+        if (!placeholder || !placeholder.parentNode) return false;
+        const prevTops = snapshotTops();
+        if (dir > 0) {
+            const next = siblingCard(1);
+            if (!next) return false;
+            container.insertBefore(placeholder, next.nextElementSibling);
+        } else {
+            const prev = siblingCard(-1);
+            if (!prev) return false;
+            container.insertBefore(placeholder, prev);
+        }
+        animateLetWay(prevTops);
+        return true;
+    }
+
+    // 指针是否越过了相邻卡片的中线，越过才换位。
+    // 基准取"相邻卡片中线"而不是占位块中心：卡片高度差异很大（折叠 ~46px，
+    // 展开可到 200px+），以占位块中心为基准会让高卡片的落点判断严重偏后。
+    // 用 offsetTop / offsetHeight 而不是 getBoundingClientRect，是因为这两个值
+    // 反映布局位置，不受让位动画中的 transform 干扰。
+    function shiftTowardsPointer(clientY) {
+        if (!placeholder) return false;
+        const y = clientY - container.getBoundingClientRect().top;
+
+        const next = siblingCard(1);
+        if (next && y > next.offsetTop + next.offsetHeight / 2) return shiftPlaceholder(1);
+
+        const prev = siblingCard(-1);
+        if (prev && y < prev.offsetTop + prev.offsetHeight / 2) return shiftPlaceholder(-1);
+
+        return false;
+    }
+
+    // 结束拖拽：keepPosition 为 true 表示落到占位块处，false 表示回到起点（取消）
+    function finishDrag(keepPosition) {
+        if (!dragCard) return;
+        const card = dragCard;
+
+        if (placeholder) {
+            if (keepPosition) {
+                container.insertBefore(card, placeholder);
+            } else {
+                // 取消时按原索引复位：先从列表里排除自己，再把原索引处的卡片当锚点
+                const others = Array.from(container.querySelectorAll('.tool-card')).filter(c => c !== card);
+                const anchor = others[srcIndex] || null;
+                if (anchor) container.insertBefore(card, anchor);
+                else container.appendChild(card);
+            }
+            if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+        }
+        placeholder = null;
+
+        card.classList.remove('dragging-follow', 'dragging', 'drag-over');
+        card.style.left = '';
+        card.style.top = '';
+        card.style.width = '';
+        card.style.height = '';
+
+        // 清理让位动画的内联样式。
+        // 必须先关过渡再清除位移：否则清除位移会按 CSS 的 all .2s 再滑一次，
+        // 表现为 drop 后卡片额外滑行一段。归位完成后再恢复默认过渡。
+        const cleanupCards = container.querySelectorAll('.tool-card');
+        cleanupCards.forEach(c => {
+            c.style.transition = 'none';
+            c.style.transform = '';
+        });
+        void container.offsetWidth;
+        cleanupCards.forEach(c => { c.style.transition = ''; });
+
+        dragCard = null;
+        toolDragSrcIndex = null;
+        refreshIndices();
+        if (keepPosition) saveToolOrder();
+    }
+
     // 使用事件委托避免每次重新绑定
     container.addEventListener('dragstart', function(e) {
         const card = getDragCard(e);
         if (!card) return;
-        card.classList.add('dragging');
-        toolDragSrcIndex = parseInt(card.dataset.index, 10);
-        e.dataTransfer.effectAllowed = 'move';
-        try { e.dataTransfer.setData('text/plain', card.dataset.index); } catch (_) {}
-    });
 
-    container.addEventListener('dragend', function(e) {
-        const card = getDragCard(e) || (e.target && typeof e.target.closest === 'function' ? e.target.closest('.tool-card') : null);
-        if (card) card.classList.remove('dragging');
-        container.querySelectorAll('.tool-card').forEach(el => el.classList.remove('drag-over'));
-        toolDragSrcIndex = null;
+        const rect = card.getBoundingClientRect();
+        dragCard = card;
+        srcIndex = parseInt(card.dataset.index, 10);
+        toolDragSrcIndex = srcIndex;
+        grabOffsetX = e.clientX - rect.left;
+        grabOffsetY = e.clientY - rect.top;
+
+        // 原生拖影是浏览器拍下的快照，会和我们 fixed 跟随的卡片叠成重影，
+        // 用 1×1 透明图替换掉，只保留跟随指针的那一张。
+        try {
+            const blank = document.createElement('canvas');
+            blank.width = 1;
+            blank.height = 1;
+            e.dataTransfer.setDragImage(blank, 0, 0);
+        } catch (_) {}
+
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            try { e.dataTransfer.setData('text/plain', card.dataset.toolId || String(srcIndex)); } catch (_) {}
+        }
+
+        // 占位块先顶住原位，再把卡片抽出文档流
+        placeholder = document.createElement('div');
+        placeholder.className = 'tool-drop-placeholder';
+        placeholder.style.height = rect.height + 'px';
+        container.insertBefore(placeholder, card);
+
+        card.style.width = rect.width + 'px';
+        card.style.height = rect.height + 'px';
+        card.style.left = rect.left + 'px';
+        card.style.top = rect.top + 'px';
+        card.classList.add('dragging-follow');
+        card.classList.remove('dragging');
     });
 
     container.addEventListener('dragover', function(e) {
-        if (toolDragSrcIndex === null) return;
-        const target = e.target;
-        const card = target && typeof target.closest === 'function' ? target.closest('.tool-card') : null;
-        if (!card) return;
+        if (!dragCard || !placeholder) return;
         e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        // 只保留当前悬停卡片的指示样式，避免多张卡片同时高亮
-        container.querySelectorAll('.tool-card.drag-over').forEach(el => {
-            if (el !== card) el.classList.remove('drag-over');
-        });
-        card.classList.add('drag-over');
-    });
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        followPointer(e.clientX, e.clientY);
 
-    container.addEventListener('dragleave', function(e) {
-        const target = e.target;
-        const card = target && typeof target.closest === 'function' ? target.closest('.tool-card') : null;
-        if (!card) return;
-        // 鼠标只是在卡片内部子元素之间移动时不取消高亮
-        if (e.relatedTarget && card.contains(e.relatedTarget)) return;
-        card.classList.remove('drag-over');
+        // 每次 dragover 最多追 4 格：快速拖动时指针一帧能跨过好几张卡片，
+        // 只移动一格会明显滞后。上限 4 次是为了避免长列表下逐帧重排过多。
+        for (let i = 0; i < 4; i++) {
+            if (!shiftTowardsPointer(e.clientY)) break;
+        }
     });
 
     container.addEventListener('drop', function(e) {
-        const target = e.target;
-        const destCard = target && typeof target.closest === 'function' ? target.closest('.tool-card') : null;
-        if (!destCard || toolDragSrcIndex === null) return;
-        e.stopPropagation();
+        if (!dragCard) return;
         e.preventDefault();
-        destCard.classList.remove('drag-over');
-
-        const destIndex = parseInt(destCard.dataset.index, 10);
-        if (toolDragSrcIndex !== destIndex) {
-            const allCards = Array.from(container.querySelectorAll('.tool-card'));
-            const srcCard = allCards[toolDragSrcIndex];
-            if (srcCard) {
-                if (toolDragSrcIndex < destIndex) {
-                    destCard.parentNode.insertBefore(srcCard, destCard.nextSibling);
-                } else {
-                    destCard.parentNode.insertBefore(srcCard, destCard);
-                }
-                saveToolOrder();
-                refreshIndices();
-            }
-        }
-        toolDragSrcIndex = null;
+        e.stopPropagation();
+        finishDrag(true);
     });
+
+    container.addEventListener('dragend', function() {
+        // drop 分支已处理过则 dragCard 已置空；这里兜底「拖到区域外松手」的取消
+        if (dragCard) finishDrag(false);
+    });
+
+    // 指针移出工具箱时容器收不到 dragover，卡片会滞留在原处；
+    // 用 document 捕获阶段保持跟随（不调用 preventDefault，不影响原生放置判定）
+    document.addEventListener('dragover', function(e) {
+        if (dragCard) followPointer(e.clientX, e.clientY);
+    }, true);
+}
+
+// ================== 字符串工具（长度 / 主域名 / 大小写） ==================
+// 主域名（可注册域名，即 eTLD+1）判定所需的二级公共后缀。
+// 说明：这不是完整的 Public Suffix List，仅内置常见国别域名的二级后缀；
+// 未命中时按「取最后两段」处理，对 example.com / a.example.com 的结果均正确。
+const STR_MULTI_PART_SUFFIXES = new Set([
+    // 英国
+    'co.uk', 'org.uk', 'me.uk', 'ltd.uk', 'plc.uk', 'net.uk', 'ac.uk', 'gov.uk', 'sch.uk',
+    // 中国
+    'com.cn', 'net.cn', 'org.cn', 'gov.cn', 'edu.cn', 'ac.cn', 'mil.cn',
+    'com.hk', 'org.hk', 'net.hk', 'edu.hk', 'gov.hk', 'idv.hk',
+    'com.tw', 'org.tw', 'net.tw', 'edu.tw', 'gov.tw', 'idv.tw',
+    'com.mo', 'net.mo', 'org.mo', 'edu.mo', 'gov.mo',
+    // 日韩
+    'co.jp', 'ne.jp', 'or.jp', 'ac.jp', 'go.jp', 'ed.jp', 'gr.jp', 'lg.jp',
+    'co.kr', 'or.kr', 'ne.kr', 'go.kr', 'ac.kr', 're.kr', 'pe.kr',
+    // 大洋洲 / 东南亚
+    'com.au', 'net.au', 'org.au', 'edu.au', 'gov.au', 'asn.au', 'id.au',
+    'co.nz', 'net.nz', 'org.nz', 'ac.nz', 'govt.nz', 'school.nz', 'geek.nz',
+    'com.sg', 'net.sg', 'org.sg', 'edu.sg', 'gov.sg', 'per.sg',
+    'com.my', 'net.my', 'org.my', 'edu.my', 'gov.my', 'id.my',
+    'co.id', 'or.id', 'net.id', 'web.id', 'ac.id', 'go.id', 'sch.id', 'my.id', 'biz.id',
+    'co.th', 'in.th', 'or.th', 'ac.th', 'go.th', 'net.th', 'mi.th',
+    'com.ph', 'net.ph', 'org.ph', 'gov.ph', 'edu.ph',
+    'com.vn', 'net.vn', 'org.vn', 'edu.vn', 'gov.vn', 'biz.vn', 'info.vn', 'name.vn',
+    // 南亚 / 中东
+    'co.in', 'net.in', 'org.in', 'firm.in', 'gen.in', 'ind.in', 'ac.in', 'edu.in', 'gov.in', 'res.in',
+    'com.pk', 'net.pk', 'org.pk', 'gov.pk', 'edu.pk',
+    'com.bd', 'com.np', 'com.lk',
+    'co.il', 'org.il', 'net.il', 'ac.il', 'gov.il', 'mun.il',
+    'co.ir', 'org.ir', 'net.ir', 'ac.ir', 'gov.ir',
+    'com.tr', 'net.tr', 'org.tr', 'gov.tr', 'edu.tr', 'av.tr', 'bel.tr', 'biz.tr', 'gen.tr', 'info.tr', 'k12.tr', 'name.tr', 'web.tr',
+    'com.sa', 'com.eg', 'com.ae', 'co.ae', 'net.ae', 'org.ae', 'ac.ae', 'gov.ae',
+    // 欧洲
+    'com.ru', 'net.ru', 'org.ru', 'pp.ru',
+    'com.ua', 'net.ua', 'org.ua', 'gov.ua', 'edu.ua', 'in.ua',
+    'com.pl', 'net.pl', 'org.pl', 'edu.pl', 'gov.pl', 'info.pl',
+    'co.at', 'or.at', 'ac.at', 'gv.at',
+    'com.gr', 'com.cy', 'com.mt', 'com.pt', 'com.es', 'com.hr', 'com.ee', 'com.lv', 'com.lt',
+    // 非洲 / 拉美
+    'co.za', 'org.za', 'net.za', 'gov.za', 'web.za', 'ac.za',
+    'co.ke', 'or.ke', 'ne.ke', 'go.ke', 'ac.ke', 'sc.ke',
+    'com.ng', 'net.ng', 'org.ng', 'edu.ng', 'gov.ng',
+    'co.tz', 'co.ug', 'co.zw', 'co.bw', 'co.mz', 'com.gh', 'com.et',
+    'com.br', 'net.br', 'org.br', 'gov.br', 'edu.br', 'art.br', 'blog.br', 'eco.br',
+    'com.mx', 'net.mx', 'org.mx', 'gob.mx', 'edu.mx',
+    'com.ar', 'net.ar', 'org.ar', 'gob.ar', 'edu.ar',
+    'com.co', 'net.co', 'org.co', 'edu.co', 'gov.co', 'nom.co',
+    'com.pe', 'net.pe', 'org.pe', 'gob.pe', 'edu.pe',
+    'com.ve', 'com.ec', 'com.uy', 'com.py', 'com.bo', 'com.do',
+    'com.gt', 'com.sv', 'com.hn', 'com.ni', 'com.pa', 'com.cr'
+]);
+
+const STR_IPV4_RE = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+
+// 从任意字符串中提取主机名（host）。
+// 依次尝试：带协议的 URL → 裸 IPv4/IPv6 → 裸域名；都取不到时返回空串。
+function strExtractHost(raw) {
+    const text = String(raw == null ? '' : raw).trim();
+    if (!text) return '';
+
+    // 1) 带协议的 URL：交给 URL 解析，端口、认证信息、路径都会被正确剥离
+    const urlMatch = text.match(/[a-z][a-z0-9+.-]*:\/\/[^\s<>"'`]+/i);
+    if (urlMatch) {
+        try {
+            // URL.hostname 对 IPv6 会带方括号，统一去掉
+            const host = new URL(urlMatch[0]).hostname.replace(/^\[|\]$/g, '');
+            if (host) return host.toLowerCase().replace(/\.$/, '');
+        } catch (e) { /* 落到底下的裸域名匹配 */ }
+    }
+
+    // 2) 裸 IPv6（含或不含方括号）
+    const v6Match = text.match(/\[([0-9a-f:.]+:[0-9a-f:.]+)\]|((?:[0-9a-f]{0,4}:){2,}[0-9a-f]{0,4})/i);
+    if (v6Match) {
+        const candidate = (v6Match[1] || v6Match[2] || '').trim();
+        if (candidate.indexOf(':') !== -1 && /^[0-9a-f:.]+$/i.test(candidate)) return candidate.toLowerCase();
+    }
+
+    // 3) 裸 IPv4
+    const v4Match = text.match(/(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])/);
+    if (v4Match && v4Match[0].split('.').every(n => Number(n) <= 255)) return v4Match[0];
+
+    // 4) 裸域名（自动忽略前后的中文、空格、路径等噪声）
+    const domMatch = text.match(/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}/i);
+    if (domMatch) return domMatch[0].toLowerCase().replace(/\.$/, '');
+
+    return '';
+}
+
+// 取主域名：a.b.example.com → example.com，shop.example.co.uk → example.co.uk。
+// IP 地址不属于域名体系，原样返回。
+// 后缀判定优先查内置表；未命中时再用通用二级前缀兜底（如 com.ga、co.ao 等
+// 未逐一枚举的国别组合），最后退化为「取最后两段」。
+const STR_GENERIC_SLD_RE = /^(?:com|net|org|gov|edu|ac|co|or|ne|go|gob|mil|sch|info|biz|web|nom|firm|gen|ind|res|per|asn|art|blog|eco|id|in)\./;
+
+function strRegistrableDomain(host) {
+    if (!host) return '';
+    if (STR_IPV4_RE.test(host) || host.indexOf(':') !== -1) return host;
+
+    const labels = host.split('.').filter(Boolean);
+    if (labels.length <= 2) return labels.join('.');
+
+    const lastTwo = labels.slice(-2).join('.');
+    const isMultiPart = STR_MULTI_PART_SUFFIXES.has(lastTwo) || STR_GENERIC_SLD_RE.test(lastTwo);
+    const take = isMultiPart ? 3 : 2;
+    return labels.slice(-take).join('.');
+}
+
+// 按字形簇（grapheme）统计字符数：emoji、组合字符不会被拆成多个
+function strCountGraphemes(text) {
+    try {
+        const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+        let n = 0;
+        for (const _g of seg.segment(text)) n++;
+        return n;
+    } catch (e) {
+        return [...text].length;
+    }
+}
+
+function setupStringTool() {
+    const input = document.getElementById('str-tool-input');
+    if (!input || input.dataset.bound === '1') return;
+    input.dataset.bound = '1';
+
+    const lenOut = document.getElementById('str-len-output');
+    const domainOut = document.getElementById('str-domain-output');
+    const upperOut = document.getElementById('str-upper-output');
+    const lowerOut = document.getElementById('str-lower-output');
+    const lenDetail = document.getElementById('str-len-detail');
+
+    // 空值统一显示灰色占位（带 data-copy-skip，复制按钮不会把它当成内容）
+    function renderResult(el, value, hintKey) {
+        if (!el) return;
+        el.textContent = '';
+        if (value) {
+            el.textContent = value;
+            return;
+        }
+        const hintText = hintKey ? meowI18n.t(hintKey) : '';
+        if (!hintText) return;
+        const span = document.createElement('span');
+        span.style.color = '#cbd5e1';
+        span.setAttribute('data-copy-skip', '1');
+        span.textContent = hintText;
+        el.appendChild(span);
+    }
+
+    function render() {
+        const raw = input.value;
+        if (!raw) {
+            renderResult(lenOut, '', 'tool_str_hint');
+            renderResult(domainOut, '', 'tool_str_hint');
+            renderResult(upperOut, '', 'tool_str_hint');
+            renderResult(lowerOut, '', 'tool_str_hint');
+            if (lenDetail) lenDetail.textContent = '';
+            return;
+        }
+
+        const chars = strCountGraphemes(raw);
+        const noSpace = strCountGraphemes(raw.replace(/\s/g, ''));
+        const bytes = new TextEncoder().encode(raw).length;
+
+        renderResult(lenOut, String(chars));
+        if (lenDetail) lenDetail.textContent = meowI18n.t('tool_str_len_extra', { ws: noSpace, bytes: bytes });
+
+        const domain = strRegistrableDomain(strExtractHost(raw));
+        renderResult(domainOut, domain, 'tool_str_no_domain');
+
+        renderResult(upperOut, raw.toUpperCase());
+        renderResult(lowerOut, raw.toLowerCase());
+    }
+
+    // 长文本输入时用 rAF 合并多次 input，避免逐键重算大字符串
+    let queued = false;
+    const scheduleRender = () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(() => { queued = false; render(); });
+    };
+
+    input.addEventListener('input', scheduleRender);
+
+    // 语言切换后占位文案需要按新语言重绘
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'sync' && changes.meow_locale) render();
+    });
+
+    render();
 }
