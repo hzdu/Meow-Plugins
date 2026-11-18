@@ -83,22 +83,86 @@ function renderFilters() {
     });
 }
 
+// ================== 提示词卡片拖拽排序 ==================
+// 交互与「服务器管理」卡片一致：标题行是唯一拖拽手柄（左侧 grip 图标提示，
+// 与侧边栏服务器管理卡片的 grip 手柄相同），松手后按新顺序落盘。
+
+// 保证每条提示词都有 order 字段：早期数据按原本的展示顺序（id 倒序）铺开一次，
+// 之后 order 就是用户拖拽出来的顺序。
+function ensurePromptOrder() {
+    const missing = myPrompts.filter(p => !Number.isFinite(p.order));
+    if (!missing.length) return false;
+    if (missing.length === myPrompts.length) {
+        myPrompts.slice().sort((a, b) => b.id - a.id).forEach((p, i) => { p.order = i; });
+    } else {
+        // 个别新记录缺 order：放到最前面，与「新增在最上」的观感一致
+        let min = Infinity;
+        myPrompts.forEach(p => { if (Number.isFinite(p.order)) min = Math.min(min, p.order); });
+        if (!Number.isFinite(min)) min = 0;
+        missing.sort((a, b) => a.id - b.id).forEach(p => { p.order = --min; });
+    }
+    return true;
+}
+
+// 新增提示词的 order：排在现有卡片最前面
+function nextPromptOrder() {
+    let min = 0;
+    myPrompts.forEach(p => { if (Number.isFinite(p.order)) min = Math.min(min, p.order); });
+    return min - 1;
+}
+
+// 可见卡片占据的 order 槽位固定不变，只把可见记录按新顺序填回这些槽位，
+// 被分类/搜索过滤掉的卡片保持原位。
+function applyPromptVisibleOrder(visibleIds) {
+    const byId = new Map(myPrompts.map(p => [String(p.id), p]));
+    const visible = visibleIds.map(id => byId.get(String(id))).filter(Boolean);
+    if (visible.length < 2) return false;
+    const visibleSet = new Set(visible);
+    const slots = myPrompts.filter(p => visibleSet.has(p)).map(p => p.order).sort((a, b) => a - b);
+    let changed = false;
+    visible.forEach((p, i) => {
+        if (p.order !== slots[i]) { p.order = slots[i]; changed = true; }
+    });
+    return changed;
+}
+
+function setupPromptCardDrag() {
+    if (!listContainer || typeof setupCardDragSort !== 'function') return;
+    setupCardDragSort({
+        container: listContainer,
+        cardSelector: '.prompt-card',
+        headerSelector: '.p-header',
+        handleClass: 'prompt-drag-handle',
+        ignoreSelector: '.p-cat-select, .delete-btn',
+        placeholderClass: 'prompt-drop-placeholder',
+        placeholderTag: 'li',
+        boundKey: 'promptDragBound',
+        onReorder: function (visibleIds) {
+            if (!applyPromptVisibleOrder(visibleIds)) return;
+            saveData();
+            renderPromptList();
+        }
+    });
+}
+
 function renderPromptList() {
+    ensurePromptOrder();
     listContainer.innerHTML = '';
     let filtered = (currentFilter === 'all') ? myPrompts : myPrompts.filter(p => p.category === currentFilter);
     const searchTerm = searchPromptsInput.value.toLowerCase();
     if (searchTerm) filtered = filtered.filter(p => (p.title && p.title.toLowerCase().indexOf(searchTerm) !== -1) || (p.content && p.content.toLowerCase().indexOf(searchTerm) !== -1));
-    filtered.sort((a, b) => b.id - a.id);
+    filtered.sort((a, b) => (a.order - b.order) || (b.id - a.id));
 
     if (filtered.length === 0) { emptyState.classList.remove('hidden'); } else {
         emptyState.classList.add('hidden');
         filtered.forEach(item => {
             const li = document.createElement('li');
             li.className = 'prompt-card';
+            li.dataset.id = item.id;
             let catOptionsHtml = '';
             promptCategories.forEach(cat => { catOptionsHtml += '<option value="' + cat.id + '"' + (cat.id === item.category ? ' selected' : '') + '>' + escapeHtml(cat.name) + '</option>'; });
             li.innerHTML = '<div class="p-header"><span class="p-title">' + escapeHtml(item.title || meowI18n.t('ph_title')) + '</span><span class="p-header-right"><select class="p-cat-select">' + catOptionsHtml + '</select><i class="fa-regular fa-xmark delete-btn" title="' + meowI18n.t('action_delete') + '"></i></span></div><div class="p-content">' + escapeHtml(item.content) + '</div>';
-            li.addEventListener('click', function(e) { if (e.target.closest('.delete-btn') || e.target.closest('.p-cat-select')) return; openPromptViewModal(item); });
+            li.addEventListener('click', function(e) { if (e.target.closest('.delete-btn') || e.target.closest('.p-cat-select') || e.target.closest('.prompt-drag-handle')) return; openPromptViewModal(item); });
             li.querySelector('.p-cat-select').addEventListener('change', function(e) {
                 e.stopPropagation();
                 const index = myPrompts.findIndex(p => p.id === item.id);
@@ -117,6 +181,8 @@ function renderPromptList() {
             listContainer.appendChild(li);
         });
     }
+    // 拖拽排序见 setupPromptCardDrag()：标题行是拖拽手柄，事件统一在列表上委托
+    setupPromptCardDrag();
 }
 
 function startEditing(item) {
@@ -133,10 +199,11 @@ addBtn.addEventListener('click', function() {
     if (!content) { showToast(meowI18n.t('msg_empty')); return; }
     if (editingPromptId) {
         const index = myPrompts.findIndex(p => p.id === editingPromptId);
-        if (index !== -1) myPrompts[index] = { id: editingPromptId, title: title, content: content, category: category };
+        // 保留原有 order：编辑内容不应打乱用户拖拽出来的顺序
+        if (index !== -1) myPrompts[index] = { id: editingPromptId, title: title, content: content, category: category, order: myPrompts[index].order };
         showToast(meowI18n.t('msg_saved')); exitEditing();
     } else {
-        myPrompts.push({ id: Date.now(), title: title, content: content, category: category });
+        myPrompts.push({ id: Date.now(), title: title, content: content, category: category, order: nextPromptOrder() });
         titleInput.value = ''; contentInput.value = ''; showToast(meowI18n.t('msg_saved'));
         if (currentFilter !== 'all' && currentFilter !== category) { currentFilter = 'all'; renderFilters(); }
     }

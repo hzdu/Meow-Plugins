@@ -76,6 +76,44 @@ function save2FA() {
     chrome.storage.local.set({ 'meow_2fa_accounts': my2faAccounts });
 }
 
+// ===== 2FA 卡片拖拽排序 =====
+// 交互与侧边栏「2FA验证」/「服务器管理」卡片完全一致：
+//   · 只有标题栏(.fa-card-header)是拖拽手柄，卡片内容区不参与拖拽，
+//     验证码仍可正常点击复制、密钥文本仍可拖选；
+//   · 拖拽期间被拖卡片脱离文档流、紧贴指针移动，原位由等高虚线占位块顶替，
+//     占位块逐格移动实时指示松手后的落点；
+//   · 其它卡片通过 FLIP 位移补间平滑让位；
+//   · 落点判断按相邻卡片中线，跳过被拖卡片自身。
+// 事件用委托只绑一次：render2FA 会重建所有卡片，逐卡绑定会重复注册。
+function setup2FACardDrag() {
+    if (!faList || typeof setupCardDragSort !== 'function') return;
+    setupCardDragSort({
+        container: faList,
+        cardSelector: '.fa-card',
+        headerSelector: '.fa-card-header',
+        handleClass: 'fa-card-drag-handle',
+        // 弹出窗口用的是 Material Icons，而不是侧边栏的 Font Awesome
+        handleIconClass: 'material-icons',
+        handleText: 'drag_indicator',
+        ignoreSelector: '.fa-card-actions .material-icons',
+        placeholderClass: 'fa-drop-placeholder',
+        boundKey: 'faDragBound',
+        onReorder: function (visibleIds) {
+            // DOM 顺序即保存顺序；顺序未变化时不写存储、不重渲染（避免重启取码定时器）
+            const byId = new Map(my2faAccounts.map(a => [String(a.id), a]));
+            const newOrder = visibleIds.map(id => byId.get(String(id))).filter(Boolean);
+            my2faAccounts.forEach(a => {
+                if (!visibleIds.includes(String(a.id))) newOrder.push(a);
+            });
+            const changed = newOrder.some((a, i) => a !== my2faAccounts[i]);
+            if (!changed) return;
+            my2faAccounts = newOrder;
+            save2FA();
+            render2FA();
+        }
+    });
+}
+
 function render2FA() {
     Object.keys(faRefreshIntervals).forEach(id => {
         clearInterval(faRefreshIntervals[id]);
@@ -87,11 +125,12 @@ function render2FA() {
 
     if (my2faAccounts.length === 0) {
         faEmpty.classList.remove('hidden');
+        setup2FACardDrag();
         return;
     }
     faEmpty.classList.add('hidden');
 
-    my2faAccounts.forEach((account, index) => {
+    my2faAccounts.forEach((account) => {
         const card = document.createElement('div');
         card.className = 'fa-card';
         card.dataset.id = account.id;
@@ -161,46 +200,14 @@ function render2FA() {
             }
         });
 
-        // 拖放排序
-        card.draggable = true;
-        card.dataset.index = index;
-        card.addEventListener('dragstart', function(e) {
-            this.classList.add('dragging');
-            faDragSrcIndex = index;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', index);
-        });
-        card.addEventListener('dragend', function() {
-            this.classList.remove('dragging');
-            document.querySelectorAll('#fa-list .fa-card').forEach(el => el.classList.remove('drag-over'));
-            faDragSrcIndex = null;
-        });
-        card.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            this.classList.add('drag-over');
-        });
-        card.addEventListener('dragleave', function() {
-            this.classList.remove('drag-over');
-        });
-        card.addEventListener('drop', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            this.classList.remove('drag-over');
-            const destIndex = index;
-            if (faDragSrcIndex !== null && faDragSrcIndex !== destIndex) {
-                const item = my2faAccounts.splice(faDragSrcIndex, 1)[0];
-                my2faAccounts.splice(destIndex, 0, item);
-                save2FA();
-                render2FA();
-            }
-            faDragSrcIndex = null;
-        });
+        // 拖拽排序见 setup2FACardDrag()：标题栏是拖拽手柄，事件统一在列表上委托
 
         faList.appendChild(card);
 
         start2FATimer(account, faAutoFetch);
     });
+
+    setup2FACardDrag();
 }
 
 function start2FATimer(account, autoFetch) {

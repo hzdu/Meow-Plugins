@@ -6,6 +6,50 @@ function saveAIProviders() {
     chrome.storage.local.set({ 'meow_ai_providers': myAiProviders });
 }
 
+// ===== AI Provider 卡片拖拽排序 =====
+// 交互与侧边栏「AI Provider」/「服务器管理」卡片完全一致：
+//   · 只有标题栏(.ai-card-header)是拖拽手柄，卡片内容区不参与拖拽，
+//     Base URL / Model / API Key 仍可正常点击复制与拖选；
+//   · 拖拽期间被拖卡片脱离文档流、紧贴指针移动，原位由等高虚线占位块顶替，
+//     占位块逐格移动实时指示松手后的落点；
+//   · 其它卡片通过 FLIP 位移补间平滑让位。
+// 事件用委托只绑一次：renderAIProviders 会重建所有卡片，逐卡绑定会重复注册。
+function setupAIProviderCardDrag() {
+    if (!aiList || typeof setupCardDragSort !== 'function') return;
+    setupCardDragSort({
+        container: aiList,
+        cardSelector: '.ai-card',
+        headerSelector: '.ai-card-header',
+        handleClass: 'ai-card-drag-handle',
+        // 弹出窗口用的是 Material Icons，而不是侧边栏的 Font Awesome
+        handleIconClass: 'material-icons',
+        handleText: 'drag_indicator',
+        ignoreSelector: '.ai-card-actions .material-icons, .ai-official-link',
+        placeholderClass: 'ai-drop-placeholder',
+        boundKey: 'aiDragBound',
+        onReorder: function (visibleIds) {
+            // 被筛选隐藏的卡片只是 display:none，仍在 DOM 里且没有参与让位，
+            // 因此按“可见卡片的新顺序填回原来的可见槽位”，隐藏项保持原位不动。
+            const domCards = Array.from(aiList.querySelectorAll('.ai-card'));
+            const visible = domCards.filter(c => c.style.display !== 'none').map(c => String(c.dataset.id));
+            const visibleSet = new Set(visible);
+
+            const providerById = new Map(myAiProviders.map(p => [String(p.id), p]));
+            let vi = 0;
+            const newOrder = myAiProviders.map(p => {
+                if (!visibleSet.has(String(p.id))) return p;
+                return providerById.get(visible[vi++]) || p;
+            });
+
+            const changed = newOrder.some((p, i) => p !== myAiProviders[i]);
+            if (!changed) return;
+            myAiProviders = newOrder;
+            saveAIProviders();
+            renderAIProviders();
+        }
+    });
+}
+
 function renderAIProviders() {
     if (!aiList) { console.error('ai-list element not found'); return; }
     if (!aiEmpty) { console.error('ai-empty element not found'); return; }
@@ -16,12 +60,13 @@ function renderAIProviders() {
     if (myAiProviders.length === 0) {
         aiEmpty.querySelector('p').innerHTML = meowI18n.t('ai_empty') ? '' : '暂无 AI Provider<br>点击上方 + 添加';
         aiEmpty.classList.remove('hidden');
+        setupAIProviderCardDrag();
         return;
     }
 
     let hasVisible = false;
 
-    myAiProviders.forEach((provider, index) => {
+    myAiProviders.forEach((provider) => {
         // 过滤：匹配标题或 Model
         let matchFilter = true;
         if (filterText) {
@@ -85,7 +130,7 @@ function renderAIProviders() {
         // 点击卡片头部切换展开/收起
         card.querySelector('.ai-card-header').addEventListener('click', function(e) {
             // 如果点击的是操作按钮（edit/del），不触发切换（它们有 stopPropagation）
-            if (e.target.closest('.ai-card-actions, .ai-official-link')) return;
+            if (e.target.closest('.ai-card-drag-handle, .ai-card-actions, .ai-official-link')) return;
             const body = card.querySelector('.ai-card-body');
             const toggle = card.querySelector('.ai-card-toggle');
             const isExpanded = card.classList.toggle('expanded');
@@ -145,41 +190,7 @@ function renderAIProviders() {
             }
         });
 
-        card.draggable = true;
-        card.dataset.index = index;
-
-        card.addEventListener('dragstart', function(e) {
-            this.classList.add('dragging');
-            aiDragSrcIndex = index;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', index);
-        });
-        card.addEventListener('dragend', function() {
-            this.classList.remove('dragging');
-            document.querySelectorAll('#ai-list .ai-card').forEach(el => el.classList.remove('drag-over'));
-            aiDragSrcIndex = null;
-        });
-        card.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            this.classList.add('drag-over');
-        });
-        card.addEventListener('dragleave', function() {
-            this.classList.remove('drag-over');
-        });
-        card.addEventListener('drop', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            this.classList.remove('drag-over');
-            const destIndex = index;
-            if (aiDragSrcIndex !== null && aiDragSrcIndex !== destIndex) {
-                const item = myAiProviders.splice(aiDragSrcIndex, 1)[0];
-                myAiProviders.splice(destIndex, 0, item);
-                saveAIProviders();
-                renderAIProviders();
-            }
-            aiDragSrcIndex = null;
-        });
+        // 拖拽排序见 setupAIProviderCardDrag()：标题栏是拖拽手柄，事件统一在列表上委托
 
         aiList.appendChild(card);
 
@@ -197,6 +208,8 @@ function renderAIProviders() {
         aiEmpty.querySelector('p').innerHTML = meowI18n.t('ai_empty_search') || '无匹配结果';
         aiEmpty.classList.remove('hidden');
     }
+
+    setupAIProviderCardDrag();
 }
 
 function openAIModal(provider) {

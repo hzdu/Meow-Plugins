@@ -267,6 +267,11 @@
     min-height: 0;
 }
 
+/* 拖拽落点判断用 offsetTop，需要容器作为定位基准 */
+#ai-list {
+    position: relative;
+}
+
 .ai-card {
     background: #fff;
     border: 1px solid #e2e8f0;
@@ -277,13 +282,8 @@
     flex-direction: column;
     gap: 4px;
     transition: all 0.2s;
-    cursor: grab;
     position: relative;
     overflow: hidden;
-}
-
-.ai-card:active {
-    cursor: grabbing;
 }
 
 .ai-card::before {
@@ -333,22 +333,67 @@
     z-index: 2;
 }
 
-.ai-card.dragging {
-    opacity: 0.4;
-    border-style: dashed;
-    transform: scale(0.97);
+/* 标题栏是唯一的拖拽手柄，卡片内容区不参与拖拽，
+   这样 Base URL / Model / API Key 仍可用鼠标点击复制与拖选 */
+.ai-card-header[draggable="true"] {
+    cursor: grab;
 }
 
-.ai-card.drag-over {
-    border-color: #6366f1;
-    background: #eef2ff;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+.ai-card.dragging-follow .ai-card-header[draggable="true"] {
+    cursor: grabbing;
+}
+
+/* 拖拽跟随层：fixed 避免容器滚动与相邻卡片让位的影响；
+   transition 置 none，否则 .ai-card 的 all .2s 会让跟随明显滞后 */
+.ai-card.dragging-follow {
+    position: fixed;
+    z-index: 1200;
+    margin: 0;
+    pointer-events: none;
+    border-color: #c4b5fd;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+    opacity: 0.97;
+    transition: none;
+    transform: scale(1.012);
+}
+
+/* 占位块：拖拽中撑出的空位，高度由 JS 按被拖卡片高度写入，位置即松手后的落点。
+   卡片本体靠 margin-bottom 拉间距，占位块要带上同样的外边距，否则会跳一下。 */
+.ai-drop-placeholder {
+    border: 1.5px dashed #a78bfa;
+    border-radius: 10px;
+    background: rgba(139, 92, 246, 0.06);
+    box-sizing: border-box;
+    margin-bottom: 10px;
+    pointer-events: none;
+}
+
+/* 拖拽手柄图标：与标题栏的 drag_indicator 保持一致 */
+.ai-card-header .ai-card-drag-handle {
+    font-size: 18px;
+    color: #cbd5e1;
+    cursor: grab;
+    transition: color 0.2s, background 0.2s;
+    padding: 2px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.ai-card-header .ai-card-drag-handle:hover {
+    color: #8b5cf6;
+    background: #ede9fe;
+}
+
+.ai-card-header .ai-card-drag-handle:active {
+    cursor: grabbing;
 }
 
 .ai-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 6px;
     cursor: pointer;
     user-select: none;
 }
@@ -386,6 +431,10 @@
     font-weight: 600;
     color: #1e293b;
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .ai-official-link {

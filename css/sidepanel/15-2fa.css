@@ -6,6 +6,11 @@
     padding-bottom: 10px;
 }
 
+/* 拖拽落点判断用 offsetTop，需要容器作为定位基准 */
+#fa-list {
+    position: relative;
+}
+
 .fa-card {
     background: #fff;
     border: 1px solid #e2e8f0;
@@ -23,22 +28,65 @@
     box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
 }
 
-.fa-card.dragging {
-    opacity: 0.4;
-    border-style: dashed;
-    transform: scale(0.97);
+/* 标题栏是唯一的拖拽手柄，卡片内容区不参与拖拽，
+   这样密钥文本仍可用鼠标拖选 */
+.fa-card-header[draggable="true"] {
+    cursor: grab;
 }
 
-.fa-card.drag-over {
-    border-color: #6366f1;
-    background: #eef2ff;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+.fa-card.dragging-follow .fa-card-header[draggable="true"] {
+    cursor: grabbing;
+}
+
+/* 拖拽跟随层：fixed 避免容器滚动与相邻卡片让位的影响；
+   transition 置 none，否则 .fa-card 的 all .2s 会让跟随明显滞后 */
+.fa-card.dragging-follow {
+    position: fixed;
+    z-index: 1200;
+    margin: 0;
+    pointer-events: none;
+    border-color: #c7d2fe;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+    transition: none;
+    transform: scale(1.012);
+}
+
+/* 占位块：拖拽中撑出的空位，高度由 JS 写入，位置即松手后的落点 */
+.fa-drop-placeholder {
+    border: 1.5px dashed #a5b4fc;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.06);
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+.fa-card-header .fa-card-drag-handle {
+    font-size: 14px;
+    color: #94a3b8;
+    cursor: grab;
+    transition: color 0.2s, background 0.2s;
+    padding: 2px;
+    border-radius: 4px;
+    line-height: 1;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.fa-card-header .fa-card-drag-handle:hover {
+    color: #6366f1;
+    background: #e0e7ff;
+}
+
+.fa-card-header .fa-card-drag-handle:active {
+    cursor: grabbing;
 }
 
 .fa-card-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
 }
 
 .fa-card-name {
@@ -50,6 +98,7 @@
 .fa-card-actions {
     display: flex;
     gap: 6px;
+    margin-left: auto;
 }
 
 .fa-card-actions .mi,

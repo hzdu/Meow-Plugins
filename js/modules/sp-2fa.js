@@ -14,6 +14,251 @@ async function fetch2FACode(secret) {
     }
 }
 
+// ===== 2FA 卡片拖拽排序 =====
+// 与「服务器管理」卡片同一套交互：
+//   · 只有标题栏(.fa-card-header)是拖拽手柄，卡片内容区不参与拖拽，
+//     这样密钥文本仍可用鼠标拖选；
+//   · 拖拽期间被拖卡片脱离文档流、紧贴指针移动，原位由等大占位块顶替，
+//     占位块逐格移动实时指示落点；
+//   · 其它卡片通过 FLIP 位移补间平滑让位。
+// 事件用委托只绑一次：render2FA 会重建所有卡片，逐卡绑定会重复注册。
+function setup2FACardDrag(container) {
+    container = container || faList;
+    if (!container) return;
+
+    function refreshIndices() {
+        container.querySelectorAll('.fa-card').forEach((card, i) => {
+            card.dataset.index = i;
+            card.removeAttribute('draggable');
+            const header = card.querySelector('.fa-card-header');
+            if (!header) return;
+            header.setAttribute('draggable', 'true');
+            header.querySelectorAll('a[href]').forEach(a => a.setAttribute('draggable', 'false'));
+            if (!header.querySelector('.fa-card-drag-handle')) {
+                const handle = document.createElement('span');
+                handle.className = 'mi fa-regular fa-grip-dots-vertical fa-card-drag-handle';
+                header.insertBefore(handle, header.firstChild);
+            }
+        });
+    }
+
+    refreshIndices();
+
+    if (container.dataset.faDragBound === '1') return;
+    container.dataset.faDragBound = '1';
+
+    let dragCard = null;
+    let placeholder = null;
+    let srcIndex = null;
+    let grabOffsetX = 0;
+    let grabOffsetY = 0;
+
+    function isActiveCard(card) {
+        return !!card && card !== dragCard && card.style.display !== 'none' && card.offsetParent !== null;
+    }
+
+    function followPointer(x, y) {
+        if (!dragCard) return;
+        dragCard.style.left = (x - grabOffsetX) + 'px';
+        dragCard.style.top = (y - grabOffsetY) + 'px';
+    }
+
+    // 用 offsetTop 而非 getBoundingClientRect：offsetTop 不受 transform 影响，
+    // 让位动画未结束时再次测量也不会把动画位移算进去。
+    function snapshotTops() {
+        const tops = new Map();
+        container.querySelectorAll('.fa-card').forEach(card => {
+            if (!isActiveCard(card)) return;
+            tops.set(card, card.offsetTop);
+        });
+        return tops;
+    }
+
+    function animateLetWay(prevTops) {
+        container.querySelectorAll('.fa-card').forEach(card => {
+            if (!isActiveCard(card)) return;
+            const before = prevTops.get(card);
+            if (before === undefined) return;
+            const dy = before - card.offsetTop;
+            if (!dy) return;
+            card.style.transition = 'none';
+            card.style.transform = 'translateY(' + dy + 'px)';
+            void card.offsetWidth;
+            card.style.transition = 'transform .18s cubic-bezier(.2, .8, .2, 1)';
+            card.style.transform = '';
+        });
+    }
+
+    function siblingCard(dir) {
+        let node = placeholder;
+        if (!node) return null;
+        while ((node = dir > 0 ? node.nextElementSibling : node.previousElementSibling)) {
+            if (node.classList && node.classList.contains('fa-card') && isActiveCard(node)) return node;
+        }
+        return null;
+    }
+
+    function shiftPlaceholder(dir) {
+        if (!placeholder || !placeholder.parentNode) return false;
+        const prevTops = snapshotTops();
+        if (dir > 0) {
+            const next = siblingCard(1);
+            if (!next) return false;
+            container.insertBefore(placeholder, next.nextElementSibling);
+        } else {
+            const prev = siblingCard(-1);
+            if (!prev) return false;
+            container.insertBefore(placeholder, prev);
+        }
+        animateLetWay(prevTops);
+        return true;
+    }
+
+    // 基准取「相邻卡片中线」：卡片高度不同时，以占位块中心为基准会让落点判断偏后
+    function shiftTowardsPointer(clientY) {
+        if (!placeholder) return false;
+        const y = clientY - container.getBoundingClientRect().top;
+
+        const next = siblingCard(1);
+        if (next && y > next.offsetTop + next.offsetHeight / 2) return shiftPlaceholder(1);
+
+        const prev = siblingCard(-1);
+        if (prev && y < prev.offsetTop + prev.offsetHeight / 2) return shiftPlaceholder(-1);
+
+        return false;
+    }
+
+    function finishDrag(keepPosition) {
+        if (!dragCard) return;
+        const card = dragCard;
+        const fromIndex = srcIndex;
+
+        if (placeholder) {
+            if (keepPosition) {
+                container.insertBefore(card, placeholder);
+            } else {
+                const others = Array.from(container.querySelectorAll('.fa-card')).filter(c => c !== card);
+                const anchor = others[fromIndex] || null;
+                if (anchor) container.insertBefore(card, anchor);
+                else container.appendChild(card);
+            }
+            if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+        }
+        placeholder = null;
+
+        card.classList.remove('dragging-follow', 'dragging', 'drag-over');
+        card.style.left = '';
+        card.style.top = '';
+        card.style.width = '';
+        card.style.height = '';
+
+        // 先关过渡再清位移，否则清除位移会按 CSS 的 all .2s 再滑一次
+        const cleanupCards = container.querySelectorAll('.fa-card');
+        cleanupCards.forEach(c => {
+            c.style.transition = 'none';
+            c.style.transform = '';
+        });
+        void container.offsetWidth;
+        cleanupCards.forEach(c => { c.style.transition = ''; });
+
+        dragCard = null;
+
+        if (!keepPosition || fromIndex === null) {
+            refreshIndices();
+            return;
+        }
+
+        // DOM 顺序即保存顺序；顺序未变化时不写存储、不重渲染（重渲染会重启取码定时器）
+        const domIds = Array.from(container.querySelectorAll('.fa-card')).map(c => String(c.dataset.id));
+        const accountById = new Map(my2faAccounts.map(a => [String(a.id), a]));
+        const newOrder = domIds.map(id => accountById.get(id)).filter(Boolean);
+        my2faAccounts.forEach(a => {
+            if (!domIds.includes(String(a.id))) newOrder.push(a);
+        });
+
+        const changed = newOrder.some((a, i) => a !== my2faAccounts[i]);
+        if (changed) {
+            my2faAccounts = newOrder;
+            saveData();
+            render2FA();
+        }
+        refreshIndices();
+    }
+
+    // 只有拖拽源是标题栏时才视为卡片排序，内容区选中文字等原生拖拽一律忽略
+    function getDragCard(e) {
+        const target = e.target;
+        if (!target || typeof target.closest !== 'function') return null;
+        const header = target.closest('.fa-card-header');
+        if (!header || !container.contains(header)) return null;
+        return header.closest('.fa-card');
+    }
+
+    container.addEventListener('dragstart', function(e) {
+        const card = getDragCard(e);
+        if (!card || !isActiveCard(card)) return;
+
+        const rect = card.getBoundingClientRect();
+        dragCard = card;
+        srcIndex = Array.from(container.querySelectorAll('.fa-card')).indexOf(card);
+        grabOffsetX = e.clientX - rect.left;
+        grabOffsetY = e.clientY - rect.top;
+
+        // 原生拖影会和 fixed 跟随的卡片叠成重影，用 1×1 透明图替换
+        try {
+            const blank = document.createElement('canvas');
+            blank.width = 1;
+            blank.height = 1;
+            e.dataTransfer.setDragImage(blank, 0, 0);
+        } catch (_) {}
+
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            try { e.dataTransfer.setData('text/plain', String(card.dataset.id || srcIndex)); } catch (_) {}
+        }
+
+        placeholder = document.createElement('div');
+        placeholder.className = 'fa-drop-placeholder';
+        placeholder.style.height = rect.height + 'px';
+        container.insertBefore(placeholder, card);
+
+        card.style.width = rect.width + 'px';
+        card.style.height = rect.height + 'px';
+        card.style.left = rect.left + 'px';
+        card.style.top = rect.top + 'px';
+        card.classList.add('dragging-follow');
+        card.classList.remove('dragging', 'drag-over');
+    });
+
+    container.addEventListener('dragover', function(e) {
+        if (!dragCard || !placeholder) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        followPointer(e.clientX, e.clientY);
+
+        for (let i = 0; i < 4; i++) {
+            if (!shiftTowardsPointer(e.clientY)) break;
+        }
+    });
+
+    container.addEventListener('drop', function(e) {
+        if (!dragCard) return;
+        e.preventDefault();
+        e.stopPropagation();
+        finishDrag(true);
+    });
+
+    container.addEventListener('dragend', function() {
+        // drop 分支已处理则 dragCard 已置空；这里兜底「拖到区域外松手」的取消
+        if (dragCard) finishDrag(false);
+    });
+
+    // 指针移出列表时容器收不到 dragover，用 document 捕获阶段保持跟随
+    document.addEventListener('dragover', function(e) {
+        if (dragCard) followPointer(e.clientX, e.clientY);
+    }, true);
+}
+
 function render2FA() {
     // 清除所有定时器
     Object.keys(faRefreshIntervals).forEach(id => {
@@ -26,12 +271,13 @@ function render2FA() {
 
     if (my2faAccounts.length === 0) {
         faEmpty.classList.remove('hidden');
+        setup2FACardDrag(faList);
         return;
     }
 
     faEmpty.classList.add('hidden');
 
-    my2faAccounts.forEach((account, index) => {
+    my2faAccounts.forEach((account) => {
         const card = document.createElement('div');
         card.className = 'fa-card';
         card.dataset.id = account.id;
@@ -40,7 +286,8 @@ function render2FA() {
         const safeName = escapeHtml(account.name);
 
         card.innerHTML = `
-            <div class="fa-card-header">
+            <div class="fa-card-header" draggable="true">
+                <span class="mi fa-card-drag-handle fa-regular fa-grip-dots-vertical"></span>
                 <span class="fa-card-name">${safeName}</span>
                 <div class="fa-card-actions">
                     <span class="mi fa-refresh-btn fa-regular fa-arrows-rotate" data-id="${account.id}"></span>
@@ -105,47 +352,15 @@ function render2FA() {
             }
         });
 
-        // 拖放排序
-        card.draggable = true;
-        card.dataset.index = index;
-        card.addEventListener('dragstart', function(e) {
-            this.classList.add('dragging');
-            faDragSrcIndex = index;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', index);
-        });
-        card.addEventListener('dragend', function() {
-            this.classList.remove('dragging');
-            document.querySelectorAll('#fa-list .fa-card').forEach(el => el.classList.remove('drag-over'));
-            faDragSrcIndex = null;
-        });
-        card.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            this.classList.add('drag-over');
-        });
-        card.addEventListener('dragleave', function() {
-            this.classList.remove('drag-over');
-        });
-        card.addEventListener('drop', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            this.classList.remove('drag-over');
-            const destIndex = index;
-            if (faDragSrcIndex !== null && faDragSrcIndex !== destIndex) {
-                const item = my2faAccounts.splice(faDragSrcIndex, 1)[0];
-                my2faAccounts.splice(destIndex, 0, item);
-                saveData();
-                render2FA();
-            }
-            faDragSrcIndex = null;
-        });
+        // 拖拽排序见 setup2FACardDrag()：标题栏是拖拽手柄，事件统一在列表上委托
 
         faList.appendChild(card);
 
         // 开始自动刷新代码
         start2FATimer(account);
     });
+
+    setup2FACardDrag(faList);
 }
 
 function start2FATimer(account) {

@@ -326,12 +326,10 @@ let editing2faId = null;
 let faRefreshIntervals = {};
 let faAutoFetch = false;
 let faComputeMode = 'cloud';
-let faDragSrcIndex = null;
 
 // AI Provider 数据
 let myAiProviders = [];
 let editingAiId = null;
-let aiDragSrcIndex = null;
 
 // AI Setting 数据
 let myAiSetting = { baseUrl: '', modelId: '', apiKey: '', autoProtocol: true };

@@ -29,7 +29,6 @@ let my2faAccounts = [];
 let editing2faId = null;
 let faRefreshIntervals = {};
 let faAutoFetch = false;
-let faDragSrcIndex = null;
 
 let myAiProviders = [];
 let editingAiId = null;
