@@ -79,10 +79,12 @@
     font-weight: 500;
 }
 
+/* 列表作为定位基准（offsetTop/offsetLeft 用于让位动画与落点判断） */
 .world-clock-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
+    position: relative;
 }
 
 .clock-item {
@@ -91,14 +93,11 @@
     border-radius: 10px;
     padding: 10px 12px;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 8px;
     align-items: center;
     transition: all 0.2s;
-    cursor: grab;
-}
-
-.clock-item:active {
-    cursor: grabbing;
+    cursor: default;
 }
 
 .clock-item:hover {
@@ -118,6 +117,74 @@
     border-color: #6366f1;
     background: #eef2ff;
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* 拖拽手柄：卡片左侧 grip，是唯一的拖拽入口；
+   卡片本体不参与拖拽，内容仍可用鼠标拖选文字 */
+.clock-item .clock-drag-handle {
+    font-size: 13px;
+    color: #94a3b8;
+    cursor: grab;
+    user-select: none;
+    padding: 2px;
+    border-radius: 4px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.2s, background 0.2s;
+}
+
+.clock-item .clock-drag-handle:hover {
+    color: #6366f1;
+    background: #eef2ff;
+}
+
+.clock-item .clock-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* 拖拽跟随层：被拖卡片脱离文档流（fixed 不受 grid 重排影响），紧贴指针移动。
+   transition 必须置 none，否则 .clock-item 的 all .2s 会让跟随明显滞后。 */
+.clock-item.dragging-follow {
+    position: fixed;
+    z-index: 1200;
+    margin: 0;
+    pointer-events: none;
+    border-color: #c7d2fe;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.2);
+    opacity: 0.97;
+    transition: none;
+    transform: scale(1.012);
+    cursor: grabbing;
+}
+
+/* 占位块：拖拽时撑住的网格单元，位置即松手后的落点，
+   尺寸由 JS 按被拖卡片写入，与网格单元等宽等高 */
+.clock-drop-placeholder {
+    border: 1.5px dashed #818cf8;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.06);
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+/* 暗色主题下的拖拽视觉 */
+.dark .clock-item.dragging-follow {
+    border-color: #4f46e5;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+}
+
+.dark .clock-drop-placeholder {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.dark .clock-item .clock-drag-handle {
+    color: #64748b;
+}
+
+.dark .clock-item .clock-drag-handle:hover {
+    color: #c7d2fe;
+    background: #312e81;
 }
 
 .clock-city-info {
@@ -143,6 +210,7 @@
     flex-direction: column;
     align-items: flex-end;
     gap: 2px;
+    margin-left: auto;
 }
 
 .clock-city-time {

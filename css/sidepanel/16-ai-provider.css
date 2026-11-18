@@ -60,6 +60,12 @@
     gap: 10px;
 }
 
+/* 列表作为定位基准，让 card.offsetTop 相对它计算；
+   拖拽落点判断依赖这个基准把指针坐标换算到容器内。 */
+#ai-provider-list {
+    position: relative;
+}
+
 .ai-card {
     background: #fff;
     border: 1px solid #e2e8f0;
@@ -131,6 +137,62 @@
     border-color: #8b5cf6;
     border-style: dashed;
     background: #f5f3ff;
+}
+
+/* 标题栏是唯一的拖拽手柄，卡片内容区不参与拖拽 */
+.ai-card-header[draggable="true"] {
+    cursor: grab;
+}
+
+.ai-card.dragging-follow .ai-card-header[draggable="true"] {
+    cursor: grabbing;
+}
+
+/* 拖拽跟随层：被拖卡片脱离文档流，紧贴指针移动。
+   用 fixed 可避免容器滚动与相邻卡片让位对它的影响；
+   transition 必须置 none，否则 .ai-card 的 all .2s 会让跟随明显滞后。 */
+.ai-card.dragging-follow {
+    position: fixed;
+    z-index: 1200;
+    margin: 0;
+    pointer-events: none;
+    border-color: #c4b5fd;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+    opacity: 0.97;
+    transition: none;
+    transform: scale(1.012);
+}
+
+/* 占位块：拖拽过程中撑出的空位，高度由 JS 按被拖卡片高度写入，
+   它的位置即松手后的落点。 */
+.ai-drop-placeholder {
+    border: 1.5px dashed #a78bfa;
+    border-radius: 10px;
+    background: rgba(139, 92, 246, 0.06);
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+/* 拖拽手柄图标：与工具箱/服务器卡片的 grip 图标保持一致 */
+.ai-card-header .ai-card-drag-handle {
+    font-size: 14px;
+    color: #94a3b8;
+    cursor: grab;
+    transition: color 0.2s, background 0.2s;
+    padding: 2px;
+    border-radius: 4px;
+    line-height: 1;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.ai-card-header .ai-card-drag-handle:hover {
+    color: #8b5cf6;
+    background: #ede9fe;
+}
+
+.ai-card-header .ai-card-drag-handle:active {
+    cursor: grabbing;
 }
 
 .ai-card-header {

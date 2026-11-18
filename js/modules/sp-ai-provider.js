@@ -26,6 +26,287 @@ function saveAIProviders() {
     chrome.storage.local.set({ 'meow_ai_providers': myAiProviders });
 }
 
+// ===== AI Provider 卡片拖拽排序 =====
+// 交互与「工具箱」「服务器管理」卡片保持一致：
+//   · 只有标题栏(.ai-card-header)是拖拽手柄，卡片内容区不参与拖拽；
+//   · 拖拽期间被拖卡片脱离文档流、紧贴指针移动；它原来的位置由一个等高的
+//     占位块顶替，占位块随指针逐格移动，实时指示"松手后落到哪"；
+//   · 其它卡片通过 FLIP 位移补间滑向新位置，形成平滑让位的观感。
+// 事件用委托只绑一次：renderAIProviders 会重建所有卡片，逐卡绑定会重复注册。
+function setupAiCardDrag(container) {
+    container = container || aiProviderList;
+    if (!container) return;
+
+    // 每次重建卡片后都要刷新：确保标题栏 draggable、补齐拖拽手柄、重排索引。
+    // 注意：只有标题栏是拖拽手柄，卡片本体绝不设置 draggable，
+    // 否则卡片展开后在内容区按住鼠标也会被浏览器当成拖拽。
+    function refreshIndices() {
+        container.querySelectorAll('.ai-card').forEach((card, i) => {
+            card.dataset.index = i;
+            card.removeAttribute('draggable');
+            const header = card.querySelector('.ai-card-header');
+            if (!header) return;
+            header.setAttribute('draggable', 'true');
+            // 标题栏里的链接自带原生拖拽（拖动会变成拖链接而不是拖卡片），统一关掉
+            header.querySelectorAll('a[href]').forEach(a => a.setAttribute('draggable', 'false'));
+            if (!header.querySelector('.ai-card-drag-handle')) {
+                const handle = document.createElement('span');
+                handle.className = 'mi ai-card-drag-handle fa-regular fa-grip-dots-vertical';
+                header.insertBefore(handle, header.firstChild);
+            }
+        });
+    }
+
+    refreshIndices();
+
+    // 事件委托只需绑定一次（renderAIProviders 每次都会调用本函数）
+    if (container.dataset.aiDragBound === '1') return;
+    container.dataset.aiDragBound = '1';
+
+    let dragCard = null;      // 正在拖拽的卡片
+    let placeholder = null;   // 撑开空位的占位块
+    let srcIndex = null;      // 拖拽起点索引
+    let grabOffsetX = 0;      // 按下点相对卡片左上角的偏移
+    let grabOffsetY = 0;
+
+    // 被筛选隐藏的卡片仍留在 DOM 里（display:none），既不占位也不参与
+    // 落点判断；offsetParent 为 null 也一并兜底。
+    function isActiveCard(card) {
+        return !!card && card !== dragCard && card.style.display !== 'none' && card.offsetParent !== null;
+    }
+
+    // 让跟随卡片贴在指针位置
+    function followPointer(x, y) {
+        if (!dragCard) return;
+        dragCard.style.left = (x - grabOffsetX) + 'px';
+        dragCard.style.top = (y - grabOffsetY) + 'px';
+    }
+
+    // 记录除被拖卡片外的纵向布局位置。
+    // 这里刻意用 offsetTop 而非 getBoundingClientRect：offsetTop 反映的是
+    // 布局位置，不受 transform 影响，因此让位动画尚未结束时再次测量
+    // 也不会把动画中的位移算进去，避免误差累积。
+    function snapshotTops() {
+        const tops = new Map();
+        container.querySelectorAll('.ai-card').forEach(card => {
+            if (!isActiveCard(card)) return;
+            tops.set(card, card.offsetTop);
+        });
+        return tops;
+    }
+
+    // FLIP：先让卡片瞬移到新布局位置并施加反向位移，再过渡回 0，形成滑入效果
+    function animateLetWay(prevTops) {
+        container.querySelectorAll('.ai-card').forEach(card => {
+            if (!isActiveCard(card)) return;
+            const before = prevTops.get(card);
+            if (before === undefined) return;
+            const dy = before - card.offsetTop;
+            if (!dy) return;
+            card.style.transition = 'none';
+            card.style.transform = 'translateY(' + dy + 'px)';
+            void card.offsetWidth; // 强制重排，确保反向位移先生效
+            card.style.transition = 'transform .18s cubic-bezier(.2, .8, .2, 1)';
+            card.style.transform = '';
+        });
+    }
+
+    // 取占位块前后真正参与排序的卡片。
+    // 必须跳过被拖卡片：它已改为 fixed，offsetTop 变成视口坐标（与其它卡片
+    // 相对容器的 offsetTop 不同基准），且视觉上不占位，不能作为落点参照。
+    function siblingCard(dir) {
+        let node = placeholder;
+        if (!node) return null;
+        while ((node = dir > 0 ? node.nextElementSibling : node.previousElementSibling)) {
+            if (node.classList && node.classList.contains('ai-card') && isActiveCard(node)) return node;
+        }
+        return null;
+    }
+
+    // 让占位块上移/下移一格（dir = 1 下移，-1 上移）
+    function shiftPlaceholder(dir) {
+        if (!placeholder || !placeholder.parentNode) return false;
+        const prevTops = snapshotTops();
+        if (dir > 0) {
+            const next = siblingCard(1);
+            if (!next) return false;
+            container.insertBefore(placeholder, next.nextElementSibling);
+        } else {
+            const prev = siblingCard(-1);
+            if (!prev) return false;
+            container.insertBefore(placeholder, prev);
+        }
+        animateLetWay(prevTops);
+        return true;
+    }
+
+    // 指针是否越过了相邻卡片的中线，越过才换位。
+    // 基准取"相邻卡片中线"而不是占位块中心：卡片展开后高度差异很大，
+    // 以占位块中心为基准会让高卡片的落点判断严重偏后。
+    function shiftTowardsPointer(clientY) {
+        if (!placeholder) return false;
+        const y = clientY - container.getBoundingClientRect().top;
+
+        const next = siblingCard(1);
+        if (next && y > next.offsetTop + next.offsetHeight / 2) return shiftPlaceholder(1);
+
+        const prev = siblingCard(-1);
+        if (prev && y < prev.offsetTop + prev.offsetHeight / 2) return shiftPlaceholder(-1);
+
+        return false;
+    }
+
+    // 结束拖拽：keepPosition 为 true 表示落到占位块处，false 表示回到起点（取消）
+    function finishDrag(keepPosition) {
+        if (!dragCard) return;
+        const card = dragCard;
+        const fromIndex = srcIndex;
+
+        if (placeholder) {
+            if (keepPosition) {
+                container.insertBefore(card, placeholder);
+            } else {
+                // 取消时按原索引复位：先从列表里排除自己，再把原索引处的卡片当锚点
+                const others = Array.from(container.querySelectorAll('.ai-card')).filter(c => c !== card);
+                const anchor = others[fromIndex] || null;
+                if (anchor) container.insertBefore(card, anchor);
+                else container.appendChild(card);
+            }
+            if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+        }
+        placeholder = null;
+
+        card.classList.remove('dragging-follow', 'dragging', 'drag-over');
+        card.style.left = '';
+        card.style.top = '';
+        card.style.width = '';
+        card.style.height = '';
+
+        // 清理让位动画的内联样式。
+        // 必须先关过渡再清除位移：否则清除位移会按 CSS 的 all .2s 再滑一次，
+        // 表现为 drop 后卡片额外滑行一段。归位完成后再恢复默认过渡。
+        const cleanupCards = container.querySelectorAll('.ai-card');
+        cleanupCards.forEach(c => {
+            c.style.transition = 'none';
+            c.style.transform = '';
+        });
+        void container.offsetWidth;
+        cleanupCards.forEach(c => { c.style.transition = ''; });
+
+        dragCard = null;
+        aiDragSrcIndex = null;
+
+        if (!keepPosition || fromIndex === null) {
+            refreshIndices();
+            return;
+        }
+
+        // 被筛选隐藏的卡片只是 display:none，仍在 DOM 里且没有参与让位，
+        // 因此按“可见卡片的新顺序填回原来的可见槽位”，隐藏项保持原位不动。
+        const domCards = Array.from(container.querySelectorAll('.ai-card'));
+        const visibleIds = domCards
+            .filter(c => c.style.display !== 'none')
+            .map(c => String(c.dataset.id));
+        const visibleSet = new Set(visibleIds);
+
+        const providerById = new Map(myAiProviders.map(p => [String(p.id), p]));
+        let vi = 0;
+        const newOrder = myAiProviders.map(p => {
+            if (!visibleSet.has(String(p.id))) return p;
+            return providerById.get(visibleIds[vi++]) || p;
+        });
+
+        const changed = newOrder.some((p, i) => p !== myAiProviders[i]);
+        if (changed) {
+            myAiProviders = newOrder;
+            saveAIProviders();
+            renderAIProviders();
+        }
+        // 预览/无数据变化时不会重渲染，这里也补齐索引，保证 dataset.index 永远等于 DOM 顺序
+        refreshIndices();
+    }
+
+    // 只有拖拽源是标题栏时才视为卡片排序；
+    // 卡片内容区里选中文字、拖链接等原生拖拽一律忽略。
+    function getDragCard(e) {
+        const target = e.target;
+        if (!target || typeof target.closest !== 'function') return null;
+        const header = target.closest('.ai-card-header');
+        if (!header || !container.contains(header)) return null;
+        return header.closest('.ai-card');
+    }
+
+    container.addEventListener('dragstart', function(e) {
+        const card = getDragCard(e);
+        if (!card || !isActiveCard(card)) return;
+
+        const rect = card.getBoundingClientRect();
+        dragCard = card;
+        srcIndex = Array.from(container.querySelectorAll('.ai-card')).indexOf(card);
+        aiDragSrcIndex = srcIndex;
+        grabOffsetX = e.clientX - rect.left;
+        grabOffsetY = e.clientY - rect.top;
+
+        // 原生拖影是浏览器拍下的快照，会和我们 fixed 跟随的卡片叠成重影，
+        // 用 1×1 透明图替换掉，只保留跟随指针的那一张。
+        try {
+            const blank = document.createElement('canvas');
+            blank.width = 1;
+            blank.height = 1;
+            e.dataTransfer.setDragImage(blank, 0, 0);
+        } catch (_) {}
+
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            try { e.dataTransfer.setData('text/plain', String(card.dataset.id || srcIndex)); } catch (_) {}
+        }
+
+        // 占位块先顶住原位，再把卡片抽出文档流
+        placeholder = document.createElement('div');
+        placeholder.className = 'ai-drop-placeholder';
+        placeholder.style.height = rect.height + 'px';
+        container.insertBefore(placeholder, card);
+
+        card.style.width = rect.width + 'px';
+        card.style.height = rect.height + 'px';
+        card.style.left = rect.left + 'px';
+        card.style.top = rect.top + 'px';
+        card.classList.add('dragging-follow');
+        card.classList.remove('dragging', 'drag-over');
+    });
+
+    container.addEventListener('dragover', function(e) {
+        if (!dragCard || !placeholder) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        followPointer(e.clientX, e.clientY);
+
+        // 每次 dragover 最多追 4 格：快速拖动时指针一帧能跨过好几张卡片，
+        // 只移动一格会明显滞后。上限 4 次是为了避免长列表下逐帧重排过多。
+        for (let i = 0; i < 4; i++) {
+            if (!shiftTowardsPointer(e.clientY)) break;
+        }
+    });
+
+    container.addEventListener('drop', function(e) {
+        if (!dragCard) return;
+        e.preventDefault();
+        e.stopPropagation();
+        finishDrag(true);
+    });
+
+    container.addEventListener('dragend', function() {
+        // drop 分支已处理过则 dragCard 已置空；这里兜底「拖到区域外松手」的取消
+        if (dragCard) finishDrag(false);
+    });
+
+    // 指针移出列表时容器收不到 dragover，卡片会滞留在原处；
+    // 用 document 捕获阶段保持跟随（不调用 preventDefault，不影响原生放置判定）
+    document.addEventListener('dragover', function(e) {
+        if (dragCard) followPointer(e.clientX, e.clientY);
+    }, true);
+}
+
 function renderAIProviders() {
     if (!aiProviderList || !aiProviderEmpty) return;
     aiProviderList.innerHTML = '';
@@ -74,13 +355,14 @@ function renderAIProviders() {
         const hasNote = provider.note && provider.note.trim();
 
         card.innerHTML = `
-            <div class="ai-card-header">
+            <div class="ai-card-header" draggable="true">
+                <span class="mi ai-card-drag-handle fa-regular fa-grip-dots-vertical"></span>
                 <i class="fa-regular fa-chevron-down ai-card-toggle"></i>
                 <span class="ai-card-name">${nameDisplay}</span>
                 <div class="ai-card-actions">
                     <i class="fa-regular fa-play ai-apply-btn" title="应用到 AI Setting" style="font-size:13px;color:#8b5cf6;"></i>
                     ${hasNote ? `<i class="fa-regular fa-file-lines ai-note-btn" title="查看备注"></i>` : ''}
-                    ${officialLink ? `<a class="ai-official-link" href="${officialLink}" target="_blank" title="打开官网"><i class="fa-regular fa-window-restore"></i></a>` : ''}
+                    ${officialLink ? `<a class="ai-official-link" href="${officialLink}" target="_blank" title="打开官网" draggable="false"><i class="fa-regular fa-window-restore"></i></a>` : ''}
                     <i class="fa-regular fa-pen-to-square ai-edit-btn" data-id="${provider.id}"></i>
                     <i class="fa-regular fa-xmark ai-del-btn" data-id="${provider.id}"></i>
                 </div>
@@ -100,7 +382,7 @@ function renderAIProviders() {
         `;
 
         card.querySelector('.ai-card-header').addEventListener('click', function(e) {
-            if (e.target.closest('.ai-card-actions, .ai-official-link')) return;
+            if (e.target.closest('.ai-card-drag-handle, .ai-card-actions, .ai-official-link')) return;
             const body = card.querySelector('.ai-card-body');
             const isExpanded = card.classList.toggle('expanded');
             body.style.display = isExpanded ? '' : 'none';
@@ -159,41 +441,8 @@ function renderAIProviders() {
 
         aiProviderList.appendChild(card);
 
-        // 拖放排序
-        card.draggable = true;
+        // 拖放排序见 setupAiCardDrag()：标题栏是拖拽手柄，事件统一在列表上委托
         card.dataset.index = index;
-        card.addEventListener('dragstart', function(e) {
-            this.classList.add('dragging');
-            aiDragSrcIndex = index;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', index);
-        });
-        card.addEventListener('dragend', function() {
-            this.classList.remove('dragging');
-            document.querySelectorAll('#ai-provider-list .ai-card').forEach(el => el.classList.remove('drag-over'));
-            aiDragSrcIndex = null;
-        });
-        card.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            this.classList.add('drag-over');
-        });
-        card.addEventListener('dragleave', function() {
-            this.classList.remove('drag-over');
-        });
-        card.addEventListener('drop', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            this.classList.remove('drag-over');
-            const destIndex = index;
-            if (aiDragSrcIndex !== null && aiDragSrcIndex !== destIndex) {
-                const item = myAiProviders.splice(aiDragSrcIndex, 1)[0];
-                myAiProviders.splice(destIndex, 0, item);
-                saveAIProviders();
-                renderAIProviders();
-            }
-            aiDragSrcIndex = null;
-        });
 
         if (!matchFilter) {
             card.style.display = 'none';
@@ -206,6 +455,9 @@ function renderAIProviders() {
         aiProviderEmpty.classList.remove('hidden');
         aiProviderEmpty.querySelector('p').textContent = '无匹配结果';
     }
+
+    // 卡片建好后统一整理拖拽手柄/索引（本函数每次重建列表都会被调用）
+    setupAiCardDrag(aiProviderList);
 }
 
 function openAIModal(provider) {

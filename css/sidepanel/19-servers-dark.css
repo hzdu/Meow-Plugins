@@ -73,6 +73,29 @@
     background: #1e1b4b;
 }
 
+.dark .srv-card.dragging-follow,
+.theme-dark .srv-card.dragging-follow {
+    border-color: #4338ca;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+}
+
+.dark .srv-drop-placeholder,
+.theme-dark .srv-drop-placeholder {
+    border-color: #4f46e5;
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.dark .srv-card-header .srv-card-drag-handle,
+.theme-dark .srv-card-header .srv-card-drag-handle {
+    color: #64748b;
+}
+
+.dark .srv-card-header .srv-card-drag-handle:hover,
+.theme-dark .srv-card-header .srv-card-drag-handle:hover {
+    color: #a5b4fc;
+    background: #312e81;
+}
+
 .dark .srv-card-name,
 .theme-dark .srv-card-name {
     color: #f1f5f9;

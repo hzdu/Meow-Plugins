@@ -21,6 +21,29 @@
     background: #1e1b4b;
 }
 
+.dark .ai-card.dragging-follow,
+.theme-dark .ai-card.dragging-follow {
+    border-color: #7c3aed;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+}
+
+.dark .ai-drop-placeholder,
+.theme-dark .ai-drop-placeholder {
+    border-color: #7c3aed;
+    background: rgba(139, 92, 246, 0.12);
+}
+
+.dark .ai-card-header .ai-card-drag-handle,
+.theme-dark .ai-card-header .ai-card-drag-handle {
+    color: #64748b;
+}
+
+.dark .ai-card-header .ai-card-drag-handle:hover,
+.theme-dark .ai-card-header .ai-card-drag-handle:hover {
+    color: #c4b5fd;
+    background: #4c1d95;
+}
+
 .dark .ai-card-name,
 .theme-dark .ai-card-name {
     color: #f1f5f9;

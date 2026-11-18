@@ -342,6 +342,12 @@
     gap: 10px;
 }
 
+/* 服务器卡片列表作为定位基准，让 card.offsetTop 相对它计算；
+   拖拽落点判断依赖这个基准把指针坐标换算到容器内。 */
+#srv-list {
+    position: relative;
+}
+
 /* 服务器卡片 */
 .srv-card {
     background: #fff;
@@ -370,6 +376,63 @@
     border-color: #6366f1;
     background: #eef2ff;
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* 标题栏是唯一的拖拽手柄，卡片内容区不参与拖拽，
+   这样展开后在输入框/文本域里仍可正常用鼠标拖选文字 */
+.srv-card-header[draggable="true"] {
+    cursor: grab;
+}
+
+.srv-card.dragging-follow .srv-card-header[draggable="true"] {
+    cursor: grabbing;
+}
+
+/* 拖拽跟随层：被拖卡片脱离文档流，紧贴指针移动。
+   用 fixed 可避免容器滚动与相邻卡片让位对它的影响；
+   transition 必须置 none，否则 .srv-card 的 all .2s 会让跟随明显滞后。 */
+.srv-card.dragging-follow {
+    position: fixed;
+    z-index: 1200;
+    margin: 0;
+    pointer-events: none;
+    border-color: #c7d2fe;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+    opacity: 0.97;
+    transition: none;
+    transform: scale(1.012);
+}
+
+/* 占位块：拖拽过程中撑出的空位，高度由 JS 按被拖卡片高度写入，
+   它的位置即松手后的落点。 */
+.srv-drop-placeholder {
+    border: 1.5px dashed #a5b4fc;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.06);
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+/* 拖拽手柄图标：与工具箱卡片的 grip 图标保持一致 */
+.srv-card-header .srv-card-drag-handle {
+    font-size: 14px;
+    color: #94a3b8;
+    cursor: grab;
+    transition: color 0.2s, background 0.2s;
+    padding: 2px;
+    border-radius: 4px;
+    line-height: 1;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.srv-card-header .srv-card-drag-handle:hover {
+    color: #6366f1;
+    background: #e0e7ff;
+}
+
+.srv-card-header .srv-card-drag-handle:active {
+    cursor: grabbing;
 }
 
 .srv-card-header {
