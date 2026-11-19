@@ -63,14 +63,36 @@
     cursor: grabbing;
 }
 
-.hot-tab.dragging {
-    opacity: 0.4;
-    transform: scale(0.9);
+/* 拖拽跟随层：被拖 TAB 脱离文档流，紧贴指针移动。
+   用 fixed 可避免容器滚动与相邻 TAB 让位对它的影响；
+   transition 置 none，否则 .hot-tab 的 all .2s 会让跟随明显滞后。 */
+.hot-tab.dragging-follow {
+    position: fixed;
+    z-index: 1200;
+    margin: 0;
+    pointer-events: none;
+    box-sizing: border-box;
+    border: 1px solid #c7d2fe;
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+    opacity: 0.97;
+    transition: none;
+    transform: scale(1.04);
+    cursor: grabbing;
 }
 
-.hot-tab.drag-over {
-    border-top: 2px solid #6366f1;
-    margin-top: -2px;
+/* 占位块：拖拽过程中撑出的空位，尺寸由 JS 按被拖 TAB 写入，位置即松手后的落点。
+   TAB 靠 margin-bottom 拉间距，占位块要带上同样的外边距，否则列表会跳一下。 */
+.hot-tab-placeholder {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 12px;
+    border: 1.5px dashed #a5b4fc;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.06);
+    box-sizing: border-box;
+    flex-shrink: 0;
+    pointer-events: none;
 }
 
 .hot-content {

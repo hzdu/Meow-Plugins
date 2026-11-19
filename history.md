@@ -1,3 +1,36 @@
+### 19.1.33
+- 「注册码管理」的服务器记录现在也能拖拽排序：之前列表全部来自服务器时卡片没有 grip 手柄、拖不动，现在所有卡片都可拖
+- 服务器记录的顺序只存本地 `meow_regcode_api_order`（按软件分类存 id 数组），不回写服务器；重新渲染/重启后保持，未记录过的新记录按服务器原顺序排在后面
+- 本地记录与服务器记录各自成组，拖拽只在本组内换位（占位块不会跨进另一段），避免松手后回弹；本地记录仍写 `meow_regcodes`
+- 通用 `card-drag.js` 新增 `sortGroup` 分组与 `onReorder(visibleIds, card)` 第二个参数；搜索过滤下仍只重排可见项，隐藏记录保持原位
+- 更新 `dev/regcode-drag-preview.html` 回归用例（本地/服务器两段各自排序、跨组不生效、筛选下隐藏项保位）
+
+### 19.1.32
+- 侧边栏「注册码管理」卡片拖拽排序同步 AI Provider/服务器管理卡片的拖放效果：标题栏（左侧新增 grip 手柄）为唯一拖拽手柄，被拖卡片脱离文档流紧贴指针移动，原位置由等高虚线占位块顶替并随指针逐格移动，其它卡片平滑让位，松手后落位
+- 服务器下发的记录只读，不参与排序：没有 grip 手柄、不能起拖、也不作为落点参照；本地记录可在它们之前自由排序
+- 搜索过滤时只重排可见项，被隐藏的记录保持原位；顺序未变不写 storage，不再整列表重渲染
+- 复用服务器卡片的 `.srv-card.dragging-follow`/`.srv-drop-placeholder`/`.srv-card-drag-handle` 样式（含暗色），`#reg-list` 补 `position: relative`
+- 通用 `card-drag.js` 新增 `canDrag` 判定，支持列表内混入不可拖拽的卡片；新增 `dev/regcode-drag-preview.html` 回归用例，移除已废弃的 `regDragSrcId` 与逐卡拖拽事件
+
+### 19.1.31
+- 侧边栏「稍后阅读」卡片拖拽排序同步 AI Provider/服务器管理卡片的拖放效果：标题行（左侧新增 grip 手柄）为唯一拖拽手柄，被拖卡片脱离文档流紧贴指针移动，原位置由等高虚线占位块顶替并随指针逐格移动，其它卡片平滑让位，松手后落位
+- 稍后阅读标题/链接样式改由 `.rl-title`/`.rl-title-text`/`.rl-url` 维护（外观不变）；数组顺序即展示顺序，重排后落盘，顺序未变不写；搜索过滤时只重排可见项，被隐藏条目保持原位
+- 侧边栏「图集」缩略图拖拽排序：整块缩略图就是拖拽手柄（格子太小，不额外插图标），4 列网格按「最近槽位」落点，占位块随指针换格、其余格子横向+纵向同时 FLIP 让位；新增 `order` 字段持久化（旧数据按时间倒序自动补齐，新图片排最前）
+- 图集只把外部文件拖入当作上传，内部排序拖拽不再点亮「拖入图片」提示；拖动复选框不会触发卡片排序
+- 通用 `card-drag.js` 新增 `layout:'grid'` 模式（二维 FLIP + 最近槽位落点），单列列表行为不变；`.prompt-list`/`.scratch-list`/`.gallery-grid` 补 `position: relative`，确保落点计算以列表自身为 offsetParent
+- 新增 `dev/readlater-drag-preview.html`、`dev/gallery-drag-preview.html` 回归用例
+
+### 19.1.30
+- 侧边栏「热门榜单」左侧 TAB 标签拖拽排序同步 AI Provider/服务器管理卡片的拖放效果：TAB 只有 40×40，整块即拖拽手柄（不额外插 grip 图标）；被拖 TAB 脱离文档流紧贴指针移动，原位置由等大的虚线占位块顶替并随指针逐格移动，其它 TAB 平滑让位，松手后落位
+- TAB 内的站点图标关闭原生拖拽，按住图标拖动也走卡片排序，不会变成拖图片；点击 TAB 仍照常切换榜单
+- 顺序未变化时不写 `meow_hot_tab_order`；应用保存的排序后重新同步索引与拖拽状态
+- 通用拖拽逻辑 `card-drag.js` 支持「卡片本身就是手柄」的紧凑列表（标题行与卡片为同一元素时不再因 `querySelector` 取不到自身而丢失 draggable）；新增 `dev/hot-tab-drag-preview.html` 回归用例，移除已废弃的 `hotDragSrcEl` 与 `.hot-tab.dragging/.drag-over`
+
+### 19.1.29
+- 侧边栏「AI 提示词」「暂存板」「工具箱」「服务器管理」「注册码管理」「2FA 验证」「国际时钟」「热门榜单」卡片同步「AI Provider」卡片的悬停边框效果：悬停时 1px 实线边框转为透明，由 1.5px 环形火焰渐变沿卡片边框顺时针流动，中心区域用 mask 挖空不影响内容，0.4s 淡入，圆角跟随各卡片自身（8px/10px）
+- 新增 `css/sidepanel/23-card-fire-border.css` 统一维护该效果并在 `css/sidepanel.css` 末尾按序引入；复用 01-base.css 已有的 `@property --fire-angle` 与 `fire-flow-angle` 关键帧，不重复定义
+- 光晕只作用于静止态悬停，`dragging`/`dragging-follow`/`drag-over` 的拖拽视觉保持原样；暗色下 `.srv-card` 的悬停边框色同步为透明，避免与光晕叠色
+
 ### 19.1.28
 - 弹出窗口「AI Provider」卡片拖拽排序同步侧边栏 AI Provider/服务器管理的拖放效果：标题栏（左侧新增 Material 图标 grip 手柄）为唯一拖拽手柄，被拖卡片脱离文档流紧贴指针移动，原位置由等高等距的虚线占位块顶替并随指针逐格移动，其它卡片平滑让位，松手后落位
 - 卡片本体不再 draggable，Base URL / Model / API Key 仍可点击复制与拖选，点标题栏仍可展开/收起（点 grip 手柄不触发）；顺序未变化时不写存储、不重渲染

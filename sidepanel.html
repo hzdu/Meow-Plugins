@@ -164,11 +164,11 @@
 
             <div id="view-hot" class="view-content view-hot-flex hidden">
                 <div class="hot-sidebar">
-                    <div class="hot-tab active" data-source="toutiao" data-i18n-title="hot_toutiao" title="头条"><img src="https://www.toutiao.com/favicon.ico" alt="头条"></div>
-                    <div class="hot-tab" data-source="douyin" data-i18n-title="hot_douyin" title="抖音"><img src="https://www.douyin.com/favicon.ico" alt="抖音"></div>
-                    <div class="hot-tab" data-source="zhihu" data-i18n-title="hot_zhihu" title="知乎"><img src="https://static.zhihu.com/heifetz/favicon.ico" alt="知乎"></div>
-                    <div class="hot-tab" data-source="xhs" data-i18n-title="hot_xhs" title="小红书"><img src="https://www.xiaohongshu.com/favicon.ico" alt="小红书"></div>
-                    <div class="hot-tab" data-source="baidu" data-i18n-title="hot_baidu" title="百度"><img src="https://www.baidu.com/favicon.ico" alt="百度"></div>
+                    <div class="hot-tab active" data-source="toutiao" data-i18n-title="hot_toutiao" title="头条"><img src="https://www.toutiao.com/favicon.ico" loading="lazy" alt="头条"></div>
+                    <div class="hot-tab" data-source="douyin" data-i18n-title="hot_douyin" title="抖音"><img src="https://www.douyin.com/favicon.ico" loading="lazy" alt="抖音"></div>
+                    <div class="hot-tab" data-source="zhihu" data-i18n-title="hot_zhihu" title="知乎"><img src="https://static.zhihu.com/heifetz/favicon.ico" loading="lazy" alt="知乎"></div>
+                    <div class="hot-tab" data-source="xhs" data-i18n-title="hot_xhs" title="小红书"><img src="https://www.xiaohongshu.com/favicon.ico" loading="lazy" alt="小红书"></div>
+                    <div class="hot-tab" data-source="baidu" data-i18n-title="hot_baidu" title="百度"><img src="https://www.baidu.com/favicon.ico" loading="lazy" alt="百度"></div>
                 </div>
                 <div class="hot-content">
                     <div id="hot-list" class="hot-list"></div>
@@ -1446,25 +1446,26 @@
 <div id="scratch-modal-input" class="rich-input" contenteditable="true" data-i18n-ph="ph_scratch_content" placeholder="在此粘贴文本或截图 (Ctrl+V)..." style="flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; overflow-y: auto; outline: none; font-family: inherit; font-size: 13px; line-height: 1.5; margin-bottom: 10px; background: #fff;"></div>
 <div class="modal-footer" style="display: flex; gap: 6px; flex-wrap: nowrap;"><button id="scratch-modal-selectall" class="prompt-view-btn"><span class="mi fa-regular fa-square-check" style="font-size: 13px; vertical-align: middle; margin-right: 2px;"></span><span data-i18n="action_select_all">全选</span></button><button id="scratch-modal-copy" class="prompt-view-btn"><span class="mi fa-regular fa-copy" style="font-size: 13px; vertical-align: middle; margin-right: 2px;"></span><span data-i18n="action_copy">复制</span></button><div style="flex: 1;"></div><button id="scratch-modal-cancel" class="prompt-view-btn prompt-view-btn-cancel" data-i18n="action_cancel">取消</button><button id="scratch-modal-save" class="prompt-view-btn prompt-view-btn-save" data-i18n="action_save">保存</button></div></div></div>
 
-    <script src="js/i18n.js"></script>
-    <script src="js/meow-confirm.js"></script>
+    <script defer src="js/i18n.js"></script>
+    <script defer src="js/meow-confirm.js"></script>
     <!-- sidepanel 模块化拆分（原 js/sidepanel.js） -->
-    <script src="js/utils.js"></script>
-    <script src="js/modules/sp-core.js"></script>
-    <script src="js/modules/card-drag.js"></script>
-    <script src="js/modules/sp-prompts.js"></script>
-    <script src="js/modules/sp-scratchpad.js"></script>
-    <script src="js/modules/sp-readlater.js"></script>
-    <script src="js/modules/sp-gallery.js"></script>
-    <script src="js/modules/sp-tools.js"></script>
-    <script src="js/modules/sp-servers.js"></script>
-    <script src="js/modules/sp-regcode.js"></script>
-    <script src="js/modules/sp-2fa.js"></script>
-    <script src="js/modules/sp-ai-provider.js"></script>
-    <script src="js/modules/sp-ai-collection.js"></script>
-    <script src="js/modules/sp-hot.js"></script>
-    <script src="js/modules/sp-editor.js"></script>
-    <script src="js/modules/sp-clock.js"></script>
-    <script src="js/modules/sp-fb-clock.js"></script>
+    <!-- defer：解析完 HTML 再按原顺序执行，首屏先画出来，不被 800KB+ 脚本的执行挡住 -->
+    <script defer src="js/utils.js"></script>
+    <script defer src="js/modules/sp-core.js"></script>
+    <script defer src="js/modules/card-drag.js"></script>
+    <script defer src="js/modules/sp-prompts.js"></script>
+    <script defer src="js/modules/sp-scratchpad.js"></script>
+    <script defer src="js/modules/sp-readlater.js"></script>
+    <script defer src="js/modules/sp-gallery.js"></script>
+    <script defer src="js/modules/sp-tools.js"></script>
+    <script defer src="js/modules/sp-servers.js"></script>
+    <script defer src="js/modules/sp-regcode.js"></script>
+    <script defer src="js/modules/sp-2fa.js"></script>
+    <script defer src="js/modules/sp-ai-provider.js"></script>
+    <script defer src="js/modules/sp-ai-collection.js"></script>
+    <script defer src="js/modules/sp-hot.js"></script>
+    <script defer src="js/modules/sp-editor.js"></script>
+    <script defer src="js/modules/sp-clock.js"></script>
+    <script defer src="js/modules/sp-fb-clock.js"></script>
 </body>
 </html>

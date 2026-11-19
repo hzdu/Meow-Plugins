@@ -41,8 +41,6 @@ let dragSrcIndex = null;
 let toolDragSrcIndex = null;
 
 // 热搜拖拽
-let hotDragSrcEl = null;
-
 // 时钟
 let clockInterval = null;
 
@@ -387,18 +385,13 @@ async function _safeStorageGet(area, keys, retries = 2) {
 }
 
 async function loadData() {
-    let syncData = {};
-    let localData = {};
-    try {
-        syncData = await _safeStorageGet('sync', ['meow_prompts', 'prompt_categories', 'meow_scratchpad_list', 'meow_read_later', 'meow_ai_tags', 'meow_hot_tab_order']);
-    } catch (e) {
-        console.error("Meow: loadData() sync storage 读取最终失败，使用空数据继续。", e);
-    }
-    try {
-        localData = await _safeStorageGet('local', ['meow_gallery', 'meow_scratchpad', 'meow_scratchpad_list_local', 'meow_2fa_accounts', 'meow_2fa_auto_fetch', 'meow_prompts']);
-    } catch (e) {
-        console.error("Meow: loadData() local storage 读取最终失败，使用空数据继续。", e);
-    }
+    // sync 与 local 互不依赖，并发读取：原来串行等两轮 storage round-trip
+    const [syncData, localData] = await Promise.all([
+        _safeStorageGet('sync', ['meow_prompts', 'prompt_categories', 'meow_scratchpad_list', 'meow_read_later', 'meow_ai_tags', 'meow_hot_tab_order'])
+            .catch((e) => { console.error("Meow: loadData() sync storage 读取最终失败，使用空数据继续。", e); return {}; }),
+        _safeStorageGet('local', ['meow_gallery', 'meow_scratchpad', 'meow_scratchpad_list_local', 'meow_2fa_accounts', 'meow_2fa_auto_fetch', 'meow_prompts'])
+            .catch((e) => { console.error("Meow: loadData() local storage 读取最终失败，使用空数据继续。", e); return {}; })
+    ]);
 
     // 提示词从 sync 迁移到 local（sync 有 8KB 单项限制，长提示词会存储失败）
     if (localData.meow_prompts) {
@@ -679,15 +672,23 @@ function renderCatManager() {
 
 // ================== 初始化入口 ==================
 async function initSidepanel() {
-    // === 0. 初始化国际化 ===
+    // === 0. 国际化与数据加载互不依赖，先并发发起，少等一轮 storage round-trip ===
     // 国际化失败不应阻塞后续渲染，仍可使用默认中文文案
-    try {
-        if (window.meowI18n) {
-            await window.meowI18n.init();
+    const i18nReady = (async () => {
+        try {
+            if (window.meowI18n) {
+                await window.meowI18n.init();
+            }
+        } catch (err) {
+            console.error("Meow: i18n init failed, continue with defaults.", err);
         }
-    } catch (err) {
-        console.error("Meow: i18n init failed, continue with defaults.", err);
-    }
+    })();
+    // loadData 内部已做重试与容错；即使最终失败也继续渲染空数据界面
+    const dataReady = loadData().catch((err) => {
+        console.error("Meow: loadData() failed during initSidepanel, UI will render with empty data.", err);
+    });
+
+    await i18nReady;
 
     // === 1. 建立与后台的长连接 (实现 Toggle 关闭功能) ===
     // 即使连接失败也不影响侧边栏正常使用
@@ -741,11 +742,7 @@ async function initSidepanel() {
     // 长时间未打开侧边栏时，Service Worker 可能已休眠，
     // chrome.storage 首次唤醒偶发超时/连接断开，loadData 内部已加重试与容错。
     // 即便 loadData 最终仍失败，也要保证 UI 基础逻辑（Tab 恢复等）不被跳过。
-    try {
-        await loadData();
-    } catch (err) {
-        console.error("Meow: loadData() failed during initSidepanel, UI will render with empty data.", err);
-    }
+    await dataReady;
 
     // 将后续渲染拆分为独立 try/catch 块，单点失败不阻塞后续
     try {
@@ -793,15 +790,9 @@ async function initSidepanel() {
         console.error("Meow: applySavedHotTabOrder failed.", err);
     }
 
-    // === 初始加载热榜数据 ===
-    try {
-        const activeHotTab = document.querySelector('.hot-tab.active');
-        if (activeHotTab) {
-            fetchHotList(activeHotTab.dataset.source);
-        }
-    } catch (err) {
-        console.error("Meow: fetchHotList failed.", err);
-    }
+    // === 热榜数据改为切到热榜 Tab 时再拉取（见 tab 点击逻辑） ===
+    // 原来每次打开侧边栏都会无条件请求 60s 接口，即使用户停在其他 Tab，
+    // 白白占用首屏带宽，弱网下还会让网络请求互相拖延。
 
     // === 搜索监听（在此注册以确保 render 函数已定义）===
     try {

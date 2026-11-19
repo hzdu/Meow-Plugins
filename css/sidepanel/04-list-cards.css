@@ -33,6 +33,8 @@
     flex-direction: column;
     gap: 10px;
     padding-bottom: 10px;
+    /* 拖拽落点用 offsetTop 计算，容器必须是 offsetParent */
+    position: relative;
 }
 
 /* 提示词卡片 */
@@ -217,7 +219,8 @@ border-top: 1px dashed #f1f5f9;
 }
 
 .prompt-card.dragging-follow .p-header[draggable="true"],
-.scratch-card.dragging-follow .scratch-meta[draggable="true"] {
+.scratch-card.dragging-follow .scratch-meta[draggable="true"],
+.scratch-card.dragging-follow .rl-title[draggable="true"] {
     cursor: grabbing;
 }
 
@@ -271,6 +274,78 @@ border-top: 1px dashed #f1f5f9;
 .p-header .prompt-drag-handle:active,
 #scratch-list .scratch-meta .scratch-drag-handle:active {
     cursor: grabbing;
+}
+
+/* ===== 稍后阅读卡片（外观复用 .scratch-card） ===== */
+/* 标题行是拖拽手柄，左侧 grip 图标与提示词/暂存板卡片一致 */
+.rl-title {
+    font-weight: 600;
+    color: #334155;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.rl-title[draggable="true"] {
+    cursor: grab;
+}
+
+.rl-title .rl-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 0;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.rl-title .rl-icon-fallback {
+    color: #94a3b8;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.rl-title-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.rl-title .readlater-drag-handle {
+    font-size: 13px;
+    color: #94a3b8;
+    cursor: grab;
+    transition: color 0.2s, background 0.2s;
+    padding: 2px;
+    border-radius: 4px;
+    line-height: 1;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.rl-title .readlater-drag-handle:hover {
+    color: #6366f1;
+    background: #e0e7ff;
+}
+
+.rl-title .readlater-drag-handle:active {
+    cursor: grabbing;
+}
+
+.rl-url {
+    font-size: 11px;
+    color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.readlater-drop-placeholder {
+    border: 1.5px dashed #a5b4fc;
+    border-radius: 8px;
+    background: rgba(99, 102, 241, 0.06);
+    box-sizing: border-box;
+    pointer-events: none;
 }
 
 /* 插入 grip 手柄后，标题仍靠左、右侧操作区仍靠右 */

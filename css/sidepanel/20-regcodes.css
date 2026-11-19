@@ -13,6 +13,11 @@
     display: none;
 }
 
+/* 注册码列表作为定位基准，让 card.offsetTop 相对它计算；拖拽落点判断依赖这个基准 */
+#reg-list {
+    position: relative;
+}
+
 .dark #view-regcodes,
 .theme-dark #view-regcodes {
     color: #e2e8f0;

@@ -2,9 +2,70 @@
 // 此文件由 sidepanel.js 拆分而来
 
 // ================== GALLERY (图集多选增强) ==================
+
+// 保证每张图片都有 order 字段：早期数据按原本的展示顺序（时间倒序）铺开一次，
+// 之后 order 就是用户拖拽出来的顺序。
+function ensureGalleryOrder() {
+    const missing = myGalleryImages.filter(img => !Number.isFinite(img.order));
+    if (!missing.length) return false;
+    if (missing.length === myGalleryImages.length) {
+        myGalleryImages.slice().sort((a, b) => b.timestamp - a.timestamp).forEach((img, i) => { img.order = i; });
+    } else {
+        // 个别新图片缺 order：放到最前面
+        let min = Infinity;
+        myGalleryImages.forEach(img => { if (Number.isFinite(img.order)) min = Math.min(min, img.order); });
+        if (!Number.isFinite(min)) min = 0;
+        missing.sort((a, b) => a.timestamp - b.timestamp).forEach(img => { img.order = --min; });
+    }
+    return true;
+}
+
+// 新增图片的 order：排在现有图片最前面
+function nextGalleryOrder() {
+    let min = 0;
+    myGalleryImages.forEach(img => { if (Number.isFinite(img.order)) min = Math.min(min, img.order); });
+    return min - 1;
+}
+
+// 可见卡片占据的 order 槽位固定不变，只把可见图片按新顺序填回这些槽位
+function applyGalleryVisibleOrder(visibleIds) {
+    const byId = new Map(myGalleryImages.map(img => [String(img.id), img]));
+    const visible = visibleIds.map(id => byId.get(String(id))).filter(Boolean);
+    if (visible.length < 2) return false;
+    const visibleSet = new Set(visible);
+    const slots = myGalleryImages.filter(img => visibleSet.has(img)).map(img => img.order).sort((a, b) => a - b);
+    let changed = false;
+    visible.forEach((img, i) => {
+        if (img.order !== slots[i]) { img.order = slots[i]; changed = true; }
+    });
+    return changed;
+}
+
+// 图集卡片拖拽排序：整块缩略图就是拖拽手柄（格子太小，不额外插 grip 图标），
+// 4 列网格按「最近槽位」落点，其余格子平滑让位。
+function setupGalleryCardDrag() {
+    if (!galleryGrid || typeof setupCardDragSort !== 'function') return;
+    setupCardDragSort({
+        container: galleryGrid,
+        cardSelector: '.gallery-item',
+        headerSelector: '.gallery-item',
+        handleClass: '',
+        ignoreSelector: '.item-check',
+        layout: 'grid',
+        placeholderClass: 'gallery-drop-placeholder',
+        boundKey: 'galleryDragBound',
+        onReorder: function (visibleIds) {
+            // DOM 顺序即保存顺序；顺序没变则不写
+            if (!applyGalleryVisibleOrder(visibleIds)) return;
+            saveData();
+        }
+    });
+}
+
 function renderGallery() {
+    ensureGalleryOrder();
     galleryGrid.innerHTML = '';
-    const sorted = myGalleryImages.slice().sort((a, b) => b.timestamp - a.timestamp);
+    const sorted = myGalleryImages.slice().sort((a, b) => (a.order - b.order) || (b.timestamp - a.timestamp));
 
     // 更新选中计数显示
     updateGallerySelectCount();
@@ -16,6 +77,7 @@ function renderGallery() {
         sorted.forEach(img => {
             const div = document.createElement('div');
             div.className = 'gallery-item';
+            div.dataset.id = img.id;
 
             // 图片
             const imageEl = document.createElement('img');
@@ -46,6 +108,8 @@ function renderGallery() {
             div.addEventListener('click', function() { openLightbox(img); });
             galleryGrid.appendChild(div);
         });
+        // 拖拽排序见 setupGalleryCardDrag()：缩略图整块是拖拽手柄，事件在网格上委托
+        setupGalleryCardDrag();
     }
 }
 
@@ -79,7 +143,7 @@ function handleImageFile(file) {
     if (!file.type.startsWith('image/')) return; if (file.size > 5 * 1024 * 1024) { showToast(meowI18n.t('msg_img_too_large')); return; }
     const reader = new FileReader();
     reader.onload = function(e) {
-        myGalleryImages.unshift({ id: Date.now() + Math.random().toString(36).substr(2, 5), timestamp: Date.now(), dataUrl: e.target.result });
+        myGalleryImages.unshift({ id: Date.now() + Math.random().toString(36).substr(2, 5), timestamp: Date.now(), dataUrl: e.target.result, order: nextGalleryOrder() });
         if (myGalleryImages.length > 50) myGalleryImages = myGalleryImages.slice(0, 50);
         saveData(); renderGallery(); showToast(meowI18n.t('msg_saved'));
     };
@@ -88,9 +152,14 @@ function handleImageFile(file) {
 
 document.addEventListener('paste', function(e) { if (viewGallery.classList.contains('hidden')) return; const items = e.clipboardData.items; for (let i = 0; i < items.length; i++) { if (items[i].type.indexOf('image') !== -1) { handleImageFile(items[i].getAsFile()); e.preventDefault(); } } });
 [galleryDropZone, viewGallery].forEach(target => {
-    target.addEventListener('dragover', function(e) { e.preventDefault(); galleryDropZone.classList.add('drag-over'); });
+    // 只响应外部文件拖入；内部卡片排序的 dragover/drop 不能点亮“松开上传”提示
+    const isFileDrag = (e) => {
+        const types = e.dataTransfer && e.dataTransfer.types;
+        return !!types && Array.prototype.indexOf.call(types, 'Files') !== -1;
+    };
+    target.addEventListener('dragover', function(e) { if (!isFileDrag(e)) return; e.preventDefault(); galleryDropZone.classList.add('drag-over'); });
     target.addEventListener('dragleave', function() { galleryDropZone.classList.remove('drag-over'); });
-    target.addEventListener('drop', function(e) { e.preventDefault(); galleryDropZone.classList.remove('drag-over'); if (viewGallery.classList.contains('hidden')) return; const files = e.dataTransfer.files; for (let i = 0; i < files.length; i++) handleImageFile(files[i]); });
+    target.addEventListener('drop', function(e) { if (!isFileDrag(e)) return; e.preventDefault(); galleryDropZone.classList.remove('drag-over'); if (viewGallery.classList.contains('hidden')) return; const files = e.dataTransfer.files; for (let i = 0; i < files.length; i++) handleImageFile(files[i]); });
 });
 
 // ================== LIGHTBOX (灯箱预览) ==================

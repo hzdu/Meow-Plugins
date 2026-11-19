@@ -293,15 +293,16 @@ function setupConverterLogic() {
         };
 
         // Check checking/auto-query logic
-        window.checkAndInitIpTools = function() {
+        // autoQuery=false：只回填缓存，不在侧边栏启动时自动发起 IP 探测（卡片默认是收起的）
+        window.checkAndInitIpTools = function(autoQuery) {
             chrome.storage.local.get(['meow_ip_cache'], (result) => {
                 const cache = result.meow_ip_cache;
                 if (cache && cache.ip) {
                     // Use cached data
                     updateIpUi(cache.ip, cache.country, cache.city, cache.isp, cache.riskHtml, cache.riskColor);
                     showIntlSecondary(cache.ipv4, cache.ipv6, cache.ip);
-                } else {
-                    // No cache (fresh install?), auto query
+                } else if (autoQuery) {
+                    // No cache：只在用户展开 IP 卡片时自动探测
                     if (!btnIpQuery.textContent.includes('...')) {
                         btnIpQuery.click();
                     }
@@ -477,8 +478,8 @@ function setupConverterLogic() {
 btnIpQuery.innerHTML = '<span class="mi fa-regular fa-arrows-rotate" style="font-size: 14px; vertical-align: middle;"></span> ' + meowI18n.t('action_query_net');
         };
 
-         // Initial check
-         checkAndInitIpTools();
+         // Initial check：只读缓存，不自动发网络探测
+         checkAndInitIpTools(false);
     }
     // IP/域名 → IP & 所在地查询
     if (domainInput && btnDomainQuery && domainResult) {
@@ -846,27 +847,30 @@ btnIpQuery.innerHTML = '<span class="mi fa-regular fa-arrows-rotate" style="font
     exchangeCardHeaders.forEach(h => {
         if (h.textContent.includes('实时汇率') || h.querySelector('#exchange-refresh-btn')) {
             h.addEventListener('click', () => {
-                const card = h.parentElement;
-                // If it was just expanded (it will NOT have 'collapsed' class anymore)
-                if (!card.classList.contains('collapsed')) {
+                // 展开动作由 setupToolCardToggle 的 onclick 负责，两者的监听顺序不固定；
+                // 放到下一轮事件循环再判断，确保先展开、再刷新
+                setTimeout(() => {
+                    const card = h.parentElement;
+                    if (card.classList.contains('collapsed')) return;
                     // Force fetch to update time info
                     delete exchangeRatesCache[exchangeFromSelect.value];
-                    // Give layout time to unhide
-                    setTimeout(doExchangeConvert, 50);
-                }
+                    doExchangeConvert();
+                }, 0);
             });
         }
     });
 
-    // Load cache and auto-convert on open
+    // Load cache：有新鲜缓存时先按缓存显示，启动阶段不发网络请求；
+    // 卡片默认收起，首次展开时上面的监听会强制刷新。
     if (exchangeAmount) {
         chrome.storage.local.get(['meow_exchange_cache'], (result) => {
             const cache = result.meow_exchange_cache;
             if (cache && cache.base && cache.rates) {
                 exchangeRatesCache[cache.base] = cache;
+                if (Date.now() - cache.timestamp < 600000) {
+                    doExchangeConvert();
+                }
             }
-            // Auto-convert with default values
-            doExchangeConvert();
         });
     }
 
@@ -938,6 +942,10 @@ function setupToolCardToggle() {
             // 如果点击的面板之前是收起状态，则展开它
             if (isCollapsed) {
                 card.classList.remove('collapsed');
+                // 工具箱卡片默认收起：展开 IP 卡片且无缓存时才发起探测
+                if (card.dataset.toolId === 'tool-ip' && typeof window.checkAndInitIpTools === 'function') {
+                    window.checkAndInitIpTools(true);
+                }
             }
         };
     });

@@ -7,7 +7,6 @@
 // ================== 全局状态 ==================
 let myRegCodes = [];
 let editingRegRecord = null;
-let regDragSrcId = null;
 
 // 软件分类
 let regCategories = []; // [{ id, name }]
@@ -43,6 +42,8 @@ function getRegCategoryName(catId) {
 // API 模式下服务器是数据真源，本地只保留一份缓存供请求失败时离线查看（只读）。
 const REG_SRC_STORE_KEY = 'meow_regcode_sources';
 const REG_CACHE_STORE_KEY = 'meow_regcode_api_cache';
+// 服务器记录的本地展示顺序（catId -> [id]），只影响本机排序，不回写服务器
+const REG_ORDER_STORE_KEY = 'meow_regcode_api_order';
 
 // 本地字段 -> 服务器字段（映射留空即同名）
 const REG_MAP_FIELDS = [
@@ -86,6 +87,7 @@ const REG_REQUEST_TIMEOUT = 15000;
 let regApiRecords = {};     // catId -> 记录数组（最近一次成功请求，或缓存水合）
 let regApiStatus = {};      // catId -> { state: 'ok'|'error'|'loading'|'cached', at, message }
 let regCacheStore = {};     // catId -> { at, records }，整份驻留内存，避免读-改-写竞争
+let regApiOrder = {};        // catId -> [id]，用户拖拽出来的服务器记录展示顺序
 const regLoadingSources = new Set();
 
 function defaultRegSourceConfig() {
@@ -371,10 +373,15 @@ function regRecordHasServerId(reg) {
 // ---------- 数据源与缓存的持久化 ----------
 async function loadRegSources() {
     try {
-        const d = await chrome.storage.local.get([REG_SRC_STORE_KEY, REG_CACHE_STORE_KEY]);
+        const d = await chrome.storage.local.get([REG_SRC_STORE_KEY, REG_CACHE_STORE_KEY, REG_ORDER_STORE_KEY]);
         const raw = d[REG_SRC_STORE_KEY] || {};
         regSources = {};
         Object.keys(raw).forEach(catId => { regSources[catId] = normalizeRegSource(raw[catId]); });
+        const rawOrder = d[REG_ORDER_STORE_KEY] || {};
+        regApiOrder = {};
+        Object.keys(rawOrder).forEach(catId => {
+            if (Array.isArray(rawOrder[catId])) regApiOrder[catId] = rawOrder[catId].map(String);
+        });
         regCacheStore = d[REG_CACHE_STORE_KEY] || {};
         Object.keys(regCacheStore).forEach(catId => {
             const cfg = regSourceOf(catId);
@@ -392,6 +399,10 @@ async function loadRegSources() {
 
 function saveRegSources() {
     chrome.storage.local.set({ [REG_SRC_STORE_KEY]: regSources });
+}
+
+function saveRegApiOrder() {
+    chrome.storage.local.set({ [REG_ORDER_STORE_KEY]: regApiOrder });
 }
 
 function removeRegSourceFor(catId) {
@@ -425,17 +436,32 @@ function regLocalRecords(catId) {
     return myRegCodes
         .filter(r => !r.linked)
         .filter(r => !catId || r.categoryId === catId)
-        .map(r => Object.assign({ origin: 'local' }, r));
+        .map(r => Object.assign({ origin: 'local', _group: 'local' }, r));
+}
+
+// 服务器记录带分组标记，并按本地保存的展示顺序排序；
+// 没记录过的（刚新增、服务器新下发）保持服务器原顺序排在后面。
+function sortApiRecords(catId, list) {
+    const order = regApiOrder[catId] || [];
+    const pos = new Map(order.map((id, i) => [String(id), i]));
+    return list
+        .map(r => Object.assign({}, r, { _group: 'api:' + catId }))
+        .sort((a, b) => {
+            const ia = pos.has(String(a.id)) ? pos.get(String(a.id)) : Infinity;
+            const ib = pos.has(String(b.id)) ? pos.get(String(b.id)) : Infinity;
+            if (ia === ib) return 0;
+            return ia < ib ? -1 : 1;
+        });
 }
 
 // API 记录按主键挂上本地 CRM 字段；没配映射的软件保持原样
 function regMergedApiRecords(catId) {
     const cfg = regSourceOf(catId);
     const apiList = regApiRecords[catId] || [];
-    if (!cfg) return apiList.slice();
+    if (!cfg) return sortApiRecords(catId, apiList.slice());
 
     const hosted = regHostedKeys(cfg);
-    if (hosted.length === REG_MAP_FIELDS.length) return apiList.slice();
+    if (hosted.length === REG_MAP_FIELDS.length) return sortApiRecords(catId, apiList.slice());
     const idKey = regIdLocalKey(cfg) || 'hwid';
     const shadows = myRegCodes.filter(r => r.categoryId === catId && r.linked);
     const used = new Set();
@@ -470,7 +496,7 @@ function regMergedApiRecords(catId) {
     const orphans = shadows
         .filter(s => !used.has(s.id))
         .map(s => Object.assign({ origin: 'local' }, s));
-    return merged.concat(orphans);
+    return sortApiRecords(catId, merged.concat(orphans));
 }
 
 // 回读成功后，把服务器主键盖到影子上，之后就不靠硬件码猜是哪条了
@@ -642,6 +668,67 @@ function renderRegCatTabs() {
 }
 
 // ================== 列表渲染 ==================
+// ================== 卡片拖拽排序 ==================
+// 本地记录：可见卡片占据的数组槽位固定不变，只把可见记录按新顺序填回这些槽位，
+// 被搜索过滤掉的记录保持原位。
+function applyRegCodeVisibleOrder(visibleIds) {
+    const byId = new Map(myRegCodes.map(r => [String(r.id), r]));
+    const visible = visibleIds.map(id => byId.get(String(id))).filter(Boolean);
+    if (visible.length < 2) return false;
+    const slots = visible.map(r => myRegCodes.indexOf(r)).sort((a, b) => a - b);
+    const next = myRegCodes.slice();
+    let changed = false;
+    visible.forEach((r, i) => {
+        if (next[slots[i]] !== r) { next[slots[i]] = r; changed = true; }
+    });
+    if (changed) myRegCodes = next;
+    return changed;
+}
+
+// 服务器记录同理：按当前展示顺序占的槽位回填，顺序只存本地，不回写服务器。
+function applyRegApiOrder(catId, visibleIds) {
+    const full = regMergedApiRecords(catId).map(r => String(r.id));
+    if (full.length < 2) return false;
+    const visible = visibleIds.map(String);
+    const visibleSet = new Set(visible);
+    const slots = [];
+    full.forEach((id, i) => { if (visibleSet.has(id)) slots.push(i); });
+    const next = full.slice();
+    let changed = false;
+    visible.forEach((id, i) => {
+        if (next[slots[i]] !== id) { next[slots[i]] = id; changed = true; }
+    });
+    if (!changed) return false;
+    regApiOrder[catId] = next;
+    return true;
+}
+
+// 卡片拖拽排序：标题栏（左侧 grip 手柄）为唯一拖拽手柄，交互与服务器管理卡片一致。
+// 本地记录与服务器记录各自成组：只能在本组内换位；服务器记录的顺序只存本地。
+function setupRegCardDrag(container) {
+    const regList = container || document.getElementById('reg-list');
+    if (!regList || typeof setupCardDragSort !== 'function') return;
+    setupCardDragSort({
+        container: regList,
+        cardSelector: '.reg-card',
+        headerSelector: '.srv-card-header',
+        handleClass: 'srv-card-drag-handle',
+        placeholderClass: 'srv-drop-placeholder',
+        boundKey: 'regCardDragBound',
+        sortGroup: function (card) { return card.dataset.group || 'local'; },
+        onReorder: function (visibleIds, card) {
+            const group = card ? String(card.dataset.group || 'local') : 'local';
+            if (group.indexOf('api:') === 0) {
+                if (!applyRegApiOrder(group.slice(4), visibleIds)) return;
+                saveRegApiOrder();
+                return;
+            }
+            if (!applyRegCodeVisibleOrder(visibleIds)) return;
+            saveRegCodes();
+        }
+    });
+}
+
 function renderRegCodes() {
     const regList = document.getElementById('reg-list');
     const regEmpty = document.getElementById('reg-empty');
@@ -686,6 +773,8 @@ function renderRegCodes() {
         const card = document.createElement('div');
         card.className = 'srv-card reg-card';
         card.dataset.id = reg.id;
+        // 本地记录与服务器记录各自成组，拖拽只在本组内换位
+        card.dataset.group = reg._group || 'local';
 
         card.innerHTML = `
             <div class="srv-card-header reg-card-header">
@@ -768,46 +857,7 @@ function renderRegCodes() {
             }
         });
 
-        // 拖拽排序：服务器记录的顺序由服务端决定，只有本地记录可排
-        card.draggable = (reg.origin === 'local');
-        if (reg.origin === 'local') {
-            card.addEventListener('dragstart', function(e) {
-                this.classList.add('dragging');
-                regDragSrcId = reg.id;
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', reg.id);
-            });
-            card.addEventListener('dragend', function() {
-                this.classList.remove('dragging');
-                document.querySelectorAll('#reg-list .reg-card').forEach(el => el.classList.remove('drag-over'));
-                regDragSrcId = null;
-            });
-            card.addEventListener('dragover', function(e) {
-                if (reg.origin !== 'local') return;
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                this.classList.add('drag-over');
-            });
-            card.addEventListener('dragleave', function() {
-                this.classList.remove('drag-over');
-            });
-            card.addEventListener('drop', function(e) {
-                e.stopPropagation();
-                e.preventDefault();
-                this.classList.remove('drag-over');
-                if (reg.origin !== 'local' || regDragSrcId === null || regDragSrcId === reg.id) return;
-                const srcIdx = myRegCodes.findIndex(r => r.id === regDragSrcId);
-                const dstIdx = myRegCodes.findIndex(r => r.id === reg.id);
-                if (srcIdx !== -1 && dstIdx !== -1) {
-                    const item = myRegCodes.splice(srcIdx, 1)[0];
-                    myRegCodes.splice(dstIdx, 0, item);
-                    saveRegCodes();
-                    renderRegCodes();
-                }
-                regDragSrcId = null;
-            });
-        }
-
+        // 拖拽排序见 setupRegCardDrag()：标题栏是拖拽手柄，事件统一在列表上委托
         regList.appendChild(card);
     });
 
@@ -833,6 +883,8 @@ function renderRegCodes() {
 
     renderRegStatusBar();
     renderRegSourceBanner();
+    // 每次重建卡片后刷新拖拽手柄与索引（事件在列表上只委托一次）
+    setupRegCardDrag(regList);
 }
 
 // 底部统计栏：销售额 + 到期状态

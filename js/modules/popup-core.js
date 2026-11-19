@@ -553,15 +553,39 @@ const renderApp = async () => {
         setTimeout(updateTabTracker, 100); 
     });
 
-    await loadHabits();
-    await loadAlarms(); 
-    await loadCountdowns(); 
-    await loadScratchpad(); 
-    await loadPreExpenses(); 
-    await loadAssets();
-    await loadSmokingData();
-    await renderCalendar();
-    
+    // 启动阶段的数据读取互不依赖时并发执行：原先近 20 次 await 串行，每次都要等一轮
+    // chrome.storage round-trip，把「数据就绪」的时间白白叠加起来。
+    // 注意：loadPreExpenses / loadAssets 都会写当天账本（自动计划收入、租金），必须串行，
+    // 且要排在 loadAndRenderFinanceList 之前，避免读到写入前的旧账本。
+    const baseLoads = Promise.all([
+        loadHabits(),
+        loadAlarms(),
+        loadCountdowns(),
+        loadScratchpad(),
+        loadSmokingData(),
+        loadAndRenderTaskList(selectedDateKey),
+        loadFinNoteHistory(),
+        loadFinLinks()
+    ]);
+    const financeWrites = (async () => {
+        await loadPreExpenses();
+        await loadAssets();
+    })();
+    await Promise.all([baseLoads, financeWrites]);
+
+    // 账本列表必须在上面两个自动写入完成之后读取
+    await loadAndRenderFinanceList(selectedDateKey);
+
+    // 日历渲染与「历史输入建议」只依赖前面已就绪的基础数据，可以并发
+    await Promise.all([
+        renderCalendar(),
+        loadTodoHistory(),
+        loadPeNameHistory(),
+        loadCdTitleHistory(),
+        loadHabitHistory(),
+        loadAlarmLabelHistory()
+    ]);
+
     renderHabitsView(); 
     renderAlarmsView(); 
     renderCountdownsView(); 
@@ -569,15 +593,6 @@ const renderApp = async () => {
     renderPreExpensesView(); 
     renderSmokingView();
     renderAssetsView();
-    await loadAndRenderTaskList(selectedDateKey);
-    await loadTodoHistory();
-    await loadPeNameHistory();
-    await loadCdTitleHistory();
-    await loadHabitHistory();
-    await loadAlarmLabelHistory();
-    await loadAndRenderFinanceList(selectedDateKey);
-    await loadFinNoteHistory();
-    await loadFinLinks();
     renderFinanceView();
     
     checkAndHighlightTabs(selectedDateKey);

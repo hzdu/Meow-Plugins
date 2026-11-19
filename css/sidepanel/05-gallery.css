@@ -46,6 +46,8 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 4px;
     padding-bottom: 10px;
+    /* 拖拽落点用 offsetLeft/offsetTop 计算，容器必须是 offsetParent */
+    position: relative;
 }
 
 .gallery-item {
@@ -89,4 +91,33 @@
 
 .gallery-item:hover .item-check {
     opacity: 1;
+}
+
+/* ===== 图集卡片拖拽排序 ===== */
+/* 缩略图整块就是拖拽手柄，格子太小不额外插 grip 图标 */
+.gallery-item[draggable="true"] {
+    cursor: grab;
+}
+
+/* 拖拽跟随层：被拖格子脱离文档流紧贴指针移动 */
+.gallery-item.dragging-follow {
+    position: fixed;
+    z-index: 1200;
+    margin: 0;
+    pointer-events: none;
+    border-color: #c7d2fe;
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.28);
+    opacity: 0.97;
+    transition: none;
+    transform: scale(1.04);
+    cursor: grabbing;
+}
+
+/* 占位块：宽高由 JS 按被拖格子写入，占一个网格单元 */
+.gallery-drop-placeholder {
+    border: 1.5px dashed #a5b4fc;
+    border-radius: 6px;
+    background: rgba(99, 102, 241, 0.08);
+    box-sizing: border-box;
+    pointer-events: none;
 }

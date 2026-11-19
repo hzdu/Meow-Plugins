@@ -1,0 +1,91 @@
+/* === 卡片悬停火焰流动边框 ===
+   将侧边栏「AI Provider」卡片（css/sidepanel/16-ai-provider.css 中的 .ai-card）的
+   鼠标悬停边框效果同步到其它功能卡片：
+   「AI 提示词」.prompt-card、「暂存板」.scratch-card、「服务器管理」.srv-card、
+   「注册码管理」.srv-card.reg-card、「2FA 验证」.fa-card、「国际时钟」.clock-item、
+   「工具箱」.tool-card、「热门榜单」.hot-item。
+
+   效果说明：悬停时 1px 实线边框转为透明，由 1.5px 的环形渐变（火焰色）沿卡片边框
+   持续流动，中心区域用 mask 挖空，不影响卡片内容与交互。
+   @property --fire-angle 与 fire-flow-angle 关键帧定义见 01-base.css。 */
+
+.prompt-card,
+.scratch-card,
+.tool-card,
+.srv-card,
+.fa-card,
+.clock-item,
+.hot-item {
+    /* ::before 环形光晕的定位基准（部分卡片原本没有 position: relative） */
+    position: relative;
+}
+
+.prompt-card::before,
+.scratch-card::before,
+.tool-card::before,
+.srv-card::before,
+.fa-card::before,
+.clock-item::before,
+.hot-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* 跟随各卡片自身的圆角（8px / 10px） */
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+        from var(--fire-angle, 0deg),
+        transparent,
+        transparent,
+        #ff4500,
+        #ff8c00,
+        #ffd700,
+        #ff6b00,
+        #ff4500,
+        transparent,
+        transparent
+    );
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    /* 高于卡片内容，保证紧贴卡片边缘的标题栏背景也不会盖住光晕 */
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: fire-flow-angle 2.5s linear infinite;
+    pointer-events: none;
+}
+
+/* 悬停：实线边框让位给流动光晕；拖拽中的各种状态不叠加该效果，
+   避免与 dashed 占位、drag-over 高亮互相干扰 */
+.prompt-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over),
+.scratch-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over),
+.tool-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over),
+.srv-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over),
+.fa-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over),
+.clock-item:hover:not(.dragging):not(.dragging-follow):not(.drag-over),
+.hot-item:hover:not(.dragging):not(.dragging-follow):not(.drag-over) {
+    border-color: transparent;
+}
+
+.prompt-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over)::before,
+.scratch-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over)::before,
+.tool-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over)::before,
+.srv-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over)::before,
+.fa-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over)::before,
+.clock-item:hover:not(.dragging):not(.dragging-follow):not(.drag-over)::before,
+.hot-item:hover:not(.dragging):not(.dragging-follow):not(.drag-over)::before {
+    opacity: 1;
+}
+
+/* 暗色：.srv-card 在 19-servers-dark.css 里另有 hover 边框色，
+   这里同步为透明，保证暗色下同样只看到流动光晕 */
+.dark .srv-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over),
+.theme-dark .srv-card:hover:not(.dragging):not(.dragging-follow):not(.drag-over) {
+    border-color: transparent;
+}

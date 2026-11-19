@@ -1,0 +1,36 @@
+/* material-icons.css - 本地 Material Icons 字体（v145）
+ *
+ * 【为什么本地化】
+ * popup.html 原先直接 <link> 到 fonts.googleapis.com 的图标样式。解析器插入的样式表
+ * 是渲染阻塞资源：该域名在部分网络环境下会长时间挂起，弹窗就要一直等到连接失败/超时
+ * 才肯首次绘制，表现为点开图标后白屏数秒。字体落到扩展包内后，首屏只依赖本地文件，
+ * 断网/被墙时图标也能正常显示。
+ *
+ * 字体来源：Google Material Icons（Apache License 2.0）
+ * 字体文件：fonts/material-icons.woff2
+ * 许可证：fonts/LICENSE-Apache-2.0.txt
+ */
+
+@font-face {
+    font-family: 'Material Icons';
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+    src: url('../fonts/material-icons.woff2') format('woff2');
+}
+
+.material-icons {
+    font-family: 'Material Icons';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+}

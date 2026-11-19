@@ -21,6 +21,14 @@ function setupCardDragSort(opts) {
     const handleText = opts.handleText || '';
     const ignoreSelector = opts.ignoreSelector || '';
     const boundKey = opts.boundKey || 'cardDragBound';
+    // list：单列列表，按相邻卡片中线逐格换位；grid：多列网格，按最近槽位落点
+    const layout = opts.layout === 'grid' ? 'grid' : 'list';
+    // 可拖拽判定：列表里混有只读卡片（如服务器下发的记录）时，
+    // 这些卡片不补手柄、不参与拖拽，也不作为让位/落点参照。
+    const canDrag = typeof opts.canDrag === 'function' ? opts.canDrag : null;
+    // 排序分组：同一列表里可能并存互不相通的几段（如本地记录 / 服务器记录），
+    // 拖拽只能在本组内换位，避免松手后跳回原位。
+    const sortGroup = typeof opts.sortGroup === 'function' ? opts.sortGroup : null;
     const onReorder = typeof opts.onReorder === 'function' ? opts.onReorder : null;
 
     // 每次重建卡片后都要刷新：确保标题行 draggable、补齐拖拽手柄、重排索引。
@@ -30,11 +38,17 @@ function setupCardDragSort(opts) {
         container.querySelectorAll(cardSelector).forEach(function (card, i) {
             card.dataset.index = i;
             card.removeAttribute('draggable');
-            const header = card.querySelector(headerSelector);
+            // 有些列表（如热门榜单左侧 TAB）卡片本身就是手柄，没有独立的标题行元素
+            const header = card.matches(headerSelector) ? card : card.querySelector(headerSelector);
             if (!header) return;
+            if (canDrag && !canDrag(card)) {
+                // 只读卡片：不设 draggable，也不插手柄
+                header.removeAttribute('draggable');
+                return;
+            }
             header.setAttribute('draggable', 'true');
-            // 标题行里的链接自带原生拖拽（拖动会变成拖链接而不是拖卡片），统一关掉
-            header.querySelectorAll('a[href]').forEach(function (a) { a.setAttribute('draggable', 'false'); });
+            // 标题行里的链接、图片自带原生拖拽（拖动会变成拖链接/拖图片，而不是拖卡片），统一关掉
+            header.querySelectorAll('a[href], img').forEach(function (el) { el.setAttribute('draggable', 'false'); });
             if (handleClass && !header.querySelector('.' + handleClass)) {
                 const handle = document.createElement('span');
                 handle.className = handleIconClass + (handleClass ? ' ' + handleClass : '');
@@ -59,7 +73,11 @@ function setupCardDragSort(opts) {
     // 被筛选隐藏的卡片仍留在 DOM 里（display:none），既不占位也不参与
     // 落点判断；offsetParent 为 null 也一并兜底。
     function isActiveCard(card) {
-        return !!card && card !== dragCard && card.style.display !== 'none' && card.offsetParent !== null;
+        if (!card || card === dragCard) return false;
+        if (card.style.display === 'none' || card.offsetParent === null) return false;
+        if (canDrag && !canDrag(card)) return false;
+        if (sortGroup && dragCard && sortGroup(card) !== sortGroup(dragCard)) return false;
+        return true;
     }
 
     // 让跟随卡片贴在指针位置
@@ -69,28 +87,30 @@ function setupCardDragSort(opts) {
         dragCard.style.top = (y - grabOffsetY) + 'px';
     }
 
-    // 记录除被拖卡片外的纵向布局位置。
-    // 这里刻意用 offsetTop 而非 getBoundingClientRect：offsetTop 反映的是
+    // 记录除被拖卡片外的布局位置。
+    // 这里刻意用 offsetTop/offsetLeft 而非 getBoundingClientRect：它们反映的是
     // 布局位置，不受 transform 影响，让位动画未结束时再次测量也不会累加误差。
-    function snapshotTops() {
-        const tops = new Map();
+    function snapshotPositions() {
+        const positions = new Map();
         container.querySelectorAll(cardSelector).forEach(function (card) {
             if (!isActiveCard(card)) return;
-            tops.set(card, card.offsetTop);
+            positions.set(card, { left: card.offsetLeft, top: card.offsetTop });
         });
-        return tops;
+        return positions;
     }
 
-    // FLIP：先让卡片瞬移到新布局位置并施加反向位移，再过渡回 0，形成滑入效果
-    function animateLetWay(prevTops) {
+    // FLIP：先让卡片瞬移到新布局位置并施加反向位移，再过渡回 0，形成滑入效果。
+    // 网格布局需要同时补间横向位移，纵向列表里的 dx 自然为 0。
+    function animateLetWay(prevPositions) {
         container.querySelectorAll(cardSelector).forEach(function (card) {
             if (!isActiveCard(card)) return;
-            const before = prevTops.get(card);
-            if (before === undefined) return;
-            const dy = before - card.offsetTop;
-            if (!dy) return;
+            const before = prevPositions.get(card);
+            if (!before) return;
+            const dx = before.left - card.offsetLeft;
+            const dy = before.top - card.offsetTop;
+            if (!dx && !dy) return;
             card.style.transition = 'none';
-            card.style.transform = 'translateY(' + dy + 'px)';
+            card.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
             void card.offsetWidth; // 强制重排，确保反向位移先生效
             card.style.transition = 'transform .18s cubic-bezier(.2, .8, .2, 1)';
             card.style.transform = '';
@@ -112,7 +132,7 @@ function setupCardDragSort(opts) {
     // 让占位块上移/下移一格（dir = 1 下移，-1 上移）
     function shiftPlaceholder(dir) {
         if (!placeholder || !placeholder.parentNode) return false;
-        const prevTops = snapshotTops();
+        const prevPositions = snapshotPositions();
         if (dir > 0) {
             const next = siblingCard(1);
             if (!next) return false;
@@ -122,7 +142,63 @@ function setupCardDragSort(opts) {
             if (!prev) return false;
             container.insertBefore(placeholder, prev);
         }
-        animateLetWay(prevTops);
+        animateLetWay(prevPositions);
+        return true;
+    }
+
+    // 布局矩形（不受 FLIP 动画的 transform 影响，拖拽过程中测量稳定）。
+    // 单元格视口位置 = 容器视口位置 + 元素相对容器的布局偏移；
+    // 前提是容器自身是定位元素（offsetParent），网格/列表都已在 CSS 里保证。
+    function layoutRect(el) {
+        const cr = container.getBoundingClientRect();
+        return {
+            left: cr.left + el.offsetLeft,
+            top: cr.top + el.offsetTop,
+            right: cr.left + el.offsetLeft + el.offsetWidth,
+            bottom: cr.top + el.offsetTop + el.offsetHeight
+        };
+    }
+
+    // 网格布局（如侧边栏图集 4 列）：把占位块移动到指针最近的槽位。
+    // 槽位 = 在流项目（活动卡片 + 占位块自身）按阅读顺序（先行后列）占的单元格；
+    // 占位块自身槽位也参与“最近”比较，指针停在占位块上时目标不变，落点稳定不回跳。
+    function placePlaceholderAt(x, y) {
+        if (!placeholder) return false;
+        const cards = Array.from(container.querySelectorAll(cardSelector)).filter(isActiveCard);
+        if (!cards.length) return false;
+
+        const inFlow = cards.concat([placeholder]);
+        inFlow.sort(function (a, b) {
+            const ra = layoutRect(a);
+            const rb = layoutRect(b);
+            if (Math.abs(ra.top - rb.top) > 1) return ra.top - rb.top;
+            return ra.left - rb.left;
+        });
+
+        let targetIdx = 0;
+        let minDist = Infinity;
+        for (let i = 0; i < inFlow.length; i++) {
+            const rect = layoutRect(inFlow[i]);
+            const dx = Math.max(rect.left - x, 0, x - rect.right);
+            const dy = Math.max(rect.top - y, 0, y - rect.bottom);
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d < minDist) {
+                minDist = d;
+                targetIdx = i;
+            }
+        }
+
+        const currentIdx = inFlow.indexOf(placeholder);
+        if (targetIdx === currentIdx) return false;
+
+        // 目标在后（targetIdx > currentIdx）→ 插到“当前占目标后一槽位”的项目前（越过它一格）
+        // 目标在前（targetIdx < currentIdx）→ 插到“当前占目标槽位”的项目前
+        const refIdx = targetIdx > currentIdx ? targetIdx + 1 : targetIdx;
+        const ref = refIdx < inFlow.length ? inFlow[refIdx] : null;
+
+        const prevPositions = snapshotPositions();
+        container.insertBefore(placeholder, ref);
+        animateLetWay(prevPositions);
         return true;
     }
 
@@ -187,11 +263,17 @@ function setupCardDragSort(opts) {
         }
 
         // 只上报可见卡片的顺序：被筛选隐藏的卡片不参与让位，位置保持不变
+        // 只上报本次拖拽分组内的卡片顺序（其它分组的顺序由各自的数据源决定）
+        const group = sortGroup ? sortGroup(card) : null;
         const visibleIds = Array.from(container.querySelectorAll(cardSelector))
-            .filter(function (c) { return c.style.display !== 'none' && c.offsetParent !== null; })
+            .filter(function (c) {
+                return c.style.display !== 'none' && c.offsetParent !== null &&
+                    (!canDrag || canDrag(c)) &&
+                    (!group || !sortGroup || sortGroup(c) === group);
+            })
             .map(function (c) { return String(c.dataset.id); });
 
-        if (onReorder) onReorder(visibleIds);
+        if (onReorder) onReorder(visibleIds, card);
         refreshIndices();
     }
 
@@ -203,7 +285,9 @@ function setupCardDragSort(opts) {
         const header = target.closest(headerSelector);
         if (!header || !container.contains(header)) return null;
         if (ignoreSelector && target.closest(ignoreSelector)) return null;
-        return header.closest(cardSelector);
+        const card = header.closest(cardSelector);
+        if (canDrag && !canDrag(card)) return null;
+        return card;
     }
 
     container.addEventListener('dragstart', function (e) {
@@ -234,6 +318,8 @@ function setupCardDragSort(opts) {
         placeholder = document.createElement(placeholderTag);
         placeholder.className = placeholderClass;
         placeholder.style.height = rect.height + 'px';
+        // 网格里每个单元宽度小于容器，占位块必须显式对齐被拖卡片的尺寸
+        if (layout === 'grid') placeholder.style.width = rect.width + 'px';
         container.insertBefore(placeholder, card);
 
         card.style.width = rect.width + 'px';
@@ -249,6 +335,11 @@ function setupCardDragSort(opts) {
         e.preventDefault();
         if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
         followPointer(e.clientX, e.clientY);
+
+        if (layout === 'grid') {
+            placePlaceholderAt(e.clientX, e.clientY);
+            return;
+        }
 
         // 每次 dragover 最多追 4 格：快速拖动时指针一帧能跨过好几张卡片，
         // 只移动一格会明显滞后。上限 4 次是为了避免长列表下逐帧重排过多。

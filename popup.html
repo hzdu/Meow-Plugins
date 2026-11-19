@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Flow Calendar</title>
+    <!-- 图标字体已本地化（css/material-icons.css）：远程 <link rel="stylesheet"> 会阻塞首次绘制，
+         fonts.googleapis.com 连不上时弹窗会白屏数秒。正文 Roboto 由 js/popup-styles.js 异步注入。 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="css/material-icons.css">
     <link rel="stylesheet" href="css/flatpickr.min.css">
     <link rel="stylesheet" href="css/popup.css">
     <link rel="stylesheet" href="css/meow-confirm.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
+    <script src="js/popup-styles.js"></script>
 </head>
 <body>
 
@@ -1585,32 +1589,33 @@
         </div>
     </div>
 
-    <script src="js/flatpickr.min.js"></script>
-    <script src="js/flatpickr-zh.js"></script>
-    <script src="js/flatpickr-zh-tw.js"></script>
-    <script src="js/i18n.js"></script>
-    <script src="js/meow-confirm.js"></script>
-    <script src="js/ai-prompts.js"></script>
+    <!-- defer：解析完 HTML 再按原顺序执行脚本，首屏可以先画出来，不被 500KB+ 脚本的执行挡住 -->
+    <script defer src="js/flatpickr.min.js"></script>
+    <script defer src="js/flatpickr-zh.js"></script>
+    <script defer src="js/flatpickr-zh-tw.js"></script>
+    <script defer src="js/i18n.js"></script>
+    <script defer src="js/meow-confirm.js"></script>
+    <script defer src="js/ai-prompts.js"></script>
     <!-- popup.js 已按功能拆分为以下模块，按顺序加载（全局作用域共享） -->
-    <script src="js/utils.js"></script>
-    <script src="js/modules/popup-core.js"></script>
-    <script src="js/modules/popup-weather.js"></script>
-    <script src="js/modules/popup-calendar.js"></script>
-    <script src="js/modules/popup-habits.js"></script>
-    <script src="js/modules/popup-alarms.js"></script>
-    <script src="js/modules/popup-finance.js"></script>
-    <script src="js/modules/popup-smoking.js"></script>
-    <script src="js/modules/popup-events.js"></script>
-    <script src="js/modules/popup-webdav.js"></script>
-    <script src="js/modules/popup-charts.js"></script>
-    <script src="js/modules/popup-exchange.js"></script>
-    <script src="js/modules/card-drag.js"></script>
-    <script src="js/modules/popup-2fa.js"></script>
-    <script src="js/modules/popup-ai.js"></script>
-    <script src="js/modules/popup-batch.js"></script>
-    <script src="js/modules/popup-assets.js"></script>
-    <script src="js/modules/popup-titlebar.js"></script>
-    <script src="js/init_flatpickr.js"></script>
+    <script defer src="js/utils.js"></script>
+    <script defer src="js/modules/popup-core.js"></script>
+    <script defer src="js/modules/popup-weather.js"></script>
+    <script defer src="js/modules/popup-calendar.js"></script>
+    <script defer src="js/modules/popup-habits.js"></script>
+    <script defer src="js/modules/popup-alarms.js"></script>
+    <script defer src="js/modules/popup-finance.js"></script>
+    <script defer src="js/modules/popup-smoking.js"></script>
+    <script defer src="js/modules/popup-events.js"></script>
+    <script defer src="js/modules/popup-webdav.js"></script>
+    <script defer src="js/modules/popup-charts.js"></script>
+    <script defer src="js/modules/popup-exchange.js"></script>
+    <script defer src="js/modules/card-drag.js"></script>
+    <script defer src="js/modules/popup-2fa.js"></script>
+    <script defer src="js/modules/popup-ai.js"></script>
+    <script defer src="js/modules/popup-batch.js"></script>
+    <script defer src="js/modules/popup-assets.js"></script>
+    <script defer src="js/modules/popup-titlebar.js"></script>
+    <script defer src="js/init_flatpickr.js"></script>
     <style>
         .big-calendar-btn {
             width: 100%;

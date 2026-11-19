@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+/* Roboto 正文由 js/popup-styles.js 异步注入（远程 @import 会阻塞 CSSOM 与首次绘制）。
+   图标字体见 css/material-icons.css，已本地化，无网络依赖。 */
 
 /* popup.css 已按功能拆分为 css/popup/*.css，本文件仅为入口汇总。
    @import 顺序即原始规则顺序，层叠顺序保持不变；新增样式请追加到对应模块。 */
