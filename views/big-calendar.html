@@ -1,182 +1,289 @@
+<!-- views/big-calendar.html -->
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
-    <title>Meow Calendar Diary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meow Workbench</title>
     <link rel="stylesheet" href="../css/big-calendar.css">
+    <link rel="stylesheet" href="../css/big-calendar-ssh.css">
+    <link rel="stylesheet" href="../css/vendor/xterm.css">
     <link rel="stylesheet" href="../css/meow-confirm.css">
-    <link href="https://fonts.loli.net/icon?family=Material+Icons" rel="stylesheet">
+    <!-- 与侧边栏一致的 Font Awesome 图标集，必须走 js/cdn-styles.js 异步注入，
+         不能在 <head> 里写渲染阻塞的远程 <link>，否则首次打开会白屏。 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdmirror.com" crossorigin>
+    <script src="../js/cdn-styles.js"></script>
 </head>
-<body>
-    <div class="main-container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-left">
-                <img src="../images/icon.png" alt="Meow Calendar" class="app-icon">
-            </div>
-            
-            <div class="header-center">
-                <div class="date-controls">
-                    <button id="btn-prev-year" class="icon-btn" title="上一年"><span class="material-icons">keyboard_double_arrow_left</span></button>
-                    <button id="btn-prev-month" class="icon-btn" title="上一月"><span class="material-icons">chevron_left</span></button>
-                    
-                    <div class="current-date-display">
-                        <span id="display-year">2025</span>
-                        <span class="date-divider">/</span>
-                        <span id="display-month">12</span>
-                    </div>
-                    
-                    <button id="btn-next-month" class="icon-btn" title="下一月"><span class="material-icons">chevron_right</span></button>
-                    <button id="btn-next-year" class="icon-btn" title="下一年"><span class="material-icons">keyboard_double_arrow_right</span></button>
-                    
-                    <button id="btn-today" class="today-btn">回到今天</button>
+
+<body tabindex="-1">
+    <!-- 液态玻璃背景光斑 -->
+    <div class="aurora" aria-hidden="true">
+        <span class="aurora-blob blob-1"></span>
+        <span class="aurora-blob blob-2"></span>
+        <span class="aurora-blob blob-3"></span>
+        <span class="aurora-grid"></span>
+    </div>
+
+    <div class="app-frame">
+        <!-- ================= 顶部：液态玻璃 TAB ================= -->
+        <header class="topbar">
+            <div class="brand">
+                <img src="../images/icon.png" alt="Meow" class="brand-icon">
+                <div class="brand-text">
+                    <span class="brand-name">Meow</span>
+                    <span class="brand-sub">WORKBENCH</span>
                 </div>
             </div>
-            
-            <div class="header-right">
-                <div class="month-plan">
-                    <span class="material-icons plan-icon">flag</span>
-                    <span id="month-plan-text" contenteditable="true" placeholder="在此写下本月目标..."></span>
-                </div>
-                <!-- <button class="icon-btn" id="btn-settings"><span class="material-icons">settings</span></button> -->
-                <a href="#" id="btn-close" class="icon-btn" title="关闭"><span class="material-icons">close</span></a>
+
+            <nav class="glass-tabs" id="main-tabs" role="tablist" aria-label="工作区">
+                <span class="tab-glider" id="tab-glider" aria-hidden="true"></span>
+                <button class="glass-tab active" type="button" role="tab" aria-selected="true"
+                    aria-controls="view-ssh" data-tab="ssh">
+                    <i class="fa-regular fa-terminal"></i><span>SSH</span>
+                </button>
+                <button class="glass-tab" type="button" role="tab" aria-selected="false"
+                    aria-controls="view-calendar" data-tab="calendar">
+                    <i class="fa-regular fa-calendar-days"></i><span>大日历</span>
+                </button>
+            </nav>
+
+            <div class="topbar-meta">
+                <span class="clock-chip" id="topbar-clock">--:--</span>
+                <a href="#" id="btn-close" class="close-btn" title="关闭">
+                    <i class="fa-regular fa-xmark"></i>
+                </a>
             </div>
         </header>
 
-        <!-- Main Content - Three Column Layout -->
-        <div class="layout-container">
-            <!-- Left Icon Sidebar (Antigravity Style) -->
-            <div class="icon-sidebar" id="icon-sidebar">
-                <div class="sidebar-icon active" id="icon-todo" data-panel="todo" title="待办事项">
-                    <span class="material-icons">assignment</span>
-                </div>
-                <div class="sidebar-icon" id="icon-notes" data-panel="notes" title="笔记">
-                    <span class="material-icons">description</span>
-                </div>
-                <div class="sidebar-icon" id="icon-bookmark" data-panel="bookmark" title="收藏">
-                    <span class="material-icons">bookmark</span>
-                </div>
-                <div class="sidebar-icon" id="icon-settings" data-panel="settings" title="设置">
-                    <span class="material-icons">settings</span>
-                </div>
-            </div>
+        <main class="tab-stage">
+            <!-- ================= TAB 1：SSH ================= -->
+            <section class="tab-view active" id="view-ssh" role="tabpanel" aria-label="SSH">
+                <div class="ssh-layout" id="ssh-layout">
+                    <!-- 服务器分组列表 -->
+                    <aside class="glass-card ssh-sidebar">
+                        <div class="pane-head">
+                            <div class="pane-title">
+                                <i class="fa-regular fa-server"></i>
+                                <span>服务器</span>
+                                <span class="count-badge" id="ssh-server-count">0</span>
+                            </div>
+                            <div class="pane-actions">
+                                <button type="button" id="btn-ssh-import" class="icon-ghost"
+                                    title="从侧边栏「服务器管理」导入">
+                                    <i class="fa-regular fa-cloud-arrow-down"></i>
+                                </button>
+                                <button type="button" id="btn-ssh-add-group" class="icon-ghost" title="新建分组">
+                                    <i class="fa-regular fa-folder-plus"></i>
+                                </button>
+                                <button type="button" id="btn-ssh-add-server" class="icon-ghost" title="添加服务器">
+                                    <i class="fa-regular fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
 
-            <!-- Left Panel (Expandable) -->
-            <div class="panel panel-left" id="panel-left">
-                <div class="panel-header">
-                    <div class="panel-header-left">
-                        <span class="material-icons" id="panel-left-icon">assignment</span>
-                        <span id="panel-left-title">待办事项</span>
-                    </div>
-                    <button class="icon-btn-small" id="btn-collapse-left" title="收起">
-                        <span class="material-icons">chevron_left</span>
-                    </button>
+                        <div class="search-box">
+                            <i class="fa-regular fa-magnifying-glass"></i>
+                            <input type="text" id="ssh-search" placeholder="搜索名称 / 主机 / 用户" autocomplete="off">
+                            <button type="button" id="btn-ssh-search-clear" class="search-clear" title="清除">
+                                <i class="fa-regular fa-circle-xmark"></i>
+                            </button>
+                        </div>
+
+                        <div class="ssh-server-list" id="ssh-server-list"></div>
+
+                            <div class="pane-foot">
+                            <i class="fa-regular fa-shield-halved"></i>
+                            <span>凭据仅保存在本机 · 真实 SSH 经本地桥接</span>
+                        </div>
+                    </aside>
+
+                    <!-- 终端 -->
+                    <section class="glass-card terminal-pane" id="terminal-pane">
+                        <div class="terminal-chrome">
+                            <div class="window-dots" aria-hidden="true">
+                                <span class="dot-red"></span>
+                                <span class="dot-amber"></span>
+                                <span class="dot-green"></span>
+                            </div>
+                            <div class="terminal-tabs" id="terminal-tabs"></div>
+                            <div class="terminal-tools">
+                                <button type="button" id="btn-ssh-bridge" class="icon-ghost bridge-btn"
+                                    title="真实 SSH 桥接设置">
+                                    <i class="fa-regular fa-plug"></i>
+                                    <span class="bridge-dot" id="ssh-bridge-dot"></span>
+                                </button>
+                                <button type="button" id="btn-connection-mode" class="icon-ghost mode-btn"
+                                    title="下次连接方式：真实 SSH">
+                                    <i class="fa-regular fa-shuffle"></i>
+                                    <span class="mode-glyph" id="connection-mode-glyph">R</span>
+                                </button>
+                                <button type="button" id="btn-toggle-commands" class="icon-ghost commands-toggle"
+                                    title="常用命令">
+                                    <i class="fa-regular fa-bolt"></i>
+                                </button>
+                                <button type="button" id="btn-terminal-clear" class="icon-ghost" title="清屏">
+                                    <i class="fa-regular fa-eraser"></i>
+                                </button>
+                                <button type="button" id="btn-terminal-new" class="icon-ghost" title="新建会话">
+                                    <i class="fa-regular fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="terminal-body">
+                            <div class="terminal-empty" id="terminal-empty">
+                                <div class="empty-orbit">
+                                    <i class="fa-regular fa-terminal"></i>
+                                </div>
+                                <h2>SSH 终端</h2>
+                                <p>连接真实服务器，或切换到本地模拟模式体验终端。<br>
+                                    真实 SSH 需要先启动本机桥接服务；支持分组、常用命令与多会话标签。</p>
+                                <div class="empty-actions">
+                                    <button type="button" class="glass-btn primary" id="btn-empty-add-server">
+                                        <i class="fa-regular fa-plus"></i> 添加服务器
+                                    </button>
+                                    <button type="button" class="glass-btn" id="btn-empty-import">
+                                        <i class="fa-regular fa-cloud-arrow-down"></i> 导入已有服务器
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="terminal-screen hidden" id="terminal-screen">
+                                <div class="terminal-lines" id="terminal-lines"></div>
+                                <div class="real-terminal hidden" id="real-terminal"></div>
+                                <form class="terminal-input-row" id="terminal-form" autocomplete="off">
+                                    <span class="term-prompt" id="term-prompt"></span>
+                                    <input type="text" id="terminal-input" class="term-input" spellcheck="false"
+                                        autocomplete="off" autocapitalize="off" autocorrect="off">
+                                </form>
+                            </div>
+                        </div>
+
+                        <footer class="terminal-statusbar">
+                            <div class="status-left">
+                                <span class="status-dot" id="term-status-dot"></span>
+                                <span id="term-status-text">未连接</span>
+                                <span class="status-sep"></span>
+                                <span id="term-session-meta">选择服务器开始</span>
+                            </div>
+                            <div class="status-right">
+                                <span class="sim-badge" id="term-mode-badge" title="连接模式">
+                                    <i class="fa-regular fa-flask"></i> 模拟
+                                </span>
+                                <span>UTF-8</span>
+                                <span id="term-clock">--:--:--</span>
+                            </div>
+                        </footer>
+                    </section>
+
+                    <!-- 常用命令 -->
+                    <aside class="glass-card ssh-commands" id="ssh-commands">
+                        <div class="pane-head">
+                            <div class="pane-title">
+                                <i class="fa-regular fa-bolt"></i>
+                                <span>常用命令</span>
+                                <span class="count-badge" id="ssh-command-count">0</span>
+                            </div>
+                            <div class="pane-actions">
+                                <button type="button" id="btn-cmd-import-xshell" class="icon-ghost" title="从 Xshell 导入快速命令">
+                                    <i class="fa-regular fa-cloud-arrow-down"></i>
+                                </button>
+                                <button type="button" id="btn-cmd-add-group" class="icon-ghost" title="新建命令分组">
+                                    <i class="fa-regular fa-folder-plus"></i>
+                                </button>
+                                <button type="button" id="btn-cmd-add" class="icon-ghost" title="添加常用命令">
+                                    <i class="fa-regular fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="search-box cmd-search-box">
+                            <i class="fa-regular fa-magnifying-glass"></i>
+                            <input type="text" id="ssh-cmd-search" placeholder="搜索命令 / 分组" autocomplete="off" aria-label="搜索常用命令">
+                            <button type="button" id="btn-ssh-cmd-search-clear" class="search-clear" title="清除">
+                                <i class="fa-regular fa-circle-xmark"></i>
+                            </button>
+                        </div>
+                        <div class="cmd-list" id="ssh-command-list"></div>
+                        <div class="pane-foot">
+                            <i class="fa-regular fa-hand-pointer"></i>
+                            <span>点击发送并执行 · Shift+点击仅填入 · 拖动排序</span>
+                        </div>
+                    </aside>
                 </div>
-                <div class="panel-content" id="panel-left-content">
-                    <!-- Todo Panel -->
-                    <div class="panel-section" id="section-todo">
-                        <p class="panel-placeholder">待办事项区域</p>
+            </section>
+
+            <!-- ================= TAB 2：大日历 ================= -->
+            <section class="tab-view" id="view-calendar" role="tabpanel" aria-label="大日历">
+                <div class="calendar-view">
+                    <div class="calendar-toolbar glass-card">
+                        <div class="date-controls">
+                            <button id="btn-prev-year" class="icon-btn" title="上一年">
+                                <i class="fa-solid fa-angles-left"></i>
+                            </button>
+                            <button id="btn-prev-month" class="icon-btn" title="上一月">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <div class="current-date-display">
+                                <span id="display-year">2025</span>
+                                <span class="date-divider">/</span>
+                                <span id="display-month">12</span>
+                            </div>
+                            <button id="btn-next-month" class="icon-btn" title="下一月">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                            <button id="btn-next-year" class="icon-btn" title="下一年">
+                                <i class="fa-solid fa-angles-right"></i>
+                            </button>
+                            <button id="btn-today" class="glass-btn small">回到今天</button>
+                        </div>
+
+                        <div class="month-plan">
+                            <i class="fa-regular fa-flag plan-icon"></i>
+                            <span id="month-plan-text" contenteditable="true" placeholder="在此写下本月目标..."></span>
+                        </div>
                     </div>
-                    <!-- Notes Panel -->
-                    <div class="panel-section hidden" id="section-notes">
-                        <p class="panel-placeholder">笔记区域</p>
-                    </div>
-                    <!-- Bookmark Panel -->
-                    <div class="panel-section hidden" id="section-bookmark">
-                        <p class="panel-placeholder">收藏区域</p>
-                    </div>
-                    <!-- Settings Panel -->
-                    <div class="panel-section hidden" id="section-settings">
-                        <p class="panel-placeholder">设置区域</p>
+
+                    <div class="calendar-panel glass-card">
+                        <div class="week-header">
+                            <div class="week-day weekend">周日</div>
+                            <div class="week-day">周一</div>
+                            <div class="week-day">周二</div>
+                            <div class="week-day">周三</div>
+                            <div class="week-day">周四</div>
+                            <div class="week-day">周五</div>
+                            <div class="week-day weekend">周六</div>
+                        </div>
+                        <div class="calendar-grid" id="calendar-grid"></div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Left Resizer -->
-            <div class="resizer resizer-left" id="resizer-left"></div>
-            
-            <!-- Center - Calendar -->
-            <div class="panel-center" id="panel-center">
-                <div class="calendar-wrapper">
-                    <!-- Week Header -->
-                    <div class="week-header">
-                        <div class="week-day weekend">周日</div>
-                        <div class="week-day">周一</div>
-                        <div class="week-day">周二</div>
-                        <div class="week-day">周三</div>
-                        <div class="week-day">周四</div>
-                        <div class="week-day">周五</div>
-                        <div class="week-day weekend">周六</div>
-                    </div>
-                    
-                    <!-- Calendar Grid -->
-                    <div class="calendar-grid" id="calendar-grid">
-                        <!-- Days will be injected here by JS -->
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Right Resizer -->
-            <div class="resizer resizer-right" id="resizer-right"></div>
-            
-            <!-- Right Panel (Expandable) -->
-            <div class="panel panel-right" id="panel-right">
-                <div class="panel-header">
-                    <div class="panel-header-left">
-                        <button class="icon-btn-small" id="btn-collapse-right" title="收起">
-                            <span class="material-icons">chevron_right</span>
+
+                <!-- 当日财务明细抽屉 -->
+                <div class="fin-sheet" id="fin-detail-sheet" aria-hidden="true">
+                    <div class="fin-sheet-head">
+                        <div class="fin-sheet-title">
+                            <i class="fa-regular fa-wallet"></i>
+                            <span>当日明细</span>
+                        </div>
+                        <button type="button" class="icon-ghost" id="btn-fin-sheet-close" title="关闭">
+                            <i class="fa-regular fa-xmark"></i>
                         </button>
-                        <span class="material-icons" id="panel-right-icon">info</span>
-                        <span id="panel-right-title">详情</span>
                     </div>
+                    <div class="fin-sheet-body"></div>
                 </div>
-                <div class="panel-content" id="panel-right-content">
-                    <!-- Details Panel -->
-                    <div class="panel-section" id="section-details">
-                        <p class="panel-placeholder">详情区域</p>
-                    </div>
-                    <!-- Finance Panel -->
-                    <div class="panel-section hidden" id="section-finance">
-                        <p class="panel-placeholder">财务区域</p>
-                    </div>
-                    <!-- Stats Panel -->
-                    <div class="panel-section hidden" id="section-stats">
-                        <p class="panel-placeholder">统计区域</p>
-                    </div>
-                    <!-- Help Panel -->
-                    <div class="panel-section hidden" id="section-help">
-                        <p class="panel-placeholder">帮助区域</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Icon Sidebar (Antigravity Style) -->
-            <div class="icon-sidebar icon-sidebar-right" id="icon-sidebar-right">
-                <div class="sidebar-icon active" id="icon-details" data-panel="details" title="详情">
-                    <span class="material-icons">info</span>
-                </div>
-                <div class="sidebar-icon" id="icon-finance" data-panel="finance" title="财务">
-                    <span class="material-icons">account_balance_wallet</span>
-                </div>
-                <div class="sidebar-icon" id="icon-stats" data-panel="stats" title="统计">
-                    <span class="material-icons">bar_chart</span>
-                </div>
-                <div class="sidebar-icon" id="icon-help" data-panel="help" title="帮助">
-                    <span class="material-icons">help_outline</span>
-                </div>
-            </div>
-
-        </div>
+            </section>
+        </main>
     </div>
 
-    <!-- Modal for details (optional, if needed for adding events) -->
-    <!-- Modal for editing task -->
+    <!-- ================= 编辑事项 ================= -->
     <div id="edit-task-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">
             <div class="modal-header">
                 <h3>编辑事项</h3>
-                <span class="close-modal">&times;</span>
+                <span class="close-modal"><i class="fa-regular fa-xmark"></i></span>
             </div>
             <div class="modal-body">
                 <textarea id="task-edit-input" placeholder="输入事项内容..."></textarea>
@@ -188,37 +295,31 @@
         </div>
     </div>
 
-    <!-- Finance Edit Modal -->
+    <!-- ================= 编辑财务 ================= -->
     <div id="edit-finance-modal" class="modal hidden">
         <div class="modal-overlay"></div>
-        <div class="modal-content" style="width: 400px;">
+        <div class="modal-content narrow">
             <div class="modal-header">
                 <h3>编辑财务记录</h3>
-                <span class="close-modal">&times;</span>
+                <span class="close-modal"><i class="fa-regular fa-xmark"></i></span>
             </div>
             <div class="modal-body">
-                <div style="margin-bottom: 15px;">
-                    <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">类型</label>
-                    <div style="display:flex; gap:20px;">
-                        <label style="color:var(--text-main); cursor:pointer; display:flex; align-items:center; gap:5px;">
-                            <input type="radio" name="fin-type" value="income"> <span style="color:var(--success-color)">收入</span>
-                        </label>
-                        <label style="color:var(--text-main); cursor:pointer; display:flex; align-items:center; gap:5px;">
-                            <input type="radio" name="fin-type" value="expense"> <span style="color:var(--danger-color)">支出</span>
-                        </label>
-                        <label style="color:var(--text-main); cursor:pointer; display:flex; align-items:center; gap:5px;">
-                            <input type="radio" name="fin-type" value="deposit"> <span style="color:#8b5cf6">存款</span>
-                        </label>
+                <label class="field">
+                    <span>类型</span>
+                    <div class="radio-row">
+                        <label class="radio-pill"><input type="radio" name="fin-type" value="income"> <span>收入</span></label>
+                        <label class="radio-pill"><input type="radio" name="fin-type" value="expense"> <span>支出</span></label>
+                        <label class="radio-pill"><input type="radio" name="fin-type" value="deposit"> <span>存款</span></label>
                     </div>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">金额</label>
-                    <input type="number" id="fin-edit-amount" style="width:100%; padding:8px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main); border-radius:4px;" step="0.01">
-                </div>
-                <div style="margin-bottom: 0;">
-                    <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">备注</label>
-                    <input type="text" id="fin-edit-note" style="width:100%; padding:8px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-main); border-radius:4px;">
-                </div>
+                </label>
+                <label class="field">
+                    <span>金额</span>
+                    <input type="number" id="fin-edit-amount" class="glass-input" step="0.01">
+                </label>
+                <label class="field">
+                    <span>备注</span>
+                    <input type="text" id="fin-edit-note" class="glass-input">
+                </label>
             </div>
             <div class="modal-footer">
                 <button class="btn-cancel" id="btn-cancel-fin-edit">取消</button>
@@ -227,9 +328,265 @@
         </div>
     </div>
 
+    <!-- ================= SSH：服务器 ================= -->
+    <div id="ssh-server-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="ssh-server-modal-title">添加服务器</h3>
+                <span class="close-modal" data-close="ssh-server-modal"><i class="fa-regular fa-xmark"></i></span>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <label class="field">
+                        <span>名称</span>
+                        <input type="text" id="ssh-srv-name" class="glass-input" placeholder="例如：生产 Web 01" maxlength="40">
+                    </label>
+                    <label class="field">
+                        <span>分组</span>
+                        <select id="ssh-srv-group" class="glass-input"></select>
+                    </label>
+                    <label class="field">
+                        <span>主机 / IP</span>
+                        <input type="text" id="ssh-srv-host" class="glass-input" placeholder="192.168.1.10" maxlength="120">
+                    </label>
+                    <label class="field">
+                        <span>端口</span>
+                        <input type="number" id="ssh-srv-port" class="glass-input" value="22" min="1" max="65535">
+                    </label>
+                    <label class="field">
+                        <span>用户名</span>
+                        <input type="text" id="ssh-srv-user" class="glass-input" placeholder="root" maxlength="60">
+                    </label>
+                    <label class="field">
+                        <span>密码</span>
+                        <span class="password-wrap">
+                            <input type="password" id="ssh-srv-pass" class="glass-input" autocomplete="new-password">
+                            <button type="button" class="eye-btn" id="btn-ssh-srv-eye" title="显示 / 隐藏">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </span>
+                    </label>
+                    <label class="field span-2">
+                        <span>备注</span>
+                        <input type="text" id="ssh-srv-note" class="glass-input" placeholder="用途、机房、到期时间…" maxlength="120">
+                    </label>
+                </div>
+                <p class="form-hint">
+                    <i class="fa-regular fa-lock"></i>
+                    账号密码只保存在本机 <code>chrome.storage.local</code>，不会上传。
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-ssh-srv-cancel">取消</button>
+                <button class="btn-save" id="btn-ssh-srv-save">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= SSH：连接 ================= -->
+    <div id="ssh-connect-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3>建立 SSH 连接</h3>
+                <span class="close-modal" data-close="ssh-connect-modal"><i class="fa-regular fa-xmark"></i></span>
+            </div>
+            <div class="modal-body">
+                <div class="connect-target" id="ssh-connect-target">
+                    <i class="fa-regular fa-server"></i>
+                    <div>
+                        <strong id="ssh-connect-title">服务器</strong>
+                        <span id="ssh-connect-addr">—</span>
+                    </div>
+                </div>
+                <div class="field">
+                    <span>连接方式</span>
+                    <div class="connect-mode-switch" id="ssh-connect-mode">
+                        <label class="connect-mode-option">
+                            <input type="radio" name="ssh-connect-mode" value="real" checked>
+                            <span><i class="fa-regular fa-plug"></i> 真实 SSH</span>
+                        </label>
+                        <label class="connect-mode-option">
+                            <input type="radio" name="ssh-connect-mode" value="sim">
+                            <span><i class="fa-regular fa-flask"></i> 本地模拟</span>
+                        </label>
+                    </div>
+                </div>
+                <p class="form-hint connect-mode-hint" id="ssh-connect-mode-hint">
+                    <i class="fa-regular fa-circle-info"></i>
+                    真实 SSH 需要本机运行桥接服务。
+                    <button type="button" class="text-link" id="btn-connect-bridge-config">配置桥接</button>
+                </p>
+                <label class="field">
+                    <span>用户名</span>
+                    <input type="text" id="ssh-connect-user" class="glass-input" autocomplete="off">
+                </label>
+                <label class="field">
+                    <span>密码</span>
+                    <span class="password-wrap">
+                        <input type="password" id="ssh-connect-pass" class="glass-input" autocomplete="current-password">
+                        <button type="button" class="eye-btn" id="btn-ssh-connect-eye" title="显示 / 隐藏">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </span>
+                </label>
+                <label class="check-row">
+                    <input type="checkbox" id="ssh-connect-save" checked>
+                    <span>连接成功后保存账号密码到这台服务器</span>
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-ssh-connect-cancel">取消</button>
+                <button class="btn-save" id="btn-ssh-connect-go">连接</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= SSH：真实终端桥接设置 ================= -->
+    <div id="ssh-bridge-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3>真实 SSH 桥接</h3>
+                <span class="close-modal" data-close="ssh-bridge-modal"><i class="fa-regular fa-xmark"></i></span>
+            </div>
+            <div class="modal-body">
+                <div class="bridge-status-row" id="ssh-bridge-status">
+                    <span class="bridge-status-dot"></span>
+                    <span id="ssh-bridge-status-text">未检测</span>
+                </div>
+                <label class="field">
+                    <span>桥接地址</span>
+                    <input type="text" id="ssh-bridge-url" class="glass-input"
+                        placeholder="ws://127.0.0.1:8765" autocomplete="off">
+                </label>
+                <label class="field">
+                    <span>访问令牌</span>
+                    <span class="password-wrap">
+                        <input type="password" id="ssh-bridge-token" class="glass-input"
+                            placeholder="粘贴桥接窗口打印的令牌" autocomplete="off">
+                        <button type="button" class="eye-btn" id="btn-ssh-bridge-eye" title="显示 / 隐藏">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </span>
+                </label>
+                <p class="form-hint">
+                    <i class="fa-regular fa-circle-info"></i>
+                    首次使用请在项目目录运行 <code>ssh-bridge\start.bat</code>，窗口里会显示地址和令牌。
+                    桥接只监听本机 127.0.0.1。
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-ssh-bridge-cancel">取消</button>
+                <button class="btn-save" id="btn-ssh-bridge-save">测试并保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= SSH：常用命令 ================= -->
+    <div id="ssh-cmd-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3 id="ssh-cmd-modal-title">添加常用命令</h3>
+                <span class="close-modal" data-close="ssh-cmd-modal"><i class="fa-regular fa-xmark"></i></span>
+            </div>
+            <div class="modal-body">
+                <label class="field">
+                    <span>名称</span>
+                    <input type="text" id="ssh-cmd-name" class="glass-input" placeholder="例如：查看磁盘占用" maxlength="40">
+                </label>
+                <label class="field">
+                    <span>分组</span>
+                    <select id="ssh-cmd-group" class="glass-input"></select>
+                </label>
+                <label class="field">
+                    <span>命令</span>
+                    <textarea id="ssh-cmd-text" class="glass-input" rows="4" placeholder="df -h"></textarea>
+                </label>
+                <p class="form-hint">
+                    <i class="fa-regular fa-circle-info"></i>
+                    支持多行命令，发送时按顺序执行。
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-ssh-cmd-cancel">取消</button>
+                <button class="btn-save" id="btn-ssh-cmd-save">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= SSH：从 Xshell 导入常用命令 ================= -->
+    <div id="ssh-xshell-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3>从 Xshell 导入常用命令</h3>
+                <span class="close-modal" data-close="ssh-xshell-modal"><i class="fa-regular fa-xmark"></i></span>
+            </div>
+            <div class="modal-body">
+                <p class="form-hint">
+                    <i class="fa-regular fa-circle-info"></i>
+                    选择 Xshell 的 <code>QuickButton Files</code> 文件夹。里面的每个子文件夹会成为 Meow 的命令分组，
+                    <code>commands.qbl</code> 里的按钮会成为常用命令。
+                </p>
+                <div class="empty-actions xshell-import-actions">
+                    <button type="button" class="glass-btn primary" id="btn-xshell-pick-folder">
+                        <i class="fa-regular fa-folder-open"></i> 选择 QuickButton Files 文件夹
+                    </button>
+                    <button type="button" class="glass-btn" id="btn-xshell-pick-files">
+                        <i class="fa-regular fa-file-lines"></i> 选择 .qbl 文件
+                    </button>
+                </div>
+                <p class="form-hint xshell-import-path">
+                    <i class="fa-regular fa-folder"></i>
+                    Xshell 8 默认位置：<code>文档\NetSarang Computer\8\Xshell\QuickButton Files</code><br>
+                    Xshell 7 把路径中的 <code>8</code> 改成 <code>7</code>。
+                </p>
+                <input type="file" id="xshell-folder-input" class="hidden" webkitdirectory multiple>
+                <input type="file" id="xshell-files-input" class="hidden" accept=".qbl" multiple>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-xshell-cancel">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 通用输入弹窗（分组命名） ================= -->
+    <div id="glass-prompt-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3 id="glass-prompt-title">新建分组</h3>
+                <span class="close-modal" data-close="glass-prompt-modal"><i class="fa-regular fa-xmark"></i></span>
+            </div>
+            <div class="modal-body">
+                <label class="field">
+                    <span id="glass-prompt-label">名称</span>
+                    <input type="text" id="glass-prompt-input" class="glass-input" maxlength="40">
+                </label>
+                <p class="form-hint hidden" id="glass-prompt-hint"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="glass-prompt-cancel">取消</button>
+                <button class="btn-save" id="glass-prompt-ok">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-toast-stack" id="glass-toast-stack" aria-live="polite"></div>
+
     <script src="../js/lunar.min.js"></script>
     <script src="../js/i18n.js"></script>
     <script src="../js/meow-confirm.js"></script>
+    <script src="../js/big-calendar-shell.js"></script>
     <script src="../js/big-calendar.js"></script>
+    <script src="../js/vendor/xterm.js"></script>
+    <script src="../js/vendor/addon-fit.js"></script>
+    <script src="../js/ssh-real.js"></script>
+    <script src="../js/big-calendar-ssh.js"></script>
 </body>
+
 </html>
+

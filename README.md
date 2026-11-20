@@ -37,6 +37,7 @@
 ### 🧰 工具箱
 | 功能 | 说明 |
 |------|------|
+| **SSH 工作台** | 大日历页内置真实 SSH（本地桥接）与本地模拟终端，支持分组、常用命令、多会话和 xterm 完整终端 |
 | IP 地址查询 | 国内 + 国际双源 |
 | 实时油价 / 汇率换算 | 实时数据聚合 |
 | Base64 编解码 | 支持文本和图片 |
@@ -173,6 +174,30 @@ Meow/
 
 ---
 
+## 🖥️ 真实 SSH
+
+大日历页面的 SSH 标签默认真实 SSH 模式。浏览器扩展不能直接建立 SSH TCP 连接，因此需要在本机启动一个小型桥接服务：
+
+```powershell
+cd ssh-bridge
+.\start.bat
+```
+
+首次运行会自动安装 `ssh2` / `ws` 依赖。桥接窗口会打印：
+
+```text
+地址: ws://127.0.0.1:8765
+令牌: ...
+```
+
+打开 Meow → 大日历 → SSH，点击右上角插头按钮，把地址和令牌填入并保存，然后选择服务器连接。桥接只监听 `127.0.0.1`，使用随机令牌鉴权；首次连接会记录服务器主机公钥指纹。
+
+常用命令面板支持分组折叠（默认折叠）、搜索和拖放排序，可按命令名称、命令内容或分组过滤；搜索状态下暂停拖拽。右上角还支持「从 Xshell 导入」：选择 Xshell 的 `QuickButton Files` 文件夹即可把快速命令按原分组导入；Xshell 8 默认路径为 `文档\NetSarang Computer\8\Xshell\QuickButton Files`，Xshell 7 将 `8` 改为 `7`。
+
+如果暂时不想启动桥接，可点击终端右上角模式按钮或连接弹窗中的「本地模拟」使用演示终端。详细说明见 [ssh-bridge/README.md](./ssh-bridge/README.md)。
+
+---
+
 ## 💾 数据安全
 
 - **存储方式**: 所有数据存储在本地 `chrome.storage` 中，不上传任何第三方服务器
@@ -199,7 +224,7 @@ Meow/
 - ❌ 不得使用 "Meow" 名称、标志进行背书或宣传（商标权不随本许可证授予）
 - ❌ 本软件按"原样"提供，**不提供任何担保，作者不承担任何责任**
 
-> 内嵌第三方库沿用各自的原许可证：[flatpickr](https://github.com/flatpickr/flatpickr)（MIT）、[lunar-javascript](https://github.com/6tail/lunar-javascript)（MIT）。Material Icons 与 FontAwesome 通过 CDN 运行时加载，未随本仓库分发。
+> 内嵌第三方库沿用各自的原许可证：[flatpickr](https://github.com/flatpickr/flatpickr)（MIT）、[lunar-javascript](https://github.com/6tail/lunar-javascript)（MIT）、[xterm.js](https://github.com/xtermjs/xterm.js)（MIT）、[ssh2](https://github.com/mscdex/ssh2)（MIT）、[ws](https://github.com/websockets/ws)（MIT）。Material Icons 与 FontAwesome 通过 CDN 运行时加载，未随本仓库分发。
 
 ---
 

@@ -213,10 +213,10 @@ function createDayCell(dayNum, isInactive, isToday = false) {
             
             let html = '';
             if (dailyIncome > 0) {
-                html += `<div class="fin-item fin-income"><span class="material-icons" style="font-size:12px">arrow_upward</span>收入 ${dailyIncome.toFixed(0)}</div>`;
+                html += `<div class="fin-item fin-income"><i class="fa-solid fa-arrow-up"></i>收入 ${dailyIncome.toFixed(0)}</div>`;
             }
             if (dailyExpense > 0) {
-                html += `<div class="fin-item fin-expense"><span class="material-icons" style="font-size:12px">arrow_downward</span>支出 ${dailyExpense.toFixed(0)}</div>`;
+                html += `<div class="fin-item fin-expense"><i class="fa-solid fa-arrow-down"></i>支出 ${dailyExpense.toFixed(0)}</div>`;
             }
             finSummary.innerHTML = html;
             
@@ -245,8 +245,8 @@ function createDayCell(dayNum, isInactive, isToday = false) {
                 <div class="task-marker"></div>
                 <div class="task-text">${task.text}</div>
                 <div class="task-actions">
-                    <div class="btn-action edit material-icons" title="编辑">edit</div>
-                    <div class="btn-action delete material-icons" title="删除">delete</div>
+                    <div class="btn-action edit" title="编辑"><i class="fa-regular fa-pen"></i></div>
+                    <div class="btn-action delete" title="删除"><i class="fa-regular fa-trash-can"></i></div>
                 </div>
             `;
             item.title = task.text;
@@ -508,8 +508,9 @@ function initLayout() {
     const resizerLeft = document.getElementById('resizer-left');
     const resizerRight = document.getElementById('resizer-right');
     
+    // 新版页面已改为液态玻璃 TAB 布局，没有旧的左右面板；
+    // 保留这段逻辑只为兼容旧版页面结构，缺失时直接跳过。
     if (!panelLeft || !panelRight || !resizerLeft || !resizerRight) {
-        console.warn('Layout elements not found');
         return;
     }
     
@@ -810,8 +811,15 @@ function saveLayout() {
 
 // Finance Details Logic
 function showFinanceDetails(dateKey) {
-    const listContainer = document.querySelector('#panel-right .panel-content');
+    const sheet = document.getElementById('fin-detail-sheet');
+    const listContainer = document.querySelector('#panel-right .panel-content') ||
+        (sheet ? sheet.querySelector('.fin-sheet-body') : null);
     if (!listContainer) return;
+
+    if (sheet) {
+        sheet.classList.add('open');
+        sheet.setAttribute('aria-hidden', 'false');
+    }
     
     // Auto expand right panel if collapsed
     const btnExpandRight = document.getElementById('btn-expand-right');
@@ -847,8 +855,8 @@ function showFinanceDetails(dateKey) {
                         <span class="fin-detail-note" style="font-size:10px;opacity:0.7">类型: ${typeLabel}</span>
                     </div>
                     <div class="fin-detail-actions">
-                        <div class="btn-action edit material-icons" title="编辑" data-index="${index}">edit</div>
-                        <div class="btn-action delete material-icons" title="删除" data-index="${index}">delete</div>
+                        <div class="btn-action edit" title="编辑" data-index="${index}"><i class="fa-regular fa-pen"></i></div>
+                        <div class="btn-action delete" title="删除" data-index="${index}"><i class="fa-regular fa-trash-can"></i></div>
                     </div>
                 </div>
             `;
@@ -858,11 +866,11 @@ function showFinanceDetails(dateKey) {
     html += `</div>`;
     listContainer.innerHTML = html;
     
-    // Bind events
+    // Bind events（图标在 <i> 内，取 currentTarget 的索引）
     const deleteBtns = listContainer.querySelectorAll('.btn-action.delete');
     deleteBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const index = parseInt(e.target.dataset.index);
+            const index = parseInt(e.currentTarget.dataset.index);
             deleteFinanceItem(dateKey, index);
         });
     });
@@ -870,7 +878,7 @@ function showFinanceDetails(dateKey) {
     const editBtns = listContainer.querySelectorAll('.btn-action.edit');
     editBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const index = parseInt(e.target.dataset.index);
+            const index = parseInt(e.currentTarget.dataset.index);
             editFinanceItem(dateKey, index);
         });
     });
@@ -970,6 +978,16 @@ if (btnSaveFin) {
                 closeFinModal();
             });
         }
+    });
+}
+
+// 财务明细抽屉关闭
+const finDetailSheet = document.getElementById('fin-detail-sheet');
+const btnFinSheetClose = document.getElementById('btn-fin-sheet-close');
+if (btnFinSheetClose && finDetailSheet) {
+    btnFinSheetClose.addEventListener('click', () => {
+        finDetailSheet.classList.remove('open');
+        finDetailSheet.setAttribute('aria-hidden', 'true');
     });
 }
 
