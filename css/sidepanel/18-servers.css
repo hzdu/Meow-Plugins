@@ -1258,6 +1258,127 @@
     padding: 10px 0;
 }
 
+/* === 网站迁移弹窗 === */
+#srv-migrate-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 82%;
+}
+
+#srv-migrate-modal .modal-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.srv-migrate-tip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #475569;
+}
+
+.srv-migrate-tip b {
+    color: #0f172a;
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.srv-migrate-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    padding: 1px;
+}
+
+.srv-migrate-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.srv-migrate-item:hover {
+    border-color: #a5b4fc;
+    background: #f8faff;
+}
+
+.srv-migrate-item.active {
+    border-color: #6366f1;
+    background: #eef2ff;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+
+.srv-migrate-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.srv-migrate-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.srv-migrate-meta {
+    font-size: 11px;
+    color: #94a3b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.srv-migrate-check {
+    font-size: 15px;
+    color: #e2e8f0;
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+
+.srv-migrate-item.active .srv-migrate-check {
+    color: #6366f1;
+}
+
+.srv-migrate-empty {
+    text-align: center;
+    padding: 14px 0;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+#srv-migrate-modal .add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#srv-migrate-modal .add-btn:disabled:hover {
+    background: #6366f1;
+}
+
 /* 网站模板选择条 */
 .srv-ws-template-bar {
     display: flex;

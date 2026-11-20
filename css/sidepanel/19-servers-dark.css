@@ -385,6 +385,89 @@ border-color: #16a34a;
     color: #e2e8f0;
 }
 
+/* === 暗色：网站迁移弹窗 === */
+.dark #srv-migrate-modal .modal-content,
+.theme-dark #srv-migrate-modal .modal-content {
+    background: #1e293b;
+}
+
+.dark #srv-migrate-modal .modal-header h3,
+.theme-dark #srv-migrate-modal .modal-header h3 {
+    color: #e2e8f0;
+}
+
+.dark #srv-migrate-modal .modal-header,
+.theme-dark #srv-migrate-modal .modal-header {
+    border-bottom-color: #334155;
+}
+
+.dark .srv-migrate-tip,
+.theme-dark .srv-migrate-tip {
+    background: #0f172a;
+    border-color: #334155;
+    color: #94a3b8;
+}
+
+.dark .srv-migrate-tip b,
+.theme-dark .srv-migrate-tip b {
+    color: #e2e8f0;
+}
+
+.dark .srv-migrate-item,
+.theme-dark .srv-migrate-item {
+    background: #0f172a;
+    border-color: #334155;
+}
+
+.dark .srv-migrate-item:hover,
+.theme-dark .srv-migrate-item:hover {
+    background: #1e1b4b;
+    border-color: #6366f1;
+}
+
+.dark .srv-migrate-item.active,
+.theme-dark .srv-migrate-item.active {
+    background: #1e1b4b;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.22);
+}
+
+.dark .srv-migrate-name,
+.theme-dark .srv-migrate-name {
+    color: #e2e8f0;
+}
+
+.dark .srv-migrate-meta,
+.theme-dark .srv-migrate-meta {
+    color: #64748b;
+}
+
+.dark .srv-migrate-check,
+.theme-dark .srv-migrate-check {
+    color: #334155;
+}
+
+.dark .srv-migrate-item.active .srv-migrate-check,
+.theme-dark .srv-migrate-item.active .srv-migrate-check {
+    color: #a5b4fc;
+}
+
+.dark .srv-migrate-empty,
+.theme-dark .srv-migrate-empty {
+    color: #64748b;
+}
+
+.dark #srv-migrate-modal .cancel-btn,
+.theme-dark #srv-migrate-modal .cancel-btn {
+    background: #334155;
+    color: #cbd5e1;
+}
+
+.dark #srv-migrate-modal .cancel-btn:hover,
+.theme-dark #srv-migrate-modal .cancel-btn:hover {
+    background: #475569;
+}
+
 .dark .srv-mini-add-btn,
 .theme-dark .srv-mini-add-btn {
     background: #052e16;

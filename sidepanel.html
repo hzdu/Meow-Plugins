@@ -1167,6 +1167,28 @@
                 </div>
             </div>
 
+            <!-- 网站迁移弹窗：选择目标服务器 -->
+            <div id="srv-migrate-modal" class="modal hidden">
+                <div class="modal-content" style="width: 90%;">
+                    <div class="modal-header">
+                        <h3>迁移网站</h3>
+                        <span class="mi close-modal fa-regular fa-xmark" id="close-srv-migrate-modal"></span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="srv-migrate-tip">
+                            <span class="mi fa-regular fa-globe" style="font-size:13px;color:#10b981;flex-shrink:0;"></span>
+                            <span>将 <b id="srv-migrate-domain">网站</b> 迁移到其它服务器</span>
+                        </div>
+                        <div id="srv-migrate-list" class="srv-migrate-list"></div>
+                        <div id="srv-migrate-empty" class="srv-migrate-empty hidden">暂无其它服务器，请先添加服务器</div>
+                    </div>
+                    <div class="modal-footer" style="display:flex; gap:8px; margin-top:4px;">
+                        <button id="srv-migrate-cancel-btn" class="cancel-btn">取消</button>
+                        <button id="srv-migrate-confirm-btn" class="add-btn" disabled>迁移</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- 2FA 视图 -->
             <div id="view-2fa" class="view-content hidden">
                 <div class="gallery-controls" id="fa-controls">

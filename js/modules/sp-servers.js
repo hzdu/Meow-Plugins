@@ -12,6 +12,14 @@ let srvDragSrcIndex = null;
 let editingWebsiteId = null; // null=添加, 否则=编辑
 let srvWebsiteStandalone = false; // 从卡片直接编辑网站时为 true（不打开服务器弹窗）
 
+// 网站迁移状态
+// srvMigrateCtx = { sourceId, ws, draftIdx }
+//   sourceId：源服务器 id
+//   ws：待迁移的网站对象（卡片内直接取服务器数据，弹窗内取编辑草稿）
+//   draftIdx：来自服务器弹窗草稿时的下标，卡片发起时为 null
+let srvMigrateCtx = null;
+let srvMigrateTargetId = null;
+
 // 分类管理
 let srvCategories = []; // [{ id: string, name: string }]
 let srvActiveCategoryId = ''; // '' = 全部
@@ -71,6 +79,12 @@ function getDefaultDbUsername(dbType) {
 
 function saveServers() {
     chrome.storage.local.set({ 'meow_servers': myServers });
+}
+
+// 服务器显示名（标题为空时退回 IP）
+function srvDisplayName(srv) {
+    if (!srv) return '(未设置)';
+    return srv.title || srv.ip || '(未设置)';
 }
 
 // === 分类管理 ===
@@ -729,6 +743,7 @@ function renderServers() {
                     </div>
                     <div class="srv-ws-item-actions">
                         <button class="srv-copy-btn" data-copy-type="website" data-widx="${wi}" title="一键复制网站信息"><span class="mi fa-regular fa-copy" style="font-size:13px;"></span>复制</button>
+                        <span class="mi srv-ws-migrate-btn fa-regular fa-arrow-right-arrow-left" data-widx="${wi}" title="迁移到其它服务器" style="font-size:14px;color:#cbd5e1;cursor:pointer;"></span>
                         <span class="mi srv-ws-edit-btn fa-regular fa-pen-to-square" data-widx="${wi}" title="编辑网站" style="font-size:14px;color:#cbd5e1;cursor:pointer;"></span>
                         <i class="fa-regular fa-xmark srv-ws-del-btn" data-widx="${wi}" title="删除网站" style="font-size:14px;color:#cbd5e1;cursor:pointer;"></i>
                     </div>
@@ -788,7 +803,7 @@ function renderServers() {
 
         // 折叠/展开
         card.querySelector('.srv-card-header').addEventListener('click', function(e) {
-            if (e.target.closest('.srv-card-drag-handle, .srv-card-actions, .srv-ws-del-btn, .srv-ws-edit-btn, .srv-ws-link, .srv-provider-link, .srv-copy-btn, .srv-ws-add-btn')) return;
+            if (e.target.closest('.srv-card-drag-handle, .srv-card-actions, .srv-ws-del-btn, .srv-ws-edit-btn, .srv-ws-migrate-btn, .srv-ws-link, .srv-provider-link, .srv-copy-btn, .srv-ws-add-btn')) return;
             const body = card.querySelector('.srv-card-body');
             const isExpanded = card.classList.toggle('expanded');
             body.style.display = isExpanded ? '' : 'none';
@@ -894,7 +909,7 @@ function renderServers() {
         // 网站折叠/展开（默认收起）
         card.querySelectorAll('.srv-ws-item-header').forEach(header => {
             header.addEventListener('click', function(e) {
-                if (e.target.closest('.srv-copy-btn, .srv-ws-edit-btn, .srv-ws-del-btn, .srv-ws-link, .srv-copy-row')) return;
+                if (e.target.closest('.srv-copy-btn, .srv-ws-edit-btn, .srv-ws-migrate-btn, .srv-ws-del-btn, .srv-ws-link, .srv-copy-row')) return;
                 const item = this.closest('.srv-ws-item');
                 const details = item.querySelector('.srv-ws-details');
                 const toggle = this.querySelector('.srv-ws-toggle');
@@ -902,6 +917,17 @@ function renderServers() {
                 const isExpanded = details.style.display !== 'none';
                 details.style.display = isExpanded ? 'none' : '';
                 if (toggle) toggle.classList.toggle('expanded', !isExpanded);
+            });
+        });
+
+        // 迁移网站到其它服务器（卡片内直接迁移，作用于已保存的数据）
+        card.querySelectorAll('.srv-ws-migrate-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const wi = parseInt(this.dataset.widx);
+                const ws = (srv.websites || [])[wi];
+                if (!ws) return;
+                openSrvMigrateModal(srv.id, ws, null);
             });
         });
 
@@ -1134,6 +1160,7 @@ function renderSrvEditWebsites() {
             </div>
             <div class="srv-ws-edit-actions">
                 ${ws.adminUrl ? `<a class="srv-ws-link" href="${escapeHtml(ws.adminUrl)}" target="_blank" title="打开后台" style="display:inline-flex;font-size:16px;color:#cbd5e1;text-decoration:none;"><span class="mi fa-regular fa-arrow-up-right-from-square" style="font-size:16px;"></span></a>` : ''}
+                ${editingSrvId ? `<span class="mi srv-ws-edit-migrate fa-regular fa-arrow-right-arrow-left" data-idx="${idx}" title="迁移到其它服务器" style="font-size:16px;color:#cbd5e1;cursor:pointer;"></span>` : ''}
                 <span class="mi srv-ws-edit-btn fa-regular fa-pen-to-square" data-idx="${idx}" title="编辑" style="font-size:16px;color:#cbd5e1;cursor:pointer;"></span>
                 <i class="fa-regular fa-xmark srv-ws-edit-del" data-idx="${idx}" title="删除" style="font-size:16px;color:#cbd5e1;cursor:pointer;"></i>
             </div>
@@ -1141,6 +1168,16 @@ function renderSrvEditWebsites() {
         item.querySelector('.srv-ws-edit-btn').addEventListener('click', function() {
             openSrvWebsiteModal(parseInt(this.dataset.idx));
         });
+        const editMigrateBtn = item.querySelector('.srv-ws-edit-migrate');
+        if (editMigrateBtn) {
+            editMigrateBtn.addEventListener('click', function() {
+                const idx = parseInt(this.dataset.idx);
+                const ws = srvEditWebsites[idx];
+                if (!ws || !editingSrvId) return;
+                // 传入草稿下标：迁移后同步从草稿中移除
+                openSrvMigrateModal(editingSrvId, ws, idx);
+            });
+        }
         item.querySelector('.srv-ws-edit-del').addEventListener('click', async function() {
             const wi = parseInt(this.dataset.idx);
             const w = srvEditWebsites[wi];
@@ -1292,6 +1329,143 @@ function closeSrvWebsiteModal() {
     document.getElementById('srv-website-modal').classList.add('hidden');
     editingWebsiteId = null;
     srvWebsiteStandalone = false;
+}
+
+// === 网站迁移（迁移到其它服务器） ===
+// 打开迁移弹窗：列出除源服务器外的所有现有服务器
+function openSrvMigrateModal(sourceSrvId, ws, draftIdx) {
+    const modal = document.getElementById('srv-migrate-modal');
+    if (!modal || !ws) return;
+
+    const candidates = myServers.filter(s => s && String(s.id) !== String(sourceSrvId));
+    if (candidates.length === 0) {
+        showToast('没有其它服务器，请先添加服务器');
+        return;
+    }
+
+    srvMigrateCtx = {
+        sourceId: sourceSrvId,
+        ws: ws,
+        draftIdx: (typeof draftIdx === 'number' ? draftIdx : null)
+    };
+    srvMigrateTargetId = null;
+
+    const domainEl = document.getElementById('srv-migrate-domain');
+    if (domainEl) domainEl.textContent = ws.domain || '(未设置域名)';
+
+    const listEl = document.getElementById('srv-migrate-list');
+    const emptyEl = document.getElementById('srv-migrate-empty');
+    if (listEl) {
+        listEl.innerHTML = candidates.map(srv => {
+            const osMeta = SRV_OS_ICONS[srv.os] || SRV_OS_ICONS.Other;
+            const ip = (srv.ip || '').trim();
+            const count = (srv.websites || []).length;
+            const meta = (ip ? ip + ' · ' : '') + `${count} 个网站`;
+            return `<div class="srv-migrate-item" data-id="${escapeHtml(String(srv.id))}" role="option" aria-selected="false" tabindex="0">
+                <span class="mi ${osMeta.icon}" style="font-size:16px;color:${osMeta.color};flex-shrink:0;"></span>
+                <div class="srv-migrate-info">
+                    <span class="srv-migrate-name">${escapeHtml(srvDisplayName(srv))}</span>
+                    <span class="srv-migrate-meta">${escapeHtml(meta)}</span>
+                </div>
+                <span class="mi fa-regular fa-circle-check srv-migrate-check"></span>
+            </div>`;
+        }).join('');
+        listEl.scrollTop = 0;
+    }
+    if (emptyEl) emptyEl.classList.add('hidden');
+
+    const confirmBtn = document.getElementById('srv-migrate-confirm-btn');
+    if (confirmBtn) confirmBtn.disabled = true;
+
+    modal.classList.remove('hidden');
+}
+
+function closeSrvMigrateModal() {
+    const modal = document.getElementById('srv-migrate-modal');
+    if (modal) modal.classList.add('hidden');
+    srvMigrateCtx = null;
+    srvMigrateTargetId = null;
+}
+
+// 选中目标服务器（未选中时不可提交）
+function selectSrvMigrateTarget(idStr) {
+    const listEl = document.getElementById('srv-migrate-list');
+    if (!listEl) return;
+    listEl.querySelectorAll('.srv-migrate-item').forEach(el => {
+        const active = el.dataset.id === String(idStr);
+        el.classList.toggle('active', active);
+        el.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    srvMigrateTargetId = idStr;
+    const confirmBtn = document.getElementById('srv-migrate-confirm-btn');
+    if (confirmBtn) confirmBtn.disabled = !idStr;
+}
+
+// 真正移动网站：写入目标服务器、从源服务器移除、同步弹窗草稿并持久化
+function moveWebsiteToServer(ctx, target) {
+    if (!ctx || !target) return null;
+    const source = myServers.find(s => String(s.id) === String(ctx.sourceId));
+    if (!source) return null;
+
+    const originId = ctx.ws ? ctx.ws.id : undefined;
+    const moved = { ...ctx.ws };
+
+    if (!Array.isArray(target.websites)) target.websites = [];
+    // 目标服务器已有同 id 记录时重新生成，避免两条网站共用同一个 id
+    if (!moved.id || target.websites.some(w => w && w.id === moved.id)) {
+        moved.id = Date.now() + Math.random();
+    }
+    target.websites.push(moved);
+
+    // 从源服务器已保存的数据中移除（草稿里新增、尚未保存的网站不在其中）
+    if (Array.isArray(source.websites)) {
+        let si = -1;
+        if (originId !== undefined && originId !== null) {
+            si = source.websites.findIndex(w => w && w.id === originId);
+        }
+        if (si === -1) si = source.websites.findIndex(w => w === ctx.ws);
+        // 列表来自草稿副本、且网站没有 id 时，才按域名回退匹配
+        if (si === -1 && (originId === undefined || originId === null) && moved.domain) {
+            si = source.websites.findIndex(w => w && (w.domain || '') === (moved.domain || ''));
+        }
+        if (si !== -1) source.websites.splice(si, 1);
+    }
+
+    // 服务器弹窗的编辑草稿同步移除，保存时不会把已迁走的网站再写回源服务器
+    if (typeof ctx.draftIdx === 'number' && srvEditWebsites[ctx.draftIdx]) {
+        srvEditWebsites.splice(ctx.draftIdx, 1);
+    }
+
+    saveServers();
+    return moved;
+}
+
+function confirmSrvMigrate() {
+    if (!srvMigrateCtx || !srvMigrateTargetId) return;
+    const ctx = srvMigrateCtx;
+    const target = myServers.find(s => String(s.id) === String(srvMigrateTargetId));
+    if (!target) {
+        closeSrvMigrateModal();
+        showToast('目标服务器已不存在');
+        return;
+    }
+
+    const moved = moveWebsiteToServer(ctx, target);
+    if (!moved) {
+        closeSrvMigrateModal();
+        showToast('迁移失败：源服务器已不存在');
+        return;
+    }
+
+    const targetName = srvDisplayName(target);
+    closeSrvMigrateModal();
+    renderServers();
+    // 服务器弹窗还开着时同步刷新「绑定网站」列表
+    const srvModalEl = document.getElementById('srv-modal');
+    if (typeof ctx.draftIdx === 'number' && srvModalEl && !srvModalEl.classList.contains('hidden')) {
+        renderSrvEditWebsites();
+    }
+    showToast(`已将「${moved.domain || '网站'}」迁移到「${targetName}」`);
 }
 
 // === 导出 ===
@@ -1704,6 +1878,46 @@ function setupServerLogic() {
     document.getElementById('close-srv-website-modal').addEventListener('click', closeSrvWebsiteModal);
     const wsModal = document.getElementById('srv-website-modal');
     wsModal.addEventListener('mousedown', function(e) { if (e.target === wsModal) e.preventDefault(); });
+
+    // === 网站迁移弹窗 ===
+    const migrateModal = document.getElementById('srv-migrate-modal');
+    if (migrateModal) {
+        document.getElementById('close-srv-migrate-modal').addEventListener('click', closeSrvMigrateModal);
+        document.getElementById('srv-migrate-cancel-btn').addEventListener('click', closeSrvMigrateModal);
+        document.getElementById('srv-migrate-confirm-btn').addEventListener('click', confirmSrvMigrate);
+        // 无输入内容，点遮罩可直接关闭
+        migrateModal.addEventListener('click', function(e) { if (e.target === migrateModal) closeSrvMigrateModal(); });
+
+        const migrateList = document.getElementById('srv-migrate-list');
+        if (migrateList) {
+            migrateList.addEventListener('click', function(e) {
+                const item = e.target.closest('.srv-migrate-item');
+                if (!item) return;
+                selectSrvMigrateTarget(item.dataset.id);
+            });
+            migrateList.addEventListener('keydown', function(e) {
+                const item = e.target.closest('.srv-migrate-item');
+                if (!item) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    selectSrvMigrateTarget(item.dataset.id);
+                }
+            });
+            // 双击目标服务器直接完成迁移
+            migrateList.addEventListener('dblclick', function(e) {
+                const item = e.target.closest('.srv-migrate-item');
+                if (!item) return;
+                selectSrvMigrateTarget(item.dataset.id);
+                confirmSrvMigrate();
+            });
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !migrateModal.classList.contains('hidden')) {
+                closeSrvMigrateModal();
+            }
+        });
+    }
 
     // 网站模板选择：从同服务器已有站点复制配置
     document.getElementById('srv-ws-template-select').addEventListener('change', function() {
