@@ -12,6 +12,82 @@
     flex: 0 0 100%;
 }
 
+/* AI Provider 弹窗：左侧表单 + 右侧 Model 独立列 */
+#ai-modal .modal-content.ai-provider-modal-content {
+    width: 92%;
+    max-width: 660px;
+    max-height: 94vh;
+    display: flex;
+    flex-direction: column;
+}
+.ai-provider-body {
+    flex: 1 1 auto;
+    display: flex;
+    gap: 14px;
+    min-height: 0;
+    padding: 0 0 10px;
+}
+.ai-provider-main {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+.ai-provider-row {
+    display: flex;
+    gap: 12px;
+}
+.ai-provider-row > .ai-provider-field {
+    flex: 1 1 0;
+    min-width: 0;
+}
+.ai-provider-field-grow {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 60px;
+}
+.ai-provider-field-grow textarea {
+    flex: 1 1 auto;
+}
+.ai-provider-models {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding-left: 14px;
+    border-left: 1px solid #eef2f7;
+}
+.ai-provider-models .ai-provider-label-row {
+    margin-bottom: 4px;
+}
+.ai-provider-models .ai-provider-label-row .sub-label {
+    white-space: nowrap;
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#ai-modal #ai-model-input {
+    flex: 1 1 auto;
+    min-height: 380px;
+}
+
+/* 窄窗口时回落为上下堆叠 */
+@media (max-width: 560px) {
+    .ai-provider-body {
+        flex-direction: column;
+    }
+    .ai-provider-models {
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px solid #eef2f7;
+        padding-top: 10px;
+    }
+    #ai-modal #ai-model-input {
+        min-height: 180px;
+    }
+}
+
 .sub-label {
     display: block;
     font-size: 12px;

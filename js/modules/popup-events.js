@@ -404,7 +404,7 @@ function exportFinanceData(rangeType) {
                         if (Array.isArray(records)) {
                             records.forEach(r => {
                                 const amountVal = parseFloat(r.amount || 0);
-                                const typeStr = r.type === 'income' ? '收入' : r.type === 'deposit' ? '存款' : '支出';
+                                const typeStr = r.type === 'income' ? '收入' : r.type === 'deposit' ? '存款' : r.type === 'loan' ? '借款' : '支出';
                                 
                                 if (r.type === 'income') totalIncome += amountVal;
                                 else if (r.type === 'deposit') { /* 存款不计入收支 */ }

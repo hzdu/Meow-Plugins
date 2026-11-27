@@ -203,6 +203,7 @@ function createDayCell(dayNum, isInactive, isToday = false) {
         fins.forEach(f => {
             const val = parseFloat(f.amount) || 0;
             if (f.type === 'income') dailyIncome += val;
+            else if (f.type === 'loan' && !f.fromDepositId) dailyIncome += val;
             else if (f.type === 'deposit') { /* 存款不计入支出 */ }
             else dailyExpense += val;
         });
@@ -845,8 +846,8 @@ function showFinanceDetails(dateKey) {
     } else {
         fins.forEach((f, index) => {
             const amountClass = f.type === 'income' ? 'income' : f.type === 'deposit' ? 'deposit' : 'expense';
-            const sign = f.type === 'income' ? '+' : '-';
-            const typeLabel = f.type === 'income' ? '收入' : f.type === 'deposit' ? '存款' : '支出';
+            const sign = (f.type === 'income' || f.type === 'loan') ? '+' : '-';
+            const typeLabel = f.type === 'income' ? '收入' : f.type === 'deposit' ? '存款' : f.type === 'loan' ? '借款' : '支出';
             html += `
                 <div class="fin-detail-item">
                     <div class="fin-detail-left">

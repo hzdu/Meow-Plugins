@@ -102,7 +102,10 @@ const renderCalendar = async () => {
             let dayInc = 0, dayExp = 0;
             finData.forEach(item => {
                 const val = parseFloat(item.amount) || 0;
-                if (item.type === 'income') { dayInc += val; monthTotalIncome += val; } 
+                if (item.type === 'loan') {
+                    // 借款从固定资产划入时不计入收支（内部划转），外部借款计入收入
+                    if (!item.fromDepositId) { dayInc += val; monthTotalIncome += val; }
+                } else if (item.type === 'income') { dayInc += val; monthTotalIncome += val; } 
                 else if (item.type === 'deposit') { /* 存款不计入收支 */ }
                 else { dayExp += val; monthTotalExpense += val; }
             });

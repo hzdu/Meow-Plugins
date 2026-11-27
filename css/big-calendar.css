@@ -1073,6 +1073,14 @@ button {
     color: var(--accent-bright);
 }
 
+.fin-detail-amount.loan {
+    color: #f59e0b;
+}
+
+.fin-detail-amount.repay {
+    color: #ef4444;
+}
+
 .fin-detail-note {
     font-size: 11px;
     color: var(--muted);

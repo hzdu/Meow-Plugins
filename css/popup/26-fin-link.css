@@ -152,6 +152,8 @@
 .fin-link-node-amount.inc { color: #10b981; }
 .fin-link-node-amount.exp { color: #ef4444; }
 .fin-link-node-amount.dep { color: #8b5cf6; }
+.fin-link-node-amount.loan { color: #f59e0b; }
+.fin-link-node-amount.repay { color: #ef4444; }
 
 .fin-link-node-meta {
     font-size: 11px;
@@ -647,6 +649,8 @@
 .fin-link-graph-panel-item-amount.inc { color: #10b981; }
 .fin-link-graph-panel-item-amount.exp { color: #ef4444; }
 .fin-link-graph-panel-item-amount.dep { color: #8b5cf6; }
+.fin-link-graph-panel-item-amount.loan { color: #f59e0b; }
+.fin-link-graph-panel-item-amount.repay { color: #ef4444; }
 .fin-link-graph-panel-item-meta {
     font-size: 10px;
     color: #9ca3af;

@@ -53,6 +53,8 @@ const finInputRow = document.querySelector(".fin-input-container");
 const finNoteDropdown = document.getElementById("fin-note-dropdown");
 const finFromDepositRow = document.getElementById("fin-from-deposit-row");
 const finFromDepositSelect = document.getElementById("fin-from-deposit");
+const finRepayLoanRow = document.getElementById("fin-repay-loan-row");
+const finRepayLoanSelect = document.getElementById("fin-repay-loan");
 
 // 账本关联 Modal 元素
 const finLinkModal = document.getElementById('fin-link-modal');

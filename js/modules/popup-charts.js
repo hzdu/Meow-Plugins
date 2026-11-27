@@ -792,6 +792,9 @@ const initChartData = async () => {
                 if (item.type === 'income') {
                     dailyIncome[i - 1] += val;
                     totalIncome += val;
+                } else if (item.type === 'loan') {
+                    if (!item.fromDepositId) { dailyIncome[i - 1] += val; totalIncome += val; }
+                    /* 借款从固定资产划入不计入收支 */
                 } else if (item.type === 'deposit') {
                     /* 存款不计入收支 */
                 } else {
@@ -1330,16 +1333,38 @@ const openFinanceChart = async () => {
             contentEl.innerHTML = '<div class="finance-ai-summary-loading"><span class="material-icons">autorenew</span> AI 分析中...</div>';
             this.classList.add('loading');
 
+            let textDiv = null;
+            let writer = null;
             try {
-                const result = await fetchFinanceAISummary();
-                contentEl.innerHTML = '';
-                const textDiv = document.createElement('div');
-                textDiv.style.whiteSpace = 'pre-wrap';
-                textDiv.style.wordBreak = 'break-word';
-                textDiv.textContent = result;
-                contentEl.appendChild(textDiv);
+                const result = await fetchFinanceAISummary((visibleText) => {
+                    // 思考阶段还没有可见文本，先继续显示加载动画
+                    if (!visibleText) return;
+                    if (!textDiv) {
+                        contentEl.innerHTML = '';
+                        textDiv = document.createElement('div');
+                        textDiv.className = 'finance-ai-summary-text finance-streaming-caret';
+                        contentEl.appendChild(textDiv);
+                        writer = createFinanceStreamWriter(textDiv, contentEl);
+                    }
+                    writer.update(visibleText);
+                });
+
+                if (!textDiv) {
+                    contentEl.innerHTML = '';
+                    textDiv = document.createElement('div');
+                    textDiv.className = 'finance-ai-summary-text';
+                    contentEl.appendChild(textDiv);
+                    writer = createFinanceStreamWriter(textDiv, contentEl);
+                }
+                textDiv.classList.remove('finance-streaming-caret');
+                writer.flush(result);
             } catch (e) {
-                contentEl.innerHTML = `<div class="finance-ai-summary-error">${escapeHtml(e.message || '请求失败')}</div>`;
+                if (textDiv) textDiv.classList.remove('finance-streaming-caret');
+                if (e && e.name === 'AbortError') return; // 弹窗已关闭，不再渲染
+                const errDiv = document.createElement('div');
+                errDiv.className = 'finance-ai-summary-error';
+                errDiv.textContent = e.message || '请求失败';
+                contentEl.appendChild(errDiv);
                 // AI 未配置时弹出漂亮的配置提示
                 if (e.message && (e.message.includes('AI Setting') || e.message.includes('请先'))) {
                     showAIConfigPrompt();
@@ -1507,16 +1532,24 @@ async function buildDateDetailFinLinksMap(finItems) {
     return finLinksMap;
 }
 
-// 获取本月财务数据（含备注）并调用 AI 总结
-async function fetchFinanceAISummary() {
-    // 1. 从 AI Setting 获取配置
-    let baseUrl = '', modelId = '', apiKey = '';
+// === 本月收支报表 AI 请求（流式） ===
+// 当前进行中的流式请求，关闭弹窗时可统一取消
+const activeFinanceStreams = new Set();
 
+function abortActiveFinanceStreams() {
+    activeFinanceStreams.forEach(controller => {
+        try { controller.abort(); } catch (e) { /* 忽略 */ }
+    });
+    activeFinanceStreams.clear();
+}
+
+// 读取「设置-AI Setting」中的接口配置
+async function readFinanceAIConfig() {
     const aiConfig = await chrome.storage.local.get(['meow_ai_setting']);
     const setting = aiConfig.meow_ai_setting || {};
-    baseUrl = (setting.baseUrl || '').replace(/\/+$/, '');
-    modelId = setting.modelId || '';
-    apiKey = setting.apiKey || '';
+    let baseUrl = (setting.baseUrl || '').replace(/\/+$/, '');
+    const modelId = setting.modelId || '';
+    const apiKey = setting.apiKey || '';
 
     // 自动补充协议地址
     if (setting.autoProtocol !== false && !baseUrl) {
@@ -1529,6 +1562,161 @@ async function fetchFinanceAISummary() {
     if (!modelId) {
         throw new Error('请先在「设置-AI Setting」中配置 Model ID');
     }
+
+    return { baseUrl, modelId, apiKey };
+}
+
+// 流式展示用的文本：过滤思考标签，并隐藏被切到一半的标签开头
+function toFinanceDisplayText(raw) {
+    const text = stripAIThinking(raw || '');
+    return text.replace(/<\/?(?:thought|thinking|reason|reasoning|think)[^>]*$/i, '');
+}
+
+// 合并流式片段的高频 DOM 更新，约 60ms 刷新一次
+function createFinanceStreamWriter(el, scrollContainer) {
+    let pendingText = '';
+    let timer = 0;
+    const paint = () => {
+        timer = 0;
+        el.textContent = pendingText;
+        if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    };
+    return {
+        update(text) {
+            pendingText = text;
+            if (!timer) timer = setTimeout(paint, 60);
+        },
+        flush(text) {
+            if (timer) { clearTimeout(timer); timer = 0; }
+            if (typeof text === 'string') pendingText = text;
+            paint();
+        }
+    };
+}
+
+// 以 SSE 流式方式请求 OpenAI 兼容的 chat/completions；
+// 服务端不支持流式时自动退化为一次性返回。onDelta(可见文本, 原始文本)
+async function streamFinanceCompletion(options) {
+    const {
+        messages, config, maxTokens = 1024, temperature = 0.7, onDelta
+    } = options || {};
+
+    const aiConfig = config || await readFinanceAIConfig();
+    const apiUrl = resolveChatCompletionsUrl(aiConfig.baseUrl);
+
+    const emit = (raw) => {
+        if (typeof onDelta === 'function') onDelta(toFinanceDisplayText(raw), raw);
+    };
+
+    const requestBody = (useStream) => JSON.stringify({
+        model: aiConfig.modelId,
+        messages,
+        max_tokens: maxTokens,
+        temperature,
+        stream: useStream
+    });
+
+    const controller = new AbortController();
+    activeFinanceStreams.add(controller);
+
+    try {
+        const send = (useStream) => fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${aiConfig.apiKey}`,
+                'Accept': useStream ? 'text/event-stream' : 'application/json'
+            },
+            body: requestBody(useStream),
+            signal: controller.signal
+        });
+
+        let response = await send(true);
+
+        if (!response.ok) {
+            const errText = await response.text().catch(() => '');
+            // 个别服务不支持 stream 参数：去掉流式参数再试一次
+            if ((response.status === 400 || response.status === 422) && /stream/i.test(errText)) {
+                response = await send(false);
+                if (!response.ok) {
+                    const retryErr = await response.text().catch(() => '');
+                    throw new Error(`API 请求失败 (${response.status}): ${retryErr}`);
+                }
+            } else {
+                throw new Error(`API 请求失败 (${response.status}): ${errText}`);
+            }
+        }
+
+        const contentType = (response.headers.get('content-type') || '').toLowerCase();
+        const useSse = !!response.body && typeof response.body.getReader === 'function' && contentType.includes('text/event-stream');
+
+        // 接口忽略了 stream:true（或该服务不支持 SSE）：按普通 JSON 一次性解析
+        if (!useSse) {
+            const data = await response.json().catch(() => null);
+            if (!data) throw new Error('AI 返回内容解析失败');
+            if (data.error) {
+                throw new Error(`API 返回错误：${data.error.message || JSON.stringify(data.error)}`);
+            }
+            const text = data.choices?.[0]?.message?.content || '';
+            emit(text);
+            return stripAIThinking(text) || 'AI 返回内容为空';
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let lineBuffer = '';
+        let raw = '';
+        let finished = false;
+
+        const handleLine = (line) => {
+            const trimmed = line.replace(/\r$/, '');
+            if (!trimmed.startsWith('data:')) return;
+            const payload = trimmed.slice(5).trim();
+            if (!payload) return;
+            if (payload === '[DONE]') { finished = true; return; }
+
+            let json;
+            try { json = JSON.parse(payload); } catch (e) { return; }
+            if (json && json.error) {
+                throw new Error(`API 返回错误：${json.error.message || JSON.stringify(json.error)}`);
+            }
+            const choice = json && json.choices && json.choices[0];
+            if (!choice) return;
+            const delta = choice.delta || choice.message || {};
+            const piece = typeof delta.content === 'string' ? delta.content : '';
+            if (!piece) return;
+            raw += piece;
+            emit(raw);
+        };
+
+        try {
+            while (!finished) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                lineBuffer += decoder.decode(value, { stream: true });
+                let nl;
+                while (!finished && (nl = lineBuffer.indexOf('\n')) !== -1) {
+                    const line = lineBuffer.slice(0, nl);
+                    lineBuffer = lineBuffer.slice(nl + 1);
+                    handleLine(line);
+                }
+            }
+            if (!finished && lineBuffer.trim()) handleLine(lineBuffer);
+        } finally {
+            try { reader.cancel(); } catch (e) { /* 已结束 */ }
+        }
+
+        const finalText = stripAIThinking(raw);
+        return finalText || 'AI 返回内容为空';
+    } finally {
+        activeFinanceStreams.delete(controller);
+    }
+}
+
+// 获取本月财务数据（含备注）并调用 AI 总结
+async function fetchFinanceAISummary(onDelta) {
+    // 1. 读取 AI 配置（未配置时抛出可读提示）
+    const aiConfig = await readFinanceAIConfig();
 
     // 2. 收集本月财务数据
     const lastDate = new Date(currYear, currMonth + 1, 0).getDate();
@@ -1553,8 +1741,8 @@ async function fetchFinanceAISummary() {
         }
     }
 
-    const totalIncome = allItems.filter(i => i.type === 'income').reduce((s, i) => s + i.amount, 0);
-    const totalExpense = allItems.filter(i => i.type === 'expense').reduce((s, i) => s + i.amount, 0);
+    const totalIncome = allItems.filter(i => i.type === 'income' || (i.type === 'loan' && !i.fromDepositId)).reduce((s, i) => s + i.amount, 0);
+    const totalExpense = allItems.filter(i => i.type === 'expense' || i.type === 'repay').reduce((s, i) => s + i.amount, 0);
 
     // 读取固定资产 AI 开关，开启时收集固定资产数据
     let assetsData = null;
@@ -1568,37 +1756,18 @@ async function fetchFinanceAISummary() {
     // 收集账本关联数据
     const linksForAI = buildMonthlyFinLinks(allItems, allData);
 
-    // 3. 构造请求
+    // 3. 构造请求（流式输出）
     const lang = window.meowI18n ? (meowI18n.lang || 'zh-CN') : 'zh-CN';
 
     const prompt = AI_PROMPTS.financeSummary(currYear, currMonth, allItems, totalIncome, totalExpense, lang, assetsData, linksForAI);
 
-    const apiUrl = resolveChatCompletionsUrl(baseUrl);
-
-    const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-            model: modelId,
-            messages: [
-                { role: 'user', content: prompt }
-            ],
-            max_tokens: 2048,
-            temperature: 0.7
-        })
+    return streamFinanceCompletion({
+        config: aiConfig,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 2048,
+        temperature: 0.7,
+        onDelta
     });
-
-    if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        throw new Error(`API 请求失败 (${response.status}): ${errText}`);
-    }
-
-    const data = await response.json();
-    const content = stripAIThinking(data.choices?.[0]?.message?.content || 'AI 返回内容为空');
-    return content;
 }
 
 // === 本月收支报表 AI 对话功能 ===
@@ -1632,8 +1801,8 @@ async function buildFinanceSystemPrompt() {
         }
     }
 
-    const totalIncome = allItems.filter(i => i.type === 'income').reduce((s, i) => s + i.amount, 0);
-    const totalExpense = allItems.filter(i => i.type === 'expense').reduce((s, i) => s + i.amount, 0);
+    const totalIncome = allItems.filter(i => i.type === 'income' || (i.type === 'loan' && !i.fromDepositId)).reduce((s, i) => s + i.amount, 0);
+    const totalExpense = allItems.filter(i => i.type === 'expense' || i.type === 'repay').reduce((s, i) => s + i.amount, 0);
 
     // 固定资产数据
     let assetsData = null;
@@ -1655,27 +1824,11 @@ async function buildFinanceSystemPrompt() {
 /**
  * 发送对话消息
  */
-async function sendFinanceChat(userText) {
-    if (!userText.trim()) return;
+async function sendFinanceChat(userText, onDelta) {
+    if (!userText.trim()) return '';
 
     // 获取 AI 配置
-    let baseUrl = '', modelId = '', apiKey = '';
-    const aiConfig = await chrome.storage.local.get(['meow_ai_setting']);
-    const setting = aiConfig.meow_ai_setting || {};
-    baseUrl = (setting.baseUrl || '').replace(/\/+$/, '');
-    modelId = setting.modelId || '';
-    apiKey = setting.apiKey || '';
-
-    if (setting.autoProtocol !== false && !baseUrl) {
-        baseUrl = 'https://api.openai.com';
-    }
-
-    if (!baseUrl || !apiKey) {
-        throw new Error('请先在「设置-AI Setting」中配置接口信息');
-    }
-    if (!modelId) {
-        throw new Error('请先在「设置-AI Setting」中配置 Model ID');
-    }
+    const aiConfig = await readFinanceAIConfig();
 
     // 构建 system prompt（首次对话时构建）
     if (financeChatHistory.length === 0) {
@@ -1684,31 +1837,24 @@ async function sendFinanceChat(userText) {
     }
     financeChatHistory.push({ role: 'user', content: userText });
 
-    const apiUrl = resolveChatCompletionsUrl(baseUrl);
-
-    const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-            model: modelId,
+    try {
+        const reply = await streamFinanceCompletion({
+            config: aiConfig,
             messages: financeChatHistory,
-            max_tokens: 1024,
-            temperature: 0.7
-        })
-    });
-
-    if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        throw new Error(`API 请求失败 (${response.status}): ${errText}`);
+            maxTokens: 1024,
+            temperature: 0.7,
+            onDelta
+        });
+        financeChatHistory.push({ role: 'assistant', content: reply });
+        return reply;
+    } catch (e) {
+        // 请求失败或被取消时撤回这条提问，避免历史里留下没有回答的消息
+        const last = financeChatHistory[financeChatHistory.length - 1];
+        if (last && last.role === 'user' && last.content === userText) {
+            financeChatHistory.pop();
+        }
+        throw e;
     }
-
-    const data = await response.json();
-    const reply = stripAIThinking(data.choices?.[0]?.message?.content || 'AI 返回内容为空');
-    financeChatHistory.push({ role: 'assistant', content: reply });
-    return reply;
 }
 
 /**
@@ -1754,6 +1900,7 @@ if (financeChatInput && financeChatSend) {
     financeChatSend.addEventListener('click', async () => {
         const text = financeChatInput.value.trim();
         if (!text) return;
+        if (financeChatSend.classList.contains('loading')) return;
 
         // 显示用户消息
         appendFinanceChatMessage('user', text);
@@ -1765,12 +1912,35 @@ if (financeChatInput && financeChatSend) {
         financeChatSend.classList.add('loading');
         financeChatSend.disabled = true;
 
-        try {
-            const reply = await sendFinanceChat(text);
+        const chatContainer = document.getElementById('finance-ai-summary-content');
+        let aiMsg = null;
+        let writer = null;
+        const ensureAiMsg = () => {
+            if (aiMsg) return;
             if (loadingMsg) loadingMsg.remove();
-            appendFinanceChatMessage('ai', reply);
+            aiMsg = appendFinanceChatMessage('ai', '');
+            aiMsg.classList.add('finance-streaming-caret');
+            writer = createFinanceStreamWriter(aiMsg, chatContainer);
+        };
+
+        try {
+            const reply = await sendFinanceChat(text, (visibleText) => {
+                if (!visibleText) return;
+                ensureAiMsg();
+                writer.update(visibleText);
+            });
+            ensureAiMsg();
+            writer.flush(reply);
+            aiMsg.classList.remove('finance-streaming-caret');
         } catch (e) {
             if (loadingMsg) loadingMsg.remove();
+            if (e && e.name === 'AbortError') {
+                if (aiMsg) aiMsg.classList.remove('finance-streaming-caret');
+                return; // 弹窗已关闭，不再渲染
+            }
+            if (aiMsg) {
+                aiMsg.classList.remove('finance-streaming-caret');
+            }
             appendFinanceChatMessage('error', e.message || '请求失败', true);
             if (e.message && (e.message.includes('AI Setting') || e.message.includes('请先'))) {
                 showAIConfigPrompt();
@@ -1810,6 +1980,7 @@ const clampOffset = () => {
 // 关闭图表 Modal
 const closeFinanceChart = () => {
     if (!financeChartModal) return;
+    abortActiveFinanceStreams(); // 关掉弹窗时一并取消未完成的流式请求
     financeChartModal.classList.remove('visible');
     financeChartModal.classList.add('hidden');
     chartState.data = null; // 清理数据

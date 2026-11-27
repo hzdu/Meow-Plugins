@@ -17,7 +17,8 @@ const refreshFinDepositOptions = (nextId) => {
     const deposits = typeof getDepositAssets === 'function' ? getDepositAssets() : [];
     const isIncome = finType.value === 'income';
     const isDeposit = finType.value === 'deposit';
-    const show = (isIncome || isDeposit) && deposits.length > 0;
+    const isLoan = finType.value === 'loan';
+    const show = (isIncome || isDeposit || isLoan) && deposits.length > 0;
     finFromDepositRow.classList.toggle('hidden', !show);
     if (!show) { finFromDepositSelect.innerHTML = ''; return; }
 
@@ -33,6 +34,57 @@ const refreshFinDepositOptions = (nextId) => {
     finFromDepositSelect.value = deposits.some(a => a.id === keep) ? keep : '';
 };
 
+// === 还款：关联借款选择 ===
+let _finLoanCache = null;
+let _finLoanCacheTime = 0;
+const getAllLoanItems = async (force) => {
+    const now = Date.now();
+    if (!force && _finLoanCache && (now - _finLoanCacheTime) < 5000) return _finLoanCache;
+    const all = await new Promise(r => chrome.storage.sync.get(null, r));
+    const loans = [];
+    for (const [k, v] of Object.entries(all || {})) {
+        if (!k.startsWith('fin_') || !Array.isArray(v)) continue;
+        const dateKey = k.slice(4);
+        v.forEach((item, index) => {
+            if (item && item.type === 'loan') loans.push({ dateKey, index, item });
+        });
+    }
+    loans.sort((a, b) => {
+        const pa = a.dateKey.split('-').map(Number);
+        const pb = b.dateKey.split('-').map(Number);
+        return (pb[0]-pa[0]) || (pb[1]-pa[1]) || (pb[2]-pa[2]);
+    });
+    _finLoanCache = loans;
+    _finLoanCacheTime = now;
+    return loans;
+};
+
+const refreshFinRepayLoanOptions = async (nextId) => {
+    if (!finRepayLoanRow || !finRepayLoanSelect) return;
+    const isRepay = finType.value === 'repay';
+    if (!isRepay) {
+        finRepayLoanRow.classList.add('hidden');
+        finRepayLoanSelect.innerHTML = '';
+        return;
+    }
+    const loans = await getAllLoanItems();
+    finRepayLoanRow.classList.remove('hidden');
+    const keep = nextId === undefined ? (finRepayLoanSelect.value || '') : nextId;
+    finRepayLoanSelect.innerHTML = '';
+    finRepayLoanSelect.appendChild(new Option(meowI18n.t('fin_repay_loan_none') || '不关联借款', ''));
+    loans.forEach(({ dateKey, item }) => {
+        const val = parseFloat(item.amount) || 0;
+        const title = getFinItemTitle(item, '借款');
+        const label = `${dateKey} · ${title} · ¥${val.toFixed(2)}`;
+        const opt = new Option(label, item.id || '');
+        opt.dataset.dateKey = dateKey;
+        finRepayLoanSelect.appendChild(opt);
+    });
+    // if keep not found (maybe new item id not yet generated), try to preserve
+    const hasKeep = Array.from(finRepayLoanSelect.options).some(o => o.value === keep);
+    finRepayLoanSelect.value = hasKeep ? keep : '';
+};
+
 const revertFinDepositEffect = (item) => {
     if (!item) return;
     if (item.fromDepositId && item.depositDeducted) adjustDepositAmount(item.fromDepositId, item.depositDeducted);
@@ -41,7 +93,7 @@ const revertFinDepositEffect = (item) => {
 
 if (finType) {
     // 类型切换时重置选择，避免「划入来源」被带到「存入账户」上
-    finType.addEventListener('change', () => refreshFinDepositOptions(''));
+    finType.addEventListener('change', () => { refreshFinDepositOptions(''); refreshFinRepayLoanOptions(''); });
 }
 
 const renderFinanceView = () => {
@@ -53,7 +105,11 @@ const renderFinanceView = () => {
         currentFinList.forEach((item, index) => {
             const val = parseFloat(item.amount);
             if (item.type === 'income') totalIncome += val;
-            else if (item.type === 'deposit') { /* 存款不计入收支显示 */ }
+            else if (item.type === 'loan') {
+                // 借款从固定资产划入时不计入收支，外部借款计入收入
+                if (!item.fromDepositId) totalIncome += val;
+            } else if (item.type === 'deposit') { /* 存款不计入收支显示 */ }
+            else if (item.type === 'repay') totalExpense += val;
             else totalExpense += val;
             const li = document.createElement("li"); li.className = "fin-item";
             li.draggable = true; // 允许拖拽
@@ -68,17 +124,20 @@ const renderFinanceView = () => {
                 li.style.opacity = "1";
             });
 
-            const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
+            const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : item.type === 'loan' ? meowI18n.t('loan') : item.type === 'repay' ? meowI18n.t('repay') : meowI18n.t('expense');
             // 存款没写备注时标题就是「存款」，meta 行不再重复类型，只留账户标签
             const metaLabel = (item.type === 'deposit' && !item.note) ? '' : typeLabel;
-            const valClass = item.type === 'income' ? 'inc' : item.type === 'deposit' ? 'dep' : 'exp';
+            const valClass = item.type === 'income' ? 'inc' : item.type === 'deposit' ? 'dep' : item.type === 'loan' ? 'loan' : item.type === 'repay' ? 'repay' : 'exp';
             const valSign = getFinAmountSign(item.type);
             const tagsHtml = item.tags ? item.tags.map(t => `<span class="fin-item-tag" style="background-color:${t.color}">${t.text}</span>`).join('') : '';
             const tagsRow = tagsHtml ? `<div class="fin-tags-row">${tagsHtml}</div>` : '';
             const depositName = item.fromDepositName || item.toDepositName;
+            const repayLoanChip = (item.type === 'repay' && item.repayLoanTitle)
+                ? `<span class="fin-from-chip fin-repay-chip" title="${escapeHtml(item.repayLoanTitle)}"><span class="material-icons">credit_score</span>${escapeHtml(item.repayLoanDateKey ? item.repayLoanDateKey + ' ' : '')}${escapeHtml((item.repayLoanTitle.split(' · ')[1]) || meowI18n.t('loan') || '借款')}</span>`
+                : (item.type === 'repay' && item.repayLoanId ? `<span class="fin-from-chip fin-repay-chip"><span class="material-icons">credit_score</span>${escapeHtml(meowI18n.t('loan') || '借款')}</span>` : '');
             const fromChip = depositName
                 ? `<span class="fin-from-chip"><span class="material-icons">savings</span>${escapeHtml(depositName)}</span>`
-                : '';
+                : repayLoanChip;
             const hasLinks = !!(item.id && finLinks.some(l => l.from.id === item.id || l.to.id === item.id));
             li.innerHTML = `<div class="fin-info"><span class="fin-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</span><span class="fin-meta">${metaLabel}${fromChip}</span>${tagsRow}</div><div style="display:flex;align-items:center;gap:5px;"><span class="fin-val ${valClass}">${valSign}${val.toFixed(2)}</span><span class="material-icons fin-link-btn ${hasLinks?'has-links':''}" title="账本关联">hub</span><span class="material-icons edit-btn">edit</span><span class="material-icons delete-btn">close</span></div>`;
             
@@ -95,6 +154,7 @@ const renderFinanceView = () => {
 const enterFinEditMode = (index, item) => {
     editingFinIndex = index; finType.value = item.type; finAmount.value = item.amount; finNote.value = item.note;
     refreshFinDepositOptions(item.fromDepositId || item.toDepositId || '');
+    refreshFinRepayLoanOptions(item.repayLoanId || '');
     addFinBtn.innerHTML = "save"; cancelFinBtn.classList.remove("hidden"); finInputRow.classList.add("editing"); finAmount.focus();
     renderFinanceView();
 };
@@ -102,6 +162,7 @@ const exitFinEditMode = () => {
     editingFinIndex = -1; finAmount.value = ""; finNote.value = "";
     addFinBtn.innerHTML = "check"; cancelFinBtn.classList.add("hidden"); finInputRow.classList.remove("editing");
     refreshFinDepositOptions('');
+    refreshFinRepayLoanOptions('');
     renderFinanceView();
 };
 const addFinance = () => {
@@ -112,9 +173,9 @@ const addFinance = () => {
             ? finFromDepositSelect.value
             : '';
 
-        // 收入可指定从某个存款账户划入
+        // 收入/借款可指定从某个存款账户划入
         let fromDepositId = '', fromDepositName = '', depositDeducted = 0;
-        if (type === 'income' && pickedId) {
+        if ((type === 'income' || type === 'loan') && pickedId) {
             fromDepositId = pickedId;
             const asset = typeof getDepositAssetById === 'function' ? getDepositAssetById(fromDepositId) : null;
             if (!asset) {
@@ -145,6 +206,17 @@ const addFinance = () => {
             depositAdded = amount;
         }
 
+        // 还款可关联某笔借款
+        let repayLoanId = '', repayLoanDateKey = '', repayLoanTitle = '';
+        if (type === 'repay' && finRepayLoanRow && !finRepayLoanRow.classList.contains('hidden') && finRepayLoanSelect) {
+            repayLoanId = finRepayLoanSelect.value || '';
+            if (repayLoanId) {
+                const opt = finRepayLoanSelect.selectedOptions[0];
+                repayLoanDateKey = opt ? (opt.dataset.dateKey || '') : '';
+                repayLoanTitle = opt ? opt.textContent : '';
+            }
+        }
+
         if (editingFinIndex > -1) { 
             revertFinDepositEffect(old);
             const updated = { type, amount, note };
@@ -160,12 +232,16 @@ const addFinance = () => {
                 updated.toDepositName = toDepositName;
                 updated.depositAdded = depositAdded;
             }
+            if (repayLoanId) {
+                updated.repayLoanId = repayLoanId;
+                updated.repayLoanDateKey = repayLoanDateKey;
+                updated.repayLoanTitle = repayLoanTitle;
+            }
             currentFinList[editingFinIndex] = updated;
             if (fromDepositId) adjustDepositAmount(fromDepositId, -depositDeducted);
             if (toDepositId) adjustDepositAmount(toDepositId, depositAdded);
             exitFinEditMode(); 
-        } 
-        else {
+        } else { 
             const item = { type, amount, note, id: genFinId() };
             if (fromDepositId) {
                 item.fromDepositId = fromDepositId;
@@ -177,11 +253,17 @@ const addFinance = () => {
                 item.toDepositName = toDepositName;
                 item.depositAdded = depositAdded;
             }
+            if (repayLoanId) {
+                item.repayLoanId = repayLoanId;
+                item.repayLoanDateKey = repayLoanDateKey;
+                item.repayLoanTitle = repayLoanTitle;
+            }
             currentFinList.push(item);
             if (fromDepositId) adjustDepositAmount(fromDepositId, -depositDeducted);
             if (toDepositId) adjustDepositAmount(toDepositId, depositAdded);
             finAmount.value = ""; finNote.value = "";
             refreshFinDepositOptions('');
+            refreshFinRepayLoanOptions('');
         }
         saveFinanceData();
         updateFinNoteHistory(note);
@@ -354,11 +436,11 @@ const renderFinLinkCurrent = async () => {
     if (!finLinkCurrentItem) return;
     const { item, dateKey } = finLinkCurrentItem;
     const val = parseFloat(item.amount);
-    const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
+    const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : item.type === 'loan' ? meowI18n.t('loan') : item.type === 'repay' ? meowI18n.t('repay') : meowI18n.t('expense');
     finLinkCurrentNode.innerHTML = `
         <div class="fin-link-node-row">
             <span class="fin-link-node-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</span>
-            <span class="fin-link-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</span>
+            <span class="fin-link-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':item.type==='loan'?'loan':item.type==='repay'?'repay':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</span>
         </div>
         <div class="fin-link-node-meta">${typeLabel} · ${dateKey}</div>
     `;
@@ -429,7 +511,7 @@ const renderFinLinkList = async () => {
     const currentId = finLinkCurrentItem ? finLinkCurrentItem.item.id : '';
     finLinkSourceList.forEach((item, index) => {
         const val = parseFloat(item.amount);
-        const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
+        const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : item.type === 'loan' ? meowI18n.t('loan') : item.type === 'repay' ? meowI18n.t('repay') : meowI18n.t('expense');
         const linked = isLinked(currentId, item.id);
         const isSelf = finLinkCurrentItem && finLinkSourceDate === finLinkCurrentItem.dateKey && index === finLinkCurrentItem.index;
 
@@ -440,7 +522,7 @@ const renderFinLinkList = async () => {
         node.innerHTML = `
             <div class="fin-link-node-row">
                 <span class="fin-link-node-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</span>
-                <span class="fin-link-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</span>
+                <span class="fin-link-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':item.type==='loan'?'loan':item.type==='repay'?'repay':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</span>
             </div>
             <div class="fin-link-node-meta">${typeLabel}${linked ? ' · 已关联' : ''}</div>
         `;
@@ -772,7 +854,7 @@ const renderFinLinkGraph = async () => {
         el.setAttribute('data-id', node.id);
         el.innerHTML = `
             <div class="fin-link-graph-node-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</div>
-            <div class="fin-link-graph-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</div>
+            <div class="fin-link-graph-node-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':item.type==='loan'?'loan':item.type==='repay'?'repay':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</div>
             <div class="fin-link-graph-node-date">${dateKey}</div>
             ${depth > 0 ? `<div class="fin-link-graph-node-depth">${depth}</div>` : ''}
             <div class="fin-link-graph-anchor anchor-top" data-anchor="top">+</div>
@@ -1220,7 +1302,7 @@ const openGraphLinkPanel = async (fromId, fromDateKey, item) => {
 
     // 显示源节点信息
     const val = parseFloat(item.amount);
-    const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
+    const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : item.type === 'loan' ? meowI18n.t('loan') : item.type === 'repay' ? meowI18n.t('repay') : meowI18n.t('expense');
     if (finLinkGraphPanelSource) {
         finLinkGraphPanelSource.innerHTML = `
             <div class="fin-link-graph-panel-source-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</div>
@@ -1285,7 +1367,7 @@ const renderGraphPanelList = async () => {
 
     list.forEach((item) => {
         const val = parseFloat(item.amount);
-        const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : meowI18n.t('expense');
+        const typeLabel = item.type === 'income' ? meowI18n.t('income') : item.type === 'deposit' ? meowI18n.t('deposit') : item.type === 'loan' ? meowI18n.t('loan') : item.type === 'repay' ? meowI18n.t('repay') : meowI18n.t('expense');
         const linked = isLinked(fromId, item.id);
         const isSelf = (item.id === fromId && finLinkGraphPanelDate === fromDateKey);
 
@@ -1294,7 +1376,7 @@ const renderGraphPanelList = async () => {
         el.innerHTML = `
             <div class="fin-link-graph-panel-item-row">
                 <span class="fin-link-graph-panel-item-note">${escapeHtml(getFinItemTitle(item, 'No note'))}</span>
-                <span class="fin-link-graph-panel-item-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</span>
+                <span class="fin-link-graph-panel-item-amount ${item.type==='income'?'inc':item.type==='deposit'?'dep':item.type==='loan'?'loan':'exp'}">${getFinAmountSign(item.type)}${val.toFixed(2)}</span>
             </div>
             <div class="fin-link-graph-panel-item-meta">${typeLabel}${linked ? ' · 已关联' : ''}${isSelf ? ' · 当前节点' : ''}</div>
         `;

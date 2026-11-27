@@ -224,12 +224,18 @@
                             <option value="expense" data-i18n="expense">支出</option>
                             <option value="income" data-i18n="income">收入</option>
                             <option value="deposit" data-i18n="deposit">存款</option>
+                            <option value="loan" data-i18n="loan">借款</option>
+                            <option value="repay" data-i18n="repay">还款</option>
                         </select>
                         <input type="number" id="fin-amount" class="fin-input-amount" placeholder="金额">
                     </div>
                     <div class="fin-from-deposit-row hidden" id="fin-from-deposit-row">
                         <span class="material-icons fin-from-deposit-icon">savings</span>
                         <select id="fin-from-deposit" class="fin-select fin-from-deposit-select"></select>
+                    </div>
+                    <div class="fin-from-deposit-row hidden" id="fin-repay-loan-row">
+                        <span class="material-icons fin-from-deposit-icon">credit_score</span>
+                        <select id="fin-repay-loan" class="fin-select fin-from-deposit-select"></select>
                     </div>
                     <div class="fin-row-bottom">
                         <div class="fin-note-wrapper">
@@ -814,48 +820,50 @@
 
             <!-- AI Provider 编辑弹窗 -->
             <div id="ai-modal" class="modal hidden">
-                <div class="modal-content" style="width: 90%;">
+                <div class="modal-content ai-provider-modal-content">
                     <div class="modal-header">
                         <h3 id="ai-modal-title" data-i18n="ai_btn_add">添加 Provider</h3>
                         <span class="material-icons close-modal" id="close-ai-modal">close</span>
                     </div>
-                    <div style="padding: 0 0 10px;">
-                        <div class="ai-modal-grid">
-                            <div class="ai-modal-col">
+                    <div class="ai-provider-body">
+                        <div class="ai-provider-main">
+                            <div class="ai-provider-field">
                                 <label class="sub-label" data-i18n="ai_ph_title">标题</label>
                                 <input type="text" id="ai-title-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="OpenAI">
                             </div>
-                            <div class="ai-modal-col">
-                                <label class="sub-label" data-i18n="ai_ph_type">接口格式</label>
-                                <select id="ai-type-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;">
-                                    <option value="openai">OpenAI</option>
-                                    <option value="anthropic">Anthropic</option>
-                                </select>
-                            </div>
-                            <div class="ai-modal-col ai-modal-full">
+                            <div class="ai-provider-field">
                                 <label class="sub-label" data-i18n="ai_ph_url">Base URL（一行一个）</label>
                                 <textarea id="ai-url-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px; min-height: 50px; resize: vertical; font-family: monospace;" placeholder="https://api.openai.com"></textarea>
                             </div>
-                            <div class="ai-modal-col">
-                                <label class="sub-label" data-i18n="ai_ph_official">官网链接</label>
-                                <input type="text" id="ai-official-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="https://openai.com">
+                            <div class="ai-provider-row">
+                                <div class="ai-provider-field">
+                                    <label class="sub-label" data-i18n="ai_ph_type">接口格式</label>
+                                    <select id="ai-type-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;">
+                                        <option value="openai">OpenAI</option>
+                                        <option value="anthropic">Anthropic</option>
+                                    </select>
+                                </div>
+                                <div class="ai-provider-field">
+                                    <label class="sub-label" data-i18n="ai_ph_official">官网链接</label>
+                                    <input type="text" id="ai-official-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px;" placeholder="https://openai.com">
+                                </div>
                             </div>
-                            <div class="ai-modal-col">
+                            <div class="ai-provider-field">
                                 <label class="sub-label" data-i18n="ai_ph_key">API Key</label>
                                 <input type="text" id="ai-key-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px; font-family: monospace;" placeholder="sk-...">
                             </div>
-                            <div class="ai-modal-col ai-modal-full">
-                                <div class="ai-provider-label-row">
-                                    <label class="sub-label" data-i18n="ai_ph_model">Model（一行一个）</label>
-                                    <button type="button" id="ai-provider-fetch-models-btn" class="ai-fetch-models-btn" title="根据 Base URL 获取可用模型列表"><span class="material-icons">cloud_download</span> 获取模型</button>
-                                </div>
-                                <textarea id="ai-model-input" class="converter-input full-border" style="width: 100%; margin-bottom: 10px; min-height: 50px; resize: vertical; font-family: monospace;" placeholder="gpt-4o"></textarea>
-                                <div id="ai-provider-model-fetch-status" class="ai-provider-fetch-status"></div>
-                            </div>
-                            <div class="ai-modal-col ai-modal-full">
+                            <div class="ai-provider-field ai-provider-field-grow">
                                 <label class="sub-label" data-i18n="ai_ph_note">备注</label>
-                                <textarea id="ai-note-input" class="converter-input full-border" style="width: 100%; margin-bottom: 0; min-height: 40px; resize: vertical; font-family: monospace; font-size: 12px;" placeholder="可选备注信息"></textarea>
+                                <textarea id="ai-note-input" class="converter-input full-border" style="width: 100%; margin-bottom: 0; min-height: 60px; resize: none; font-family: monospace; font-size: 12px;" placeholder="可选备注信息"></textarea>
                             </div>
+                        </div>
+                        <div class="ai-provider-models">
+                            <div class="ai-provider-label-row">
+                                <label class="sub-label" data-i18n="ai_ph_model">Model（一行一个）</label>
+                                <button type="button" id="ai-provider-fetch-models-btn" class="ai-fetch-models-btn" title="根据 Base URL 获取可用模型列表"><span class="material-icons">cloud_download</span> 获取模型</button>
+                            </div>
+                            <textarea id="ai-model-input" class="converter-input full-border" style="width: 100%; margin-bottom: 6px; resize: none; font-family: monospace;" placeholder="gpt-4o"></textarea>
+                            <div id="ai-provider-model-fetch-status" class="ai-provider-fetch-status"></div>
                         </div>
                     </div>
                     <div class="modal-footer" style="display:flex; gap:8px;">
@@ -2353,6 +2361,21 @@
             font-size: 11px;
             padding: 12px;
             text-align: center;
+        }
+
+        /* 流式输出：正文与末尾光标 */
+        .finance-ai-summary-text {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .finance-streaming-caret::after {
+            content: '▍';
+            margin-left: 1px;
+            color: #8b5cf6;
+            animation: finance-caret-blink 1s steps(1) infinite;
+        }
+        @keyframes finance-caret-blink {
+            50% { opacity: 0; }
         }
 
         /* === AI 对话输入栏 === */

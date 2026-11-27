@@ -180,6 +180,12 @@
     border-top-color: #334155;
 }
 
+/* 暗色：Model 独立列分隔线 */
+.dark #ai-provider-modal .ai-provider-models,
+.theme-dark #ai-provider-modal .ai-provider-models {
+    border-color: #334155;
+}
+
 .dark #ai-provider-modal .ai-delete-btn,
 .theme-dark #ai-provider-modal .ai-delete-btn {
     background: #450a0a;

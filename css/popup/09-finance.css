@@ -360,3 +360,18 @@ color: var(--primary-color);
 .fin-val.dep {
     color: #8b5cf6;
 }
+
+.fin-val.loan {
+    color: #f59e0b;
+}
+
+.fin-val.repay {
+    color: #ef4444;
+}
+
+.fin-repay-chip {
+    font-size: 0.7rem;
+    color: #ef4444;
+    vertical-align: middle;
+    margin-left: 2px;
+}

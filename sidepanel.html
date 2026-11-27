@@ -1240,46 +1240,52 @@
 
             <!-- AI Provider 编辑弹窗 -->
             <div id="ai-provider-modal" class="modal hidden">
-                <div class="modal-content" style="width: 90%; max-height: 90vh;">
+                <div class="modal-content ai-provider-modal-content">
                     <div class="modal-header">
                         <h3 id="ai-provider-modal-title">添加 AI Provider</h3>
                         <span class="mi close-modal fa-regular fa-xmark" id="close-ai-provider-modal"></span>
                     </div>
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label>标题</label>
-                            <input type="text" id="ai-provider-title-input" class="converter-input full-border" placeholder="例如：我的 OpenAI">
-                        </div>
-                        <div class="form-group">
-                            <label>接口格式</label>
-                            <select id="ai-provider-type-input" class="converter-input full-border">
-                                <option value="openai">OpenAI</option>
-                                <option value="anthropic">Anthropic</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>官网链接</label>
-                            <input type="text" id="ai-provider-official-input" class="converter-input full-border" placeholder="https://platform.openai.com">
-                        </div>
-                        <div class="form-group">
-                            <label>Base URL（一行一个）</label>
-                            <textarea id="ai-provider-url-input" class="converter-input full-border" rows="2" placeholder="https://api.openai.com/v1"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>API Key</label>
-                            <input type="text" id="ai-provider-key-input" class="converter-input full-border" placeholder="sk-..." style="font-family:monospace">
-                        </div>
-                        <div class="form-group">
-                            <div class="ai-provider-label-row">
-                                <label>Model（一行一个）</label>
-                                <button type="button" id="ai-provider-fetch-models-btn" class="ai-fetch-models-btn" title="根据 Base URL 获取可用模型列表"><span class="mi fa-regular fa-cloud-arrow-down" style="font-size:14px;vertical-align:middle;"></span> 获取模型</button>
+                    <div class="modal-body ai-provider-body">
+                        <div class="ai-provider-main">
+                            <div class="form-group">
+                                <label>标题</label>
+                                <input type="text" id="ai-provider-title-input" class="converter-input full-border" placeholder="例如：我的 OpenAI">
                             </div>
-                            <textarea id="ai-provider-model-input" class="converter-input full-border" rows="2" placeholder="gpt-4o"></textarea>
-                            <div id="ai-provider-model-fetch-status" class="ai-provider-fetch-status"></div>
+                            <div class="form-group">
+                                <label>Base URL（一行一个）</label>
+                                <textarea id="ai-provider-url-input" class="converter-input full-border" rows="2" placeholder="https://api.openai.com/v1"></textarea>
+                            </div>
+                            <div class="ai-provider-row">
+                                <div class="form-group">
+                                    <label>接口格式</label>
+                                    <select id="ai-provider-type-input" class="converter-input full-border">
+                                        <option value="openai">OpenAI</option>
+                                        <option value="anthropic">Anthropic</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>官网链接</label>
+                                    <input type="text" id="ai-provider-official-input" class="converter-input full-border" placeholder="https://platform.openai.com">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>API Key</label>
+                                <input type="text" id="ai-provider-key-input" class="converter-input full-border" placeholder="sk-..." style="font-family:monospace">
+                            </div>
+                            <div class="form-group ai-provider-field-grow">
+                                <label>备注</label>
+                                <textarea id="ai-provider-note-input" class="converter-input full-border" rows="2" placeholder="可选备注"></textarea>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>备注</label>
-                            <textarea id="ai-provider-note-input" class="converter-input full-border" rows="2" placeholder="可选备注"></textarea>
+                        <div class="ai-provider-models">
+                            <div class="form-group ai-provider-models-group">
+                                <div class="ai-provider-label-row">
+                                    <label>Model（一行一个）</label>
+                                    <button type="button" id="ai-provider-fetch-models-btn" class="ai-fetch-models-btn" title="根据 Base URL 获取可用模型列表"><span class="mi fa-regular fa-cloud-arrow-down" style="font-size:14px;vertical-align:middle;"></span> 获取模型</button>
+                                </div>
+                                <textarea id="ai-provider-model-input" class="converter-input full-border" placeholder="gpt-4o"></textarea>
+                                <div id="ai-provider-model-fetch-status" class="ai-provider-fetch-status"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer" style="display:flex; gap:8px;">

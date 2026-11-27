@@ -19,19 +19,25 @@ function isSafeHtmlUrl(value) {
     return /^(https?:|mailto:|tel:|blob:)/.test(s);
 }
 
-// 账本条目标题：存款不需要备注，没写备注时直接用类型名当标题
+// 账本条目标题：存款/借款/还款不需要备注，没写备注时直接用类型名当标题
 function getFinItemTitle(item, fallback) {
     if (!item) return fallback || '';
     if (item.note) return item.note;
     if (item.type === 'deposit') {
         return (typeof meowI18n !== 'undefined' && meowI18n.t('deposit')) || '存款';
     }
+    if (item.type === 'loan') {
+        return (typeof meowI18n !== 'undefined' && meowI18n.t('loan')) || '借款';
+    }
+    if (item.type === 'repay') {
+        return (typeof meowI18n !== 'undefined' && meowI18n.t('repay')) || '还款';
+    }
     return fallback || '';
 }
 
-// 金额符号：存款是转入资产，和收入一样取正号，只有支出带负号
+// 金额符号：支出/还款为负号，其余为正号
 function getFinAmountSign(type) {
-    return type === 'expense' ? '-' : '+';
+    return (type === 'expense' || type === 'repay') ? '-' : '+';
 }
 
 // 备份会上传到 WebDAV 或落成 JSON 文件。注册码的 API 配置（含 Token、地址、字段映射）

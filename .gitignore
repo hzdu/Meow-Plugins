@@ -6,3 +6,4 @@ __MACOSX/
 dev/
 ssh-bridge/
 node_modules/
+.freebuff/
