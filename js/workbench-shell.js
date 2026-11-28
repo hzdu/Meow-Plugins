@@ -1,10 +1,12 @@
-// big-calendar-shell.js — 顶级液态玻璃 TAB、时钟、关闭
-// 负责视图切换与滑动玻璃指示块，SSH / 日历各自独立初始化。
+// workbench-shell.js — 顶级分段式 TAB、时钟、关闭
+// 负责视图切换与滑动指示块，SSH / 日历各自独立初始化。
 
 (function () {
     'use strict';
 
-    var TAB_KEY = 'meow_big_calendar_tab';
+    var TAB_KEY = 'meow_workbench_tab';
+    // Legacy key for old big-calendar tab preference migration; kept for backward compat.
+    var LEGACY_TAB_KEY = 'meow_big_calendar_tab';
 
     var tabs = Array.prototype.slice.call(document.querySelectorAll('.glass-tab'));
     var tabNav = document.getElementById('main-tabs');
@@ -19,6 +21,7 @@
     function readSavedTab() {
         try {
             var v = localStorage.getItem(TAB_KEY);
+            if (v !== 'ssh' && v !== 'calendar') v = localStorage.getItem(LEGACY_TAB_KEY);
             if (v === 'ssh' || v === 'calendar') return v;
         } catch (e) { /* ignore */ }
         return null;

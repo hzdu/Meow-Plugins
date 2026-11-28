@@ -1,6 +1,6 @@
-// big-calendar-ssh.js — 大日历页面第一 TAB：SSH 工作区
-// 功能：服务器分组 / 凭据连接 / 真实 SSH（本地桥接）/ 多会话模拟终端 / 常用命令分组
-// 说明：真实 SSH 由 ssh-bridge 转发；模拟终端不建立网络连接。
+// workbench-ssh.js — 工作台页面第一 TAB：SSH 工作区
+// 功能：服务器分组 / 凭据连接 / 真实 SSH（本地桥接）/ 多会话终端 / 常用命令分组
+// 说明：真实 SSH 由 ssh-bridge 转发，不再提供本地模拟终端。
 
 (function () {
     'use strict';
@@ -24,7 +24,7 @@
     // ======================================================================
 
     var state = null;
-    var ui = { collapsed: {}, cmdCollapsed: {}, search: '', mode: 'real' };
+    var ui = { collapsed: {}, cmdCollapsed: {}, search: '' };
     var commandSearch = '';
     var dragState = null;
     var suppressCommandClickUntil = 0;
@@ -60,23 +60,6 @@
 
     function uid(prefix) {
         return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-    }
-
-    function two(n) {
-        return n < 10 ? '0' + n : String(n);
-    }
-
-    function nowTime() {
-        var d = new Date();
-        return two(d.getHours()) + ':' + two(d.getMinutes()) + ':' + two(d.getSeconds());
-    }
-
-    function fmtLoginDate() {
-        var d = new Date(Date.now() - 86400000);
-        var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + d.getDate() + ' ' +
-            two(d.getHours()) + ':' + two(d.getMinutes()) + ':' + two(d.getSeconds()) + ' ' + d.getFullYear();
     }
 
     // ======================================================================
@@ -274,6 +257,38 @@
             } catch (e) { /* fall through */ }
         }
         return Promise.resolve(window.confirm(options && options.message ? options.message : '确定继续？'));
+    }
+
+    function legacyCopyText(text) {
+        return new Promise(function (resolve, reject) {
+            var area = document.createElement('textarea');
+            area.value = text;
+            area.setAttribute('readonly', '');
+            area.style.position = 'fixed';
+            area.style.left = '-9999px';
+            area.style.top = '0';
+            document.body.appendChild(area);
+            area.select();
+            area.setSelectionRange(0, area.value.length);
+            var ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ }
+            if (area.parentNode) area.parentNode.removeChild(area);
+            if (ok) resolve();
+            else reject(new Error('复制命令不可用'));
+        });
+    }
+
+    function copyText(text) {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            try {
+                return navigator.clipboard.writeText(text).catch(function () {
+                    return legacyCopyText(text);
+                });
+            } catch (e) {
+                return legacyCopyText(text);
+            }
+        }
+        return legacyCopyText(text);
     }
 
     // ======================================================================
@@ -1607,13 +1622,12 @@
             openConnectModal(server);
             return;
         }
-        var mode = ui.mode === 'sim' ? 'sim' : 'real';
-        if (mode === 'real' && !bridge.token) {
+        if (!bridge.token) {
             openBridgeModal();
-            toast('请先配置真实 SSH 桥接，或切换为本地模拟', 'error');
+            toast('请先配置真实 SSH 桥接', 'error');
             return;
         }
-        connectServer(server, { username: server.username, password: server.password }, mode);
+        connectServer(server, { username: server.username, password: server.password });
     }
 
     function openConnectModal(server) {
@@ -1626,12 +1640,6 @@
         $('btn-ssh-connect-eye').innerHTML = '<i class="fa-regular fa-eye"></i>';
         $('ssh-connect-save').checked = true;
 
-        var mode = ui.mode === 'sim' ? 'sim' : 'real';
-        var radios = document.querySelectorAll('input[name="ssh-connect-mode"]');
-        Array.prototype.forEach.call(radios, function (radio) {
-            radio.checked = radio.value === mode;
-        });
-        updateConnectModeUI();
         openModal('ssh-connect-modal');
         setTimeout(function () {
             if (server.password) $('ssh-connect-pass').focus();
@@ -1648,8 +1656,6 @@
 
         var username = $('ssh-connect-user').value.trim();
         var password = $('ssh-connect-pass').value;
-        var modeEl = document.querySelector('input[name="ssh-connect-mode"]:checked');
-        var mode = modeEl && modeEl.value === 'sim' ? 'sim' : 'real';
 
         if (!username) {
             toast('请输入用户名', 'error');
@@ -1661,14 +1667,11 @@
             $('ssh-connect-pass').focus();
             return;
         }
-        if (mode === 'real' && !bridge.token) {
-            toast('请先配置真实 SSH 桥接，或切换为本地模拟', 'error');
+        if (!bridge.token) {
+            toast('请先配置真实 SSH 桥接', 'error');
             openBridgeModal();
             return;
         }
-
-        ui.mode = mode;
-        saveUi();
 
         if ($('ssh-connect-save').checked) {
             server.username = username;
@@ -1678,48 +1681,33 @@
         }
 
         closeModal('ssh-connect-modal');
-        connectServer(server, { username: username, password: password }, mode);
+        connectServer(server, { username: username, password: password });
     }
 
     // ======================================================================
     // 终端会话
     // ======================================================================
 
-    function createSession(server, creds, mode) {
-        var username = String(creds.username || 'root');
-        var homeUser = username.replace(/[^\w.-]/g, '_') || 'user';
-        var session = {
+    function createSession(server, creds) {
+        return {
             id: uid('sess'),
-            mode: mode === 'real' ? 'real' : 'sim',
             serverId: server.id,
             title: server.name || server.host,
             host: server.host,
             port: String(server.port || '22'),
-            username: username,
-            homeUser: homeUser,
-            hostname: server.host,
+            username: String(creds.username || 'root'),
             status: 'connecting',
             connectStartedAt: Date.now(),
             autoRetried: false,
             creds: creds,
-            home: ['home', homeUser],
-            cwd: ['home', homeUser],
-            fs: null,
             real: null,
             hostKey: '',
-            lines: [],
-            history: [],
-            historyIndex: 0,
-            timers: [],
-            connectedAt: 0
+            connectedAt: 0,
+            cwd: ''
         };
-        if (session.mode === 'sim') session.fs = createFs(session);
-        return session;
     }
 
-    function connectServer(server, creds, mode) {
-        mode = mode === 'sim' ? 'sim' : 'real';
-
+    function connectServer(server, creds) {
         var existing = sessions.filter(function (s) {
             return s.serverId === server.id && (s.status === 'connecting' || s.status === 'connected');
         })[0];
@@ -1727,7 +1715,7 @@
         if (existing) {
             // 桥接重启后，旧 WebSocket 可能还没触发 close 事件，但底层连接已失效。
             // 这种情况下不能复用旧会话，否则会一直停留在旧的失败状态。
-            var stale = existing.mode === 'real' && existing.real && !existing.real.isConnected() &&
+            var stale = existing.real && !existing.real.isConnected() &&
                 (existing.status === 'connected' ||
                     (existing.status === 'connecting' && Date.now() - existing.connectStartedAt > 15000));
             if (stale) {
@@ -1742,36 +1730,34 @@
             return;
         }
 
-        if (mode === 'real' && !(window.MeowSshReal && window.MeowSshReal.isSupported())) {
+        if (!(window.MeowSshReal && window.MeowSshReal.isSupported())) {
             toast('真实终端组件未加载，请刷新页面后重试', 'error');
             return;
         }
-        if (mode === 'real' && location.protocol === 'file:') {
+        if (location.protocol === 'file:') {
             toast('真实 SSH 需要通过扩展页面打开；file:// 页面会被浏览器阻止本地 WebSocket', 'error');
             return;
         }
-        if (mode === 'real' && !bridge.token) {
-            toast('请先配置真实 SSH 桥接，或切换为本地模拟', 'error');
+        if (!bridge.token) {
+            toast('请先配置真实 SSH 桥接', 'error');
             openBridgeModal();
             return;
         }
 
-        var session = createSession(server, creds, mode);
-
-        if (session.mode === 'real') {
-            try {
-                session.real = window.MeowSshReal.createSession(els.realTerminal, {
-                    id: session.id,
-                    onStatus: function (status) { onRealStatus(session, status); },
-                    onReady: function () { onRealReady(session); },
-                    onError: function (message) { onRealError(session, message); },
-                    onClose: function () { onRealClosed(session); },
-                    onHostKey: function (info) { onRealHostKey(session, info); }
-                });
-            } catch (err) {
-                toast('真实终端初始化失败：' + err.message, 'error');
-                return;
-            }
+        var session = createSession(server, creds);
+        try {
+            session.real = window.MeowSshReal.createSession(els.realTerminal, {
+                id: session.id,
+                onStatus: function (status) { onRealStatus(session, status); },
+                onReady: function () { onRealReady(session); },
+                onError: function (message) { onRealError(session, message); },
+                onClose: function () { onRealClosed(session); },
+                onHostKey: function (info) { onRealHostKey(session, info); },
+                onCwd: function (cwd) { onRealCwd(session, cwd); }
+            });
+        } catch (err) {
+            toast('真实终端初始化失败：' + err.message, 'error');
+            return;
         }
 
         sessions.push(session);
@@ -1781,46 +1767,13 @@
         renderTerminal(true);
         renderServers();
 
-        if (session.mode === 'real') {
-            session.real.connect({
-                url: bridge.url,
-                token: bridge.token,
-                host: session.host,
-                port: session.port,
-                username: session.username,
-                password: creds.password
-            });
-            return;
-        }
-
-        startSimulatedConnection(session, creds);
-    }
-
-    function startSimulatedConnection(session, creds) {
-        var address = creds.username + '@' + session.host + ':' + session.port;
-
-        schedule(session, 120, function () {
-            appendLine(session, L('Connecting to ' + address + ' ...'), 'dim');
-        });
-
-        schedule(session, 420, function () {
-            appendLine(session, L('Connection established.', 'success'));
-            appendLine(session, L('Remote protocol version 2.0, remote software version OpenSSH_8.9p1 Ubuntu-3ubuntu0.6'), 'dim');
-        });
-
-        schedule(session, 700, function () {
-            appendLine(session, L('Authenticating with password for ' + creds.username + ' ...'), 'dim');
-        });
-
-        schedule(session, 980, function () {
-            appendLine(session, S([
-                { t: 'Authentication succeeded. ' },
-                { t: 'Welcome back, ' + creds.username + '.', c: 'accent' }
-            ]), 'success');
-        });
-
-        schedule(session, 1260, function () {
-            finishConnection(session);
+        session.real.connect({
+            url: bridge.url,
+            token: bridge.token,
+            host: session.host,
+            port: session.port,
+            username: session.username,
+            password: creds.password
         });
     }
 
@@ -1833,10 +1786,19 @@
             updateBridgeIndicator();
         } else if (status === 'error' || status === 'closed') {
             session.status = 'closed';
+            session.cwd = '';
         }
         renderSessionTabs();
         updateStatusBar();
         renderServers();
+    }
+
+    function onRealCwd(session, cwd) {
+        if (sessions.indexOf(session) === -1) return;
+        var value = String(cwd || '').trim();
+        if (!value || session.cwd === value) return;
+        session.cwd = value;
+        if (session === getActiveSession()) updateStatusBar();
     }
 
     function onRealReady(session) {
@@ -1845,6 +1807,10 @@
         session.connectedAt = Date.now();
         bridge.status = 'online';
         updateBridgeIndicator();
+        if (session.real && typeof session.real.getCwd === 'function') {
+            var cwd = session.real.getCwd();
+            if (cwd) onRealCwd(session, cwd);
+        }
         renderSessionTabs();
         renderTerminal(true);
         renderServers();
@@ -1856,7 +1822,7 @@
 
         // 某些服务器/端口转发会在旧连接刚释放时拒绝下一次握手。
         // 首次遇到这种瞬时错误时自动重连一次；主机密钥、认证失败等不会走这里。
-        if (session.mode === 'real' && !session.autoRetried && session.creds &&
+        if (!session.autoRetried && session.creds &&
             /Connection lost before handshake/i.test(String(message || ''))) {
             session.autoRetried = true;
             var retryCreds = session.creds;
@@ -1870,7 +1836,7 @@
             setTimeout(function () {
                 if (sessions.indexOf(session) === -1) return;
                 closeSession(session.id, true);
-                connectServer(retryServer, retryCreds, 'real');
+                connectServer(retryServer, retryCreds);
             }, 900);
             return;
         }
@@ -1885,6 +1851,7 @@
     function onRealClosed(session) {
         if (sessions.indexOf(session) === -1) return;
         session.status = 'closed';
+        session.cwd = '';
         renderSessionTabs();
         updateStatusBar();
         renderServers();
@@ -1896,46 +1863,6 @@
         if (info.isNew) {
             toast('首次连接，已记录主机指纹 ' + (info.fingerprint || ''), 'success');
         }
-    }
-
-    function finishConnection(session) {
-        if (session.status !== 'connecting') return;
-        session.status = 'connected';
-        session.connectedAt = Date.now();
-
-        appendLine(session, L(''));
-        appendLine(session, S([
-            { t: 'Welcome to ' },
-            { t: 'Ubuntu 22.04.4 LTS', c: 'accent' },
-            { t: ' (GNU/Linux 5.15.0-105-generic x86_64)' }
-        ]));
-        appendLine(session, L(' * Documentation:  https://help.ubuntu.com'), 'dim');
-        appendLine(session, L(' * Management:     https://landscape.canonical.com'), 'dim');
-        appendLine(session, L(''));
-        appendLine(session, L('Last login: ' + fmtLoginDate() + ' from 10.0.0.2'), 'dim');
-        appendLine(session, L(''));
-        appendLine(session, L('提示：输入 help 查看模拟终端支持的命令。'), 'dim');
-
-        if (session.id === activeSessionId) {
-            renderTerminal(true);
-        }
-        renderSessionTabs();
-        renderServers();
-        toast('已连接 ' + session.host, 'success');
-    }
-
-    function schedule(session, delay, fn) {
-        var timer = setTimeout(function () {
-            session.timers = session.timers.filter(function (t) { return t !== timer; });
-            if (sessions.indexOf(session) === -1) return;
-            fn();
-        }, delay);
-        session.timers.push(timer);
-    }
-
-    function clearSessionTimers(session) {
-        session.timers.forEach(function (timer) { clearTimeout(timer); });
-        session.timers = [];
     }
 
     function activateSession(id) {
@@ -1960,7 +1887,6 @@
         if (index === -1) return;
 
         var session = sessions[index];
-        clearSessionTimers(session);
         if (session.real) session.real.dispose();
         session.creds = null;
         sessions.splice(index, 1);
@@ -2034,62 +1960,27 @@
         if (!session) {
             empty.classList.remove('hidden');
             screen.classList.add('hidden');
-            screen.classList.remove('real-mode');
             if (els.realTerminal) els.realTerminal.classList.add('hidden');
             sessions.forEach(function (item) {
                 if (item.real) item.real.setActive(false);
             });
-            els.input.disabled = true;
-            els.input.value = '';
-            els.prompt.innerHTML = '';
             updateStatusBar();
             return;
         }
 
         empty.classList.add('hidden');
         screen.classList.remove('hidden');
-
-        if (session.mode === 'real') {
-            screen.classList.add('real-mode');
-            if (els.realTerminal) els.realTerminal.classList.remove('hidden');
-            sessions.forEach(function (item) {
-                if (item.real) item.real.setActive(item === session);
-            });
-            els.input.disabled = true;
-            els.input.value = '';
-            els.prompt.innerHTML = '';
-            updateStatusBar();
-            if (session.real) {
-                session.real.fit();
-                if (focus && session.status === 'connected') {
-                    setTimeout(function () { session.real.focus(); }, 50);
-                }
-            }
-            return;
-        }
-
-        screen.classList.remove('real-mode');
-        if (els.realTerminal) els.realTerminal.classList.add('hidden');
+        if (els.realTerminal) els.realTerminal.classList.remove('hidden');
         sessions.forEach(function (item) {
-            if (item.real) item.real.setActive(false);
+            if (item.real) item.real.setActive(item === session);
         });
-
-        els.lines.innerHTML = '';
-        session.lines.forEach(function (line) {
-            els.lines.appendChild(lineEl(line));
-        });
-
-        els.input.disabled = session.status !== 'connected';
-        els.input.value = '';
-        els.input.placeholder = session.status === 'connected'
-            ? '输入命令，help 查看帮助'
-            : '正在建立连接…';
-        els.prompt.innerHTML = promptHTML(session);
         updateStatusBar();
-        scrollTerminal();
 
-        if (focus && session.status === 'connected') {
-            setTimeout(focusInput, 40);
+        if (session.real) {
+            session.real.fit();
+            if (focus && session.status === 'connected') {
+                setTimeout(function () { session.real.focus(); }, 50);
+            }
         }
     }
 
@@ -2098,13 +1989,29 @@
         var dot = els.statusDot;
         var text = els.statusText;
         var meta = els.sessionMeta;
+        var cwdPath = els.cwdPath;
+        var cwdWrap = els.cwdWrap;
+        var copyBtn = els.copyCwd;
+        var cwd = session && session.cwd ? session.cwd : '';
+
+        if (cwdPath) {
+            cwdPath.textContent = cwd || '—';
+            cwdPath.title = cwd
+                ? '当前目录：' + cwd + (cwd === '~' ? '（用户主目录）' : '')
+                : '尚未获取当前目录';
+        }
+        if (cwdWrap) cwdWrap.classList.toggle('empty', !cwd);
+        if (copyBtn) {
+            copyBtn.disabled = !cwd;
+            copyBtn.title = cwd ? '复制当前目录' : '当前目录不可用';
+        }
+
         if (!dot || !text || !meta) return;
 
         dot.className = 'status-dot';
         if (!session) {
             text.textContent = '未连接';
             meta.textContent = '选择服务器开始';
-            updateModeBadge(null);
             return;
         }
 
@@ -2120,1057 +2027,27 @@
 
         var index = sessions.indexOf(session) + 1;
         meta.textContent = session.username + '@' + session.host + ':' + session.port +
-            ' · ' + (session.mode === 'real' ? '真实 SSH' : '模拟') +
             ' · 会话 ' + index + '/' + sessions.length;
-        updateModeBadge(session);
     }
 
-    function updateModeBadge(session) {
-        var badge = els.modeBadge;
-        if (!badge) return;
-        var real = session ? session.mode === 'real' : ui.mode !== 'sim';
-        badge.className = 'sim-badge' + (real ? ' real' : '');
-        badge.innerHTML = real
-            ? '<i class="fa-regular fa-plug"></i> 真实 SSH'
-            : '<i class="fa-regular fa-flask"></i> 模拟';
-        badge.title = real
-            ? '通过本机桥接连接真实服务器'
-            : '本地模拟终端，不发起网络连接';
-        updateModeButton();
-    }
-
-    function updateModeButton() {
-        var button = $('btn-connection-mode');
-        var glyph = $('connection-mode-glyph');
-        var real = ui.mode !== 'sim';
-        if (button) {
-            button.title = real
-                ? '下次连接方式：真实 SSH（点击切换为模拟）'
-                : '下次连接方式：本地模拟（点击切换为真实）';
-            button.classList.toggle('is-sim', !real);
+    function copyCurrentCwd() {
+        var session = getActiveSession();
+        var cwd = session && session.cwd ? session.cwd : '';
+        if (!cwd) {
+            toast('当前目录不可用', 'error');
+            return;
         }
-        if (glyph) glyph.textContent = real ? 'R' : 'S';
+        copyText(cwd).then(function () {
+            toast('已复制当前目录', 'success');
+        }).catch(function () {
+            toast('复制失败，请手动选择路径', 'error');
+        });
     }
 
     function focusInput() {
         var session = getActiveSession();
-        if (!session || session.status !== 'connected') return;
-        if (session.mode === 'real' && session.real) {
-            session.real.focus();
-            return;
-        }
-        if (els.input) els.input.focus();
-    }
-
-    function scrollTerminal() {
-        if (!els.lines) return;
-        els.lines.scrollTop = els.lines.scrollHeight;
-    }
-
-    // ======================================================================
-    // 终端行
-    // ======================================================================
-
-    function L(text, cls) {
-        return { segs: [{ t: String(text == null ? '' : text) }], cls: cls || null };
-    }
-
-    function S(segs, cls) {
-        return { segs: segs, cls: cls || null };
-    }
-
-    function normalizeLine(line) {
-        if (!line) return L('');
-        if (typeof line === 'string') return L(line);
-        return {
-            segs: (line.segs || []).map(function (seg) {
-                return { t: String(seg.t == null ? '' : seg.t), c: seg.c || null };
-            }),
-            cls: line.cls || null
-        };
-    }
-
-    function lineEl(line) {
-        var div = document.createElement('div');
-        div.className = 'term-line' + (line.cls ? ' ' + line.cls : '');
-        (line.segs || []).forEach(function (seg) {
-            var span = document.createElement('span');
-            if (seg.c) span.className = 'term-' + seg.c;
-            span.textContent = seg.t;
-            div.appendChild(span);
-        });
-        return div;
-    }
-
-    function appendLine(session, line, cls) {
-        if (!session) return;
-        var normalized = normalizeLine(line);
-        if (cls && !normalized.cls) normalized.cls = cls;
-
-        session.lines.push(normalized);
-        if (session.lines.length > 900) {
-            session.lines.splice(0, session.lines.length - 900);
-        }
-
-        if (session.id === activeSessionId && els.lines) {
-            els.lines.appendChild(lineEl(normalized));
-            while (els.lines.childElementCount > 900) {
-                els.lines.removeChild(els.lines.firstChild);
-            }
-            scrollTerminal();
-        }
-    }
-
-    function appendLines(session, lines) {
-        (lines || []).forEach(function (line) { appendLine(session, line); });
-    }
-
-    function lineText(line) {
-        return (line.segs || []).map(function (seg) { return seg.t; }).join('');
-    }
-
-    function promptSegments(session) {
-        return [
-            { t: session.username, c: 'user' },
-            { t: '@', c: 'symbol' },
-            { t: session.hostname, c: 'host' },
-            { t: ':', c: 'symbol' },
-            { t: cwdDisplay(session), c: 'path' },
-            { t: session.username === 'root' ? '#' : '$', c: 'symbol' },
-            { t: '', c: 'gap' }
-        ];
-    }
-
-    function promptHTML(session) {
-        return promptSegments(session).map(function (seg) {
-            return '<span class="term-' + seg.c + '">' + esc(seg.t) + '</span>';
-        }).join('');
-    }
-
-    // ======================================================================
-    // 模拟文件系统
-    // ======================================================================
-
-    function makeDir(children) {
-        return { type: 'dir', children: children || {} };
-    }
-
-    function makeFile(content) {
-        return { type: 'file', content: content || '' };
-    }
-
-    function createFs(session) {
-        var user = session.homeUser;
-        var host = session.host;
-
-        var accessLog = [];
-        var errorLog = [];
-        for (var i = 0; i < 18; i++) {
-            var minute = two((i * 7) % 60);
-            accessLog.push('10.0.0.' + (20 + i) + ' - - [19/Nov/2026:' + two(9 + (i % 8)) + ':' + minute + ':11 +0800] ' +
-                '"GET /api/v1/health HTTP/1.1" 200 ' + (120 + i * 13) + ' "-" "curl/8.5.0"');
-            if (i % 5 === 0) {
-                errorLog.push('2026/11/19 ' + two(9 + (i % 8)) + ':' + minute + ':04 [error] upstream timed out (110) while reading response header');
-            }
-        }
-
-        var syslog = [
-            'Nov 19 09:12:01 ' + host + ' systemd[1]: Started Daily apt download activities.',
-            'Nov 19 09:14:22 ' + host + ' sshd[2214]: Accepted password for ' + session.username + ' from 10.0.0.2 port 51234 ssh2',
-            'Nov 19 09:16:08 ' + host + ' kernel: [ 8123.441] eth0: link up, 1000 Mbps, full duplex',
-            'Nov 19 09:21:37 ' + host + ' cron[1441]: (root) CMD (/usr/local/bin/backup.sh)',
-            'Nov 19 09:24:02 ' + host + ' nginx[982]: 2026/11/19 09:24:02 [warn] 982#982: server name conflict',
-            'Nov 19 09:31:15 ' + host + ' systemd[1]: Reloading nginx.service.',
-            'Nov 19 09:31:16 ' + host + ' systemd[1]: Reloaded nginx.service.',
-            'Nov 19 09:40:00 ' + host + ' CRON[2311]: (root) CMD (/usr/bin/find /tmp -type f -mtime +7 -delete)'
-        ].join('\n');
-
-        var home = makeDir({
-            '.bashrc': makeFile('# ~/.bashrc\nexport PS1="\\u@\\h:\\w\\$ "\nalias ll="ls -alF"\n'),
-            '.bash_history': makeFile('ls -la\ncd /var/log\ntail -f syslog\nsystemctl status nginx\n'),
-            '.ssh': makeDir({
-                'authorized_keys': makeFile('# ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... meow-demo\n')
-            }),
-            'README.md': makeFile('# ' + host + '\n\n这是 Meow SSH 模拟终端生成的演示目录。\n所有命令都在本机模拟执行，不会连接远程主机。\n'),
-            'logs': makeDir({
-                'access.log': makeFile(accessLog.join('\n')),
-                'error.log': makeFile(errorLog.join('\n') || 'no error')
-            }),
-            'scripts': makeDir({
-                'deploy.sh': makeFile('#!/usr/bin/env bash\nset -euo pipefail\necho "deploying to ' + host + '..."\n'),
-                'backup.sh': makeFile('#!/usr/bin/env bash\ntar -czf /tmp/site-$(date +%F).tar.gz /var/www\n')
-            })
-        });
-
-        var homeParent = {};
-        homeParent[user] = home;
-
-        return makeDir({
-            bin: makeDir({}),
-            etc: makeDir({
-                'hostname': makeFile(host),
-                'os-release': makeFile('NAME="Ubuntu"\nVERSION="22.04.4 LTS (Jammy Jellyfish)"\nID=ubuntu\nPRETTY_NAME="Ubuntu 22.04.4 LTS"'),
-                'nginx': makeDir({
-                    'nginx.conf': makeFile('user www-data;\nworker_processes auto;\nhttp {\n    include /etc/nginx/sites-enabled/*;\n}\n')
-                })
-            }),
-            home: makeDir(homeParent),
-            root: makeDir({
-                '.bash_history': makeFile('ls -la\ncd /var/log\n'),
-                'deploy.sh': makeFile('#!/usr/bin/env bash\nset -e\necho deploy\n')
-            }),
-            tmp: makeDir({}),
-            var: makeDir({
-                log: makeDir({
-                    'syslog': makeFile(syslog),
-                    'nginx': makeDir({
-                        'access.log': makeFile(accessLog.slice(0, 8).join('\n')),
-                        'error.log': makeFile(errorLog.join('\n') || 'no error')
-                    })
-                }),
-                www: makeDir({
-                    'html': makeDir({ 'index.html': makeFile('<!DOCTYPE html>\n<html><body><h1>Meow</h1></body></html>\n') })
-                })
-            }),
-            opt: makeDir({
-                app: makeDir({
-                    'config.yml': makeFile('server:\n  port: 8080\n  workers: 4\nlogging:\n  level: info\n'),
-                    'app.log': makeFile('[info] server started on :8080\n[info] worker 1 ready\n[info] worker 2 ready\n')
-                })
-            })
-        });
-    }
-
-    function resolvePath(session, input) {
-        var raw = String(input == null ? '' : input);
-        var base;
-        if (!raw || raw === '~') return session.home.slice();
-        if (raw.indexOf('~/') === 0) {
-            base = session.home.slice();
-            raw = raw.slice(2);
-        } else if (raw.charAt(0) === '/') {
-            base = [];
-            raw = raw.slice(1);
-        } else {
-            base = session.cwd.slice();
-        }
-
-        raw.split('/').forEach(function (part) {
-            if (!part || part === '.') return;
-            if (part === '..') {
-                base.pop();
-                return;
-            }
-            base.push(part);
-        });
-
-        return base;
-    }
-
-    function getNode(session, pathArr) {
-        var node = session.fs;
-        for (var i = 0; i < pathArr.length; i++) {
-            if (!node || node.type !== 'dir') return null;
-            node = node.children[pathArr[i]];
-            if (!node) return null;
-        }
-        return node;
-    }
-
-    function parentNode(session, pathArr) {
-        if (!pathArr.length) return { parent: null, name: '' };
-        var parent = getNode(session, pathArr.slice(0, -1));
-        return { parent: parent, name: pathArr[pathArr.length - 1] };
-    }
-
-    function cwdDisplay(session) {
-        var cwd = session.cwd || [];
-        var home = session.home || ['home', session.homeUser || 'user'];
-        var sameHome = cwd.length === home.length && cwd.every(function (v, i) { return v === home[i]; });
-        if (sameHome) return '~';
-        var inHome = cwd.length > home.length && home.every(function (v, i) { return cwd[i] === v; });
-        if (inHome) return '~/' + cwd.slice(home.length).join('/');
-        return '/' + cwd.join('/');
-    }
-
-    function sortEntries(entries) {
-        return entries.sort(function (a, b) {
-            if (a.node.type !== b.node.type) return a.node.type === 'dir' ? -1 : 1;
-            return a.name.localeCompare(b.name);
-        });
-    }
-
-    function listEntries(node, all) {
-        var entries = Object.keys(node.children).map(function (name) {
-            return { name: name, node: node.children[name] };
-        });
-        if (!all) {
-            entries = entries.filter(function (e) { return e.name.charAt(0) !== '.'; });
-        }
-        return sortEntries(entries);
-    }
-
-    // ======================================================================
-    // 命令执行
-    // ======================================================================
-
-    var COMMAND_NAMES = [
-        'help', 'ls', 'll', 'cd', 'pwd', 'cat', 'echo', 'mkdir', 'touch', 'rm', 'mv', 'cp',
-        'tail', 'head', 'grep', 'find', 'whoami', 'hostname', 'id', 'uname', 'date', 'uptime',
-        'df', 'free', 'ps', 'top', 'ip', 'ifconfig', 'ss', 'netstat', 'ping', 'curl',
-        'systemctl', 'docker', 'history', 'env', 'clear', 'exit', 'logout', 'sudo', 'ssh',
-        'vim', 'vi', 'nano', 'apt', 'yum', 'crontab', 'neofetch', 'w'
-    ];
-
-    function tokenize(input) {
-        var out = [];
-        var current = '';
-        var quote = null;
-        for (var i = 0; i < input.length; i++) {
-            var ch = input.charAt(i);
-            if (quote) {
-                if (ch === quote) quote = null;
-                else current += ch;
-                continue;
-            }
-            if (ch === '"' || ch === "'") {
-                quote = ch;
-                continue;
-            }
-            if (/\s/.test(ch)) {
-                if (current) {
-                    out.push(current);
-                    current = '';
-                }
-                continue;
-            }
-            current += ch;
-        }
-        if (current) out.push(current);
-        return out;
-    }
-
-    function executeInput(session, raw) {
-        if (!session || session.status !== 'connected') return;
-
-        var command = String(raw == null ? '' : raw);
-        var prompt = promptSegments(session);
-
-        if (!command.trim()) {
-            appendLine(session, S(prompt.slice(0, -1).concat([{ t: '\u00A0', c: 'symbol' }]), 'cmd'));
-            updatePromptOnly(session);
-            return;
-        }
-
-        appendLine(session, S(prompt.concat([{ t: command }]), 'cmd'));
-
-        session.history.push(command);
-        if (session.history.length > 120) session.history.shift();
-        session.historyIndex = session.history.length;
-
-        var grepPattern = null;
-        var grepInsensitive = false;
-        var baseCommand = command;
-
-        var grepMatch = command.match(/^([\s\S]*?)\s*\|\s*(?:grep|egrep)\s+(-i\s+)?(?:"([^"]*)"|'([^']*)'|(\S+))\s*$/);
-        if (grepMatch) {
-            baseCommand = grepMatch[1];
-            grepInsensitive = !!grepMatch[2];
-            grepPattern = grepMatch[3] || grepMatch[4] || grepMatch[5] || '';
-        }
-
-        var result = runCommandWithSudo(session, baseCommand);
-        if (!result) return;
-
-        if (grepPattern !== null) {
-            var filtered = (result.lines || []).filter(function (line) {
-                var text = lineText(line);
-                return grepInsensitive
-                    ? text.toLowerCase().indexOf(grepPattern.toLowerCase()) >= 0
-                    : text.indexOf(grepPattern) >= 0;
-            });
-            result.lines = filtered;
-            result.clear = false;
-            result.close = false;
-        }
-
-        if (result.clear) {
-            session.lines = [];
-            renderTerminal(true);
-            return;
-        }
-
-        appendLines(session, result.lines || []);
-
-        if (result.close) {
-            appendLine(session, L('logout'), 'dim');
-            appendLine(session, L('Connection to ' + session.host + ' closed.'), 'dim');
-            setTimeout(function () { closeSession(session.id); }, 420);
-            return;
-        }
-
-        updatePromptOnly(session);
-    }
-
-    function updatePromptOnly(session) {
-        if (session.id === activeSessionId) {
-            els.prompt.innerHTML = promptHTML(session);
-            els.input.value = '';
-            scrollTerminal();
-        }
-    }
-
-    function runCommandWithSudo(session, command) {
-        var trimmed = command.trim();
-        if (/^sudo\s+/.test(trimmed)) {
-            var rest = trimmed.replace(/^sudo\s+/, '');
-            var sudoLine = L('[sudo] password for ' + session.username + ': ', 'dim');
-            var result = runBuiltin(session, rest);
-            if (result) {
-                result.lines = [sudoLine].concat(result.lines || []);
-                return result;
-            }
-            return { lines: [sudoLine] };
-        }
-        return runBuiltin(session, trimmed);
-    }
-
-    function runBuiltin(session, command) {
-        var tokens = tokenize(command);
-        if (!tokens.length) return { lines: [] };
-
-        var cmd = tokens[0];
-        var args = tokens.slice(1);
-
-        switch (cmd) {
-            case 'help': return { lines: helpLines() };
-            case 'ls': return { lines: cmdLs(session, args) };
-            case 'll': return { lines: cmdLs(session, ['-l'].concat(args)) };
-            case 'cd': return { lines: cmdCd(session, args) };
-            case 'pwd': return { lines: [L('/' + session.cwd.join('/'))] };
-            case 'cat': return { lines: cmdCat(session, args) };
-            case 'echo': return { lines: [L(args.join(' '))] };
-            case 'mkdir': return { lines: cmdMkdir(session, args) };
-            case 'touch': return { lines: cmdTouch(session, args) };
-            case 'rm': return { lines: cmdRm(session, args) };
-            case 'mv':
-            case 'cp': return { lines: cmdMoveCopy(session, cmd, args) };
-            case 'tail': return { lines: cmdHeadTail(session, args, true) };
-            case 'head': return { lines: cmdHeadTail(session, args, false) };
-            case 'grep': return { lines: cmdGrep(session, args) };
-            case 'find': return { lines: findLines(session, args) };
-            case 'whoami': return { lines: [L(session.username)] };
-            case 'hostname': return { lines: [L(session.hostname)] };
-            case 'id': return { lines: [L('uid=1000(' + session.username + ') gid=1000(' + session.username + ') groups=1000(' + session.username + '),27(sudo)')] };
-            case 'uname': return { lines: [L(unameLine(args))] };
-            case 'date': return { lines: [L(dateLine())] };
-            case 'uptime': return { lines: [L(uptimeLine(session))] };
-            case 'df': return { lines: dfLines(session, args) };
-            case 'free': return { lines: freeLines() };
-            case 'ps': return { lines: psLines(session) };
-            case 'top': return { lines: topLines(session) };
-            case 'ip': return { lines: ipLines(session) };
-            case 'ifconfig': return { lines: ifconfigLines(session) };
-            case 'ss':
-            case 'netstat': return { lines: socketLines(session) };
-            case 'ping': return runPing(session, args);
-            case 'curl': return { lines: curlLines(args) };
-            case 'systemctl': return { lines: systemctlLines(session, args) };
-            case 'docker': return { lines: dockerLines(args) };
-            case 'history': return { lines: historyLines(session) };
-            case 'env': return { lines: envLines(session) };
-            case 'clear': return { clear: true, lines: [] };
-            case 'exit':
-            case 'logout': return { close: true, lines: [] };
-            case 'sudo': return { lines: [L('sudo: 已处于模拟 root 权限，无需提权', 'dim')] };
-            case 'ssh': return {
-                lines: [
-                    L('本页面终端为本地模拟环境，不会发起真实 SSH 连接。', 'warn'),
-                    L('请使用左侧服务器列表新建会话，默认使用已保存的账号密码登录。', 'dim')
-                ]
-            };
-            case 'vim':
-            case 'vi':
-            case 'nano': return { lines: [L('模拟终端不提供 ' + cmd + ' 编辑器，可使用 cat 查看文件。', 'warn')] };
-            case 'apt':
-            case 'yum': return { lines: [L('模拟环境：软件包管理命令不会真正执行。', 'dim')] };
-            case 'crontab': return { lines: crontabLines(args) };
-            case 'neofetch': return { lines: neofetchLines(session) };
-            case 'w': return { lines: [L(' ' + nowTime() + ' up 42 days,  3:17,  2 users,  load average: 0.08, 0.12, 0.09')] };
-            default:
-                return {
-                    lines: [
-                        L('bash: ' + cmd + ': command not found', 'error'),
-                        L('输入 help 查看模拟终端支持的命令。', 'dim')
-                    ]
-                };
-        }
-    }
-
-    function helpLines() {
-        return [
-            L('Meow 模拟终端 · 可用命令', 'banner'),
-            L('  文件与目录   ls / ll / cd / pwd / cat / mkdir / touch / rm / mv / cp / find'),
-            L('  文本处理     echo / head / tail / grep（支持 cmd | grep 关键字）'),
-            L('  系统信息     whoami / hostname / id / uname / date / uptime / df / free / ps / top'),
-            L('  网络         ip / ifconfig / ss / netstat / ping / curl'),
-            L('  服务与容器   systemctl / docker / crontab'),
-            L('  其他         history / env / clear / exit / neofetch'),
-            L(''),
-            L('提示：↑ ↓ 浏览历史命令，Tab 补全命令与路径，Ctrl+L 清屏。', 'dim'),
-            L('本终端为纯本地模拟，不会向任何服务器发起网络连接。', 'dim')
-        ];
-    }
-
-    function groupingArgs(args) {
-        var flags = [];
-        var values = [];
-        args.forEach(function (arg) {
-            if (arg.charAt(0) === '-' && arg.length > 1) flags.push(arg);
-            else values.push(arg);
-        });
-        return { flags: flags, values: values };
-    }
-
-    function cmdLs(session, args) {
-        var parsed = groupingArgs(args);
-        var long = parsed.flags.some(function (f) { return f.indexOf('l') >= 0; });
-        var all = parsed.flags.some(function (f) { return f.indexOf('a') >= 0; });
-        var target = parsed.values[parsed.values.length - 1] || '.';
-        var pathArr = resolvePath(session, target);
-        var node = getNode(session, pathArr);
-
-        if (!node) {
-            return [L("ls: cannot access '" + target + "': No such file or directory", 'error')];
-        }
-        if (node.type === 'file') {
-            return [L(target)];
-        }
-
-        var entries = listEntries(node, all);
-        if (!entries.length) return [];
-
-        if (long) {
-            return entries.map(function (entry) {
-                var isDir = entry.node.type === 'dir';
-                var size = isDir ? 4096 : (entry.node.content || '').length + 128;
-                return S([
-                    { t: isDir ? 'drwxr-xr-x' : '-rw-r--r--', c: 'dim' },
-                    { t: ' 1 ' + session.username + ' ' + session.username + ' ' },
-                    { t: String(size).padStart(6, ' ') + ' Nov 19 10:24 ' },
-                    { t: entry.name + (isDir ? '/' : ''), c: isDir ? 'accent' : null }
-                ]);
-            });
-        }
-
-        var segs = [];
-        entries.forEach(function (entry, index) {
-            if (index) segs.push({ t: '  ' });
-            segs.push({
-                t: entry.name + (entry.node.type === 'dir' ? '/' : ''),
-                c: entry.node.type === 'dir' ? 'accent' : null
-            });
-        });
-        return [{ segs: segs }];
-    }
-
-    function cmdCd(session, args) {
-        var target = args.filter(function (a) { return a.charAt(0) !== '-'; })[0] || '~';
-        var pathArr = resolvePath(session, target);
-        var node = getNode(session, pathArr);
-        if (!node) return [L('bash: cd: ' + target + ': No such file or directory', 'error')];
-        if (node.type !== 'dir') return [L('bash: cd: ' + target + ': Not a directory', 'error')];
-        session.cwd = pathArr;
-        return [];
-    }
-
-    function cmdCat(session, args) {
-        var values = groupingArgs(args).values;
-        if (!values.length) return [L('cat: 缺少文件参数', 'error')];
-
-        var out = [];
-        values.forEach(function (target) {
-            var node = getNode(session, resolvePath(session, target));
-            if (!node) {
-                out.push(L('cat: ' + target + ': No such file or directory', 'error'));
-                return;
-            }
-            if (node.type === 'dir') {
-                out.push(L('cat: ' + target + ': Is a directory', 'error'));
-                return;
-            }
-            node.content.split('\n').forEach(function (text) { out.push(L(text)); });
-        });
-        return out;
-    }
-
-    function cmdMkdir(session, args) {
-        var parsed = groupingArgs(args);
-        var parents = parsed.flags.some(function (f) { return f.indexOf('p') >= 0; });
-        if (!parsed.values.length) return [L('mkdir: 缺少目录名', 'error')];
-
-        var out = [];
-        parsed.values.forEach(function (target) {
-            var pathArr = resolvePath(session, target);
-            var parent = getNode(session, pathArr.slice(0, -1));
-            var name = pathArr[pathArr.length - 1];
-            if (!name) return;
-
-            if (!parent || parent.type !== 'dir') {
-                if (parents) {
-                    var cursor = session.fs;
-                    var failed = false;
-                    for (var i = 0; i < pathArr.length; i++) {
-                        if (!cursor.children[pathArr[i]]) cursor.children[pathArr[i]] = makeDir({});
-                        cursor = cursor.children[pathArr[i]];
-                        if (cursor.type !== 'dir') {
-                            out.push(L("mkdir: cannot create directory '" + target + "': Not a directory", 'error'));
-                            failed = true;
-                            break;
-                        }
-                    }
-                    if (failed) return;
-                    return;
-                }
-                out.push(L("mkdir: cannot create directory '" + target + "': No such file or directory", 'error'));
-                return;
-            }
-            if (parent.children[name]) {
-                if (parents) return;
-                out.push(L("mkdir: cannot create directory '" + target + "': File exists", 'error'));
-                return;
-            }
-            parent.children[name] = makeDir({});
-        });
-        return out;
-    }
-
-    function cmdTouch(session, args) {
-        var values = groupingArgs(args).values;
-        if (!values.length) return [L('touch: 缺少文件名', 'error')];
-        var out = [];
-        values.forEach(function (target) {
-            var pathArr = resolvePath(session, target);
-            var parent = getNode(session, pathArr.slice(0, -1));
-            var name = pathArr[pathArr.length - 1];
-            if (!parent || parent.type !== 'dir') {
-                out.push(L("touch: cannot touch '" + target + "': No such file or directory", 'error'));
-                return;
-            }
-            if (!parent.children[name]) parent.children[name] = makeFile('');
-        });
-        return out;
-    }
-
-    function cmdRm(session, args) {
-        var parsed = groupingArgs(args);
-        var recursive = parsed.flags.some(function (f) { return f.indexOf('r') >= 0; });
-        var force = parsed.flags.some(function (f) { return f.indexOf('f') >= 0; });
-        if (!parsed.values.length) return [L('rm: 缺少操作对象', 'error')];
-
-        var out = [];
-        parsed.values.forEach(function (target) {
-            var pathArr = resolvePath(session, target);
-            var info = parentNode(session, pathArr);
-            var parent = info.parent;
-            var name = info.name;
-            if (!parent || parent.type !== 'dir' || !parent.children[name]) {
-                if (!force) out.push(L("rm: cannot remove '" + target + "': No such file or directory", 'error'));
-                return;
-            }
-            var node = parent.children[name];
-            if (node.type === 'dir' && !recursive) {
-                out.push(L("rm: cannot remove '" + target + "': Is a directory", 'error'));
-                return;
-            }
-            delete parent.children[name];
-        });
-        return out;
-    }
-
-    function cmdMoveCopy(session, cmd, args) {
-        var values = groupingArgs(args).values;
-        if (values.length < 2) return [L(cmd + ': 需要源路径与目标路径', 'error')];
-
-        var srcPath = resolvePath(session, values[0]);
-        var dstPath = resolvePath(session, values[1]);
-        var srcParent = parentNode(session, srcPath).parent;
-        var srcName = srcPath[srcPath.length - 1];
-        if (!srcParent || !srcParent.children[srcName]) {
-            return [L(cmd + ": cannot stat '" + values[0] + "': No such file or directory", 'error')];
-        }
-
-        var srcNode = srcParent.children[srcName];
-        var dstNode = getNode(session, dstPath);
-        var finalParent;
-        var finalName;
-
-        if (dstNode && dstNode.type === 'dir') {
-            finalParent = dstNode;
-            finalName = srcName;
-        } else {
-            finalParent = getNode(session, dstPath.slice(0, -1));
-            finalName = dstPath[dstPath.length - 1];
-        }
-
-        if (!finalParent || finalParent.type !== 'dir' || !finalName) {
-            return [L(cmd + ": cannot create '" + values[1] + "': Not a directory", 'error')];
-        }
-
-        if (cmd === 'mv') {
-            finalParent.children[finalName] = srcNode;
-            delete srcParent.children[srcName];
-        } else {
-            finalParent.children[finalName] = cloneNode(srcNode);
-        }
-        return [];
-    }
-
-    function cloneNode(node) {
-        if (node.type === 'file') return makeFile(node.content);
-        var children = {};
-        Object.keys(node.children).forEach(function (key) {
-            children[key] = cloneNode(node.children[key]);
-        });
-        return makeDir(children);
-    }
-
-    function cmdHeadTail(session, args, isTail) {
-        var parsed = groupingArgs(args);
-        var count = 10;
-
-        for (var i = 0; i < args.length; i++) {
-            if (args[i] === '-n') {
-                count = parseInt(args[i + 1], 10) || 10;
-                break;
-            }
-            if (/^-n\d+$/.test(args[i])) {
-                count = parseInt(args[i].slice(2), 10) || 10;
-                break;
-            }
-            if (/^-\d+$/.test(args[i])) {
-                count = parseInt(args[i].slice(1), 10) || 10;
-                break;
-            }
-        }
-
-        var target = parsed.values[parsed.values.length - 1];
-        var label = isTail ? 'tail' : 'head';
-        if (!target) return [L(label + ': 缺少文件参数', 'error')];
-
-        var node = getNode(session, resolvePath(session, target));
-        if (!node) return [L(label + ": cannot open '" + target + "' for reading: No such file or directory", 'error')];
-        if (node.type === 'dir') return [L(label + ": error reading '" + target + "': Is a directory", 'error')];
-
-        var lines = node.content.split('\n');
-        var slice = isTail ? lines.slice(Math.max(0, lines.length - count)) : lines.slice(0, count);
-        var out = slice.map(function (text) { return L(text); });
-
-        if (isTail && args.indexOf('-f') >= 0) {
-            out.push(L('（模拟环境：tail -f 不会持续输出）', 'dim'));
-        }
-        return out;
-    }
-
-    function cmdGrep(session, args) {
-        var values = groupingArgs(args).values;
-        if (values.length < 2) return [L('grep: 用法 grep 关键字 文件', 'error')];
-        var pattern = values[0];
-        var target = values[1];
-        var node = getNode(session, resolvePath(session, target));
-        if (!node) return [L('grep: ' + target + ': No such file or directory', 'error')];
-        if (node.type === 'dir') return [L('grep: ' + target + ': Is a directory', 'error')];
-        return node.content.split('\n')
-            .filter(function (text) { return text.indexOf(pattern) >= 0; })
-            .map(function (text) { return L(text); });
-    }
-
-    function findLines(session, args) {
-        var values = groupingArgs(args).values;
-        var start = values[0] || '.';
-        var nameIndex = args.indexOf('-name');
-        var pattern = nameIndex >= 0 ? (args[nameIndex + 1] || '*') : '*';
-        var regex = new RegExp('^' + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
-
-        var rootPath = resolvePath(session, start);
-        var root = getNode(session, rootPath);
-        if (!root) return [L('find: \'' + start + '\': No such file or directory', 'error')];
-
-        var out = [];
-        (function walk(node, pathArr) {
-            Object.keys(node.children).forEach(function (name) {
-                var child = node.children[name];
-                var childPath = pathArr.concat([name]);
-                if (regex.test(name)) out.push(L('/' + childPath.join('/')));
-                if (child.type === 'dir' && out.length < 200) walk(child, childPath);
-            });
-        })(root, rootPath);
-
-        return out.length ? out : [L('')];
-    }
-
-    function unameLine(args) {
-        if (args.indexOf('-a') >= 0) {
-            return 'Linux ip-172-31-24-18 5.15.0-105-generic #115-Ubuntu SMP Mon Apr 15 09:52:04 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux';
-        }
-        return 'Linux';
-    }
-
-    function dateLine() {
-        var d = new Date();
-        var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        var offset = -d.getTimezoneOffset();
-        var sign = offset >= 0 ? '+' : '-';
-        var abs = Math.abs(offset);
-        return days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + d.getDate() + ' ' +
-            two(d.getHours()) + ':' + two(d.getMinutes()) + ':' + two(d.getSeconds()) +
-            ' CST ' + d.getFullYear() + ' ' + sign + two(Math.floor(abs / 60)) + two(abs % 60);
-    }
-
-    function uptimeLine(session) {
-        var seed = hostSeed(session);
-        return ' ' + nowTime() + ' up ' + (18 + seed % 60) + ' days,  ' + (seed % 10) + ':' + two(seed % 60) +
-            ',  2 users,  load average: 0.0' + (seed % 9) + ', 0.1' + (seed % 7) + ', 0.0' + (seed % 5);
-    }
-
-    function hostSeed(session) {
-        var seed = 0;
-        var text = String(session.host || '');
-        for (var i = 0; i < text.length; i++) seed = (seed * 31 + text.charCodeAt(i)) % 997;
-        return seed;
-    }
-
-    function dfLines(session, args) {
-        var human = args.join(' ').indexOf('h') >= 0;
-        var seed = hostSeed(session);
-        var total = 38 + seed % 40;
-        var used = Math.floor(total * 0.46);
-        var avail = total - used;
-        if (human) {
-            return [
-                L('Filesystem      Size  Used Avail Use% Mounted on'),
-                L('/dev/vda1        ' + total + 'G   ' + used + 'G   ' + avail + 'G  ' + Math.round(used / total * 100) + '% /'),
-                L('tmpfs           795M     0  795M   0% /dev/shm'),
-                L('/dev/vda15      105M  6.1M   99M   6% /boot/efi')
-            ];
-        }
-        return [
-            L('Filesystem     1K-blocks     Used Available Use% Mounted on'),
-            L('/dev/vda1       ' + (total * 1048576) + ' ' + (used * 1048576) + ' ' + (avail * 1048576) + '  ' + Math.round(used / total * 100) + '% /')
-        ];
-    }
-
-    function freeLines() {
-        return [
-            L('               total        used        free      shared  buff/cache   available'),
-            L('Mem:           7.8Gi       2.1Gi       4.9Gi        12Mi       812Mi       5.4Gi'),
-            L('Swap:          2.0Gi          0B       2.0Gi')
-        ];
-    }
-
-    function psLines(session) {
-        var rows = [
-            ['root', '1', '0.0', '0.1', '168412', '12960', '?', 'Ss', '09:12', '0:04', '/sbin/init'],
-            ['root', '412', '0.0', '0.2', '61240', '18880', '?', 'Ss', '09:12', '0:01', '/lib/systemd/systemd-journald'],
-            ['root', '982', '0.0', '0.1', '55212', '9820', '?', 'Ss', '09:13', '0:00', 'nginx: master process /usr/sbin/nginx'],
-            ['www-data', '984', '0.0', '0.1', '55620', '10240', '?', 'S', '09:13', '0:02', 'nginx: worker process'],
-            ['root', '1441', '0.0', '0.0', '8420', '3120', '?', 'Ss', '09:13', '0:00', '/usr/sbin/cron -f'],
-            [session.username, '2214', '0.0', '0.1', '13484', '7840', '?', 'Ss', '09:14', '0:00', '-bash'],
-            ['root', '2388', '0.3', '1.4', '1823104', '112040', '?', 'Ssl', '09:18', '0:22', 'node /opt/app/server.js']
-        ];
-        var out = [L('USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND')];
-        rows.forEach(function (row) {
-            out.push(L(row.join(' ')));
-        });
-        return out;
-    }
-
-    function topLines(session) {
-        return [
-            L('top - ' + nowTime() + ' up 42 days,  3:17,  2 users,  load average: 0.08, 0.12, 0.09'),
-            L('Tasks: 128 total,   1 running, 127 sleeping,   0 stopped,   0 zombie'),
-            L('%Cpu(s):  1.7 us,  0.7 sy,  0.0 ni, 97.4 id,  0.2 wa,  0.0 hi,  0.0 si,  0.0 st'),
-            L('MiB Mem :   7952.4 total,   5031.2 free,   2140.8 used,    780.4 buff/cache'),
-            L('MiB Swap:   2048.0 total,   2048.0 free,      0.0 used.   5510.3 avail Mem'),
-            L(''),
-            L('    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND'),
-            L('   2388 root      20   0 1823104 112040  18232 S   0.7   1.4   0:22.41 node'),
-            L('    982 root      20   0   55212   9820   6120 S   0.0   0.1   0:00.31 nginx'),
-            L('   1441 root      20   0    8420   3120   2210 S   0.0   0.0   0:00.12 cron')
-        ];
-    }
-
-    function ipLines(session) {
-        var ip = /^\d+\.\d+\.\d+\.\d+$/.test(session.host) ? session.host : '172.31.24.18';
-        return [
-            L('1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000'),
-            L('    inet 127.0.0.1/8 scope host lo'),
-            L('2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000'),
-            L('    link/ether 02:42:ac:11:00:02 brd ff:ff:ff:ff:ff:ff'),
-            L('    inet ' + ip + '/24 brd 172.31.24.255 scope global dynamic eth0'),
-            L('       valid_lft 85234sec preferred_lft 85234sec')
-        ];
-    }
-
-    function ifconfigLines(session) {
-        var ip = /^\d+\.\d+\.\d+\.\d+$/.test(session.host) ? session.host : '172.31.24.18';
-        return [
-            L('eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500'),
-            L('        inet ' + ip + '  netmask 255.255.255.0  broadcast 172.31.24.255'),
-            L('        ether 02:42:ac:11:00:02  txqueuelen 1000  (Ethernet)'),
-            L('        RX packets 184223  bytes 241029311 (241.0 MB)'),
-            L('        TX packets 152884  bytes 38019221 (38.0 MB)')
-        ];
-    }
-
-    function socketLines(session) {
-        var ip = /^\d+\.\d+\.\d+\.\d+$/.test(session.host) ? session.host : '172.31.24.18';
-        return [
-            L('Netid State  Recv-Q Send-Q Local Address:Port   Peer Address:Port'),
-            L('tcp   LISTEN 0      128    0.0.0.0:22          0.0.0.0:*'),
-            L('tcp   LISTEN 0      511    0.0.0.0:80          0.0.0.0:*'),
-            L('tcp   LISTEN 0      511    0.0.0.0:443         0.0.0.0:*'),
-            L('tcp   ESTAB  0      0      ' + ip + ':22     10.0.0.2:51234')
-        ];
-    }
-
-    function runPing(session, args) {
-        // 解析 -c 次数，默认 4 次；模拟环境一次性输出，避免与后续命令交错。
-        var count = 4;
-        var countIndex = args.indexOf('-c');
-        if (countIndex >= 0 && args[countIndex + 1]) {
-            count = parseInt(args[countIndex + 1], 10);
-            if (!count || count < 0) count = 4;
-            if (count > 10) count = 10;
-        }
-
-        var target = '';
-        for (var a = 0; a < args.length; a++) {
-            if (args[a] === '-c') { a++; continue; }
-            if (args[a].charAt(0) !== '-') { target = args[a]; break; }
-        }
-        if (!target) return { lines: [L('ping: usage error: Destination address required', 'error')] };
-
-        var out = [L('PING ' + target + ' (' + target + ') 56(84) bytes of data.')];
-        var total = 0;
-        for (var i = 0; i < count; i++) {
-            var ms = 0.32 + i * 0.04 + Math.random() * 0.12;
-            total += ms;
-            out.push(L('64 bytes from ' + target + ': icmp_seq=' + (i + 1) + ' ttl=56 time=' + ms.toFixed(2) + ' ms'));
-        }
-        out.push(L(''));
-        out.push(L('--- ' + target + ' ping statistics ---'));
-        out.push(L(count + ' packets transmitted, ' + count + ' received, 0% packet loss, time ' + (count * 1000) + 'ms'));
-        out.push(L('rtt min/avg/max/mdev = ' + (count ? 0.331 : 0) + '/' +
-            (count ? (total / count).toFixed(3) : 0) + '/0.511/0.061 ms', 'dim'));
-        return { lines: out };
-    }
-
-    function curlLines(args) {
-        var hasHeader = args.indexOf('-I') >= 0 || args.indexOf('--head') >= 0;
-        var url = args.filter(function (a) { return a.charAt(0) !== '-'; })[0] || 'https://example.com';
-        if (hasHeader) {
-            return [
-                L('HTTP/2 200'),
-                L('date: Wed, 19 Nov 2026 09:24:02 GMT'),
-                L('content-type: text/html; charset=UTF-8'),
-                L('server: nginx'),
-                L('x-served-by: meow-simulation')
-            ];
-        }
-        return [
-            L('{"status":"ok","service":"meow-demo","target":"' + url.replace(/"/g, '') + '","uptime":38201}', 'dim')
-        ];
-    }
-
-    function systemctlLines(session, args) {
-        var action = args[0] || 'status';
-        var service = args[1] || 'nginx';
-
-        if (action === 'restart' || action === 'reload' || action === 'start' || action === 'stop') {
-            return [L('模拟环境：' + action + ' ' + service + '.service 已完成（未影响真实主机）', 'dim')];
-        }
-        if (action === 'enable' || action === 'disable') {
-            return [L('模拟环境：' + action + ' ' + service + '.service', 'dim')];
-        }
-
-        return [
-            L('● ' + service + '.service - A high performance web server and a reverse proxy server'),
-            L('     Loaded: loaded (/lib/systemd/system/' + service + '.service; enabled; vendor preset: enabled)'),
-            L('     Active: active (running) since Wed 2026-11-19 09:13:02 CST; 1h 12min ago', 'success'),
-            L('       Docs: man:nginx(8)'),
-            L('   Main PID: 982 (nginx)'),
-            L('      Tasks: 3 (limit: 9451)'),
-            L('     Memory: 8.1M'),
-            L('        CPU: 412ms'),
-            L('     CGroup: /system.slice/' + service + '.service'),
-            L('             ├─982 nginx: master process /usr/sbin/nginx'),
-            L('             └─984 nginx: worker process')
-        ];
-    }
-
-    function dockerLines(args) {
-        if (args[0] === 'images') {
-            return [
-                L('REPOSITORY          TAG       IMAGE ID       CREATED         SIZE'),
-                L('nginx               latest    605c77e624dd   2 weeks ago     141MB'),
-                L('redis               7-alpine  c1a7c53e1f88   3 weeks ago     41.2MB'),
-                L('node                20-alpine 9c1e2e4c6d11   4 weeks ago     132MB')
-            ];
-        }
-        if (args[0] === 'ps') {
-            return [
-                L('CONTAINER ID   IMAGE          COMMAND                  CREATED       STATUS         PORTS                  NAMES'),
-                L('8f2c91a4d6b1   nginx:latest   "/docker-entrypoint.…"   2 hours ago   Up 2 hours     0.0.0.0:80->80/tcp     web'),
-                L('b41d77e0c3a2   redis:7        "docker-entrypoint.s…"   2 hours ago   Up 2 hours     6379/tcp               cache')
-            ];
-        }
-        return [L('docker: 模拟环境仅支持 docker ps / docker images', 'dim')];
-    }
-
-    function historyLines(session) {
-        if (!session.history.length) return [L('    1  help'), L('    2  ls -la'), L('    3  uptime')];
-        return session.history.map(function (item, index) {
-            return L(String(index + 1).padStart(5, ' ') + '  ' + item);
-        });
-    }
-
-    function envLines(session) {
-        return [
-            L('USER=' + session.username),
-            L('HOME=/home/' + session.homeUser),
-            L('SHELL=/bin/bash'),
-            L('PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'),
-            L('LANG=en_US.UTF-8'),
-            L('TERM=xterm-256color'),
-            L('HOSTNAME=' + session.hostname),
-            L('SSH_CONNECTION=10.0.0.2 51234 ' + session.host + ' ' + session.port)
-        ];
-    }
-
-    function crontabLines(args) {
-        if (args[0] === '-e') return [L('模拟环境：不提供 crontab 编辑器', 'dim')];
-        return [
-            L('# m h  dom mon dow   command'),
-            L('0 3 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1'),
-            L('*/5 * * * * curl -sf http://127.0.0.1/health || systemctl restart nginx')
-        ];
-    }
-
-    function neofetchLines(session) {
-        return [
-            S([{ t: '        /\\_/\\        ', c: 'accent' }, { t: session.username + '@' + session.hostname }]),
-            S([{ t: '       ( o.o )       ', c: 'accent' }, { t: '-----------------' }]),
-            S([{ t: '        > ^ <        ', c: 'accent' }, { t: 'OS: Ubuntu 22.04.4 LTS x86_64' }]),
-            S([{ t: '                     ', c: 'accent' }, { t: 'Host: Meow SSH Simulation' }]),
-            S([{ t: '', c: null }, { t: 'Kernel: 5.15.0-105-generic' }]),
-            S([{ t: '', c: null }, { t: 'Uptime: ' + (18 + hostSeed(session) % 60) + ' days, 3 hours' }]),
-            S([{ t: '', c: null }, { t: 'Shell: bash 5.1.16' }]),
-            S([{ t: '', c: null }, { t: 'Terminal: Meow Workbench' }]),
-            S([{ t: '', c: null }, { t: 'CPU: Intel Xeon Platinum 8259CL (2) @ 2.50GHz' }]),
-            S([{ t: '', c: null }, { t: 'Memory: 2140MiB / 7952MiB' }])
-        ];
+        if (!session || session.status !== 'connected' || !session.real) return;
+        session.real.focus();
     }
 
     // ======================================================================
@@ -3188,147 +2065,27 @@
             return line.trim();
         }).filter(Boolean);
 
-        if (!lines.length) return;
-
-        if (session.mode === 'real') {
-            if (!session.real) return;
-            if (onlyFill) {
-                session.real.paste(lines[0]);
-                toast('已填入命令，按 Enter 执行');
-            } else {
-                lines.forEach(function (line) { session.real.sendLine(line); });
-                session.real.focus();
-            }
-            return;
-        }
+        if (!lines.length || !session.real) return;
 
         if (onlyFill) {
-            els.input.value = lines[0];
-            focusInput();
+            session.real.paste(lines[0]);
             toast('已填入命令，按 Enter 执行');
-            return;
+        } else {
+            lines.forEach(function (line) { session.real.sendLine(line); });
+            session.real.focus();
         }
-
-        for (var i = 0; i < lines.length; i++) {
-            if (session.status !== 'connected' || sessions.indexOf(session) === -1) break;
-            executeInput(session, lines[i]);
-        }
-        focusInput();
-    }
-
-    function submitTerminal() {
-        var session = getActiveSession();
-        if (!session || session.status !== 'connected') return;
-        if (session.mode === 'real') return;
-        var raw = els.input.value;
-        els.input.value = '';
-        executeInput(session, raw);
-        focusInput();
-    }
-
-    function historyStep(direction) {
-        var session = getActiveSession();
-        if (!session || !session.history.length) return;
-
-        var next = session.historyIndex + direction;
-        if (next < 0) next = 0;
-        if (next > session.history.length) next = session.history.length;
-        session.historyIndex = next;
-
-        els.input.value = next === session.history.length ? '' : session.history[next];
-        setTimeout(function () {
-            els.input.setSelectionRange(els.input.value.length, els.input.value.length);
-        }, 0);
     }
 
     function clearActiveTerminal() {
         var session = getActiveSession();
-        if (!session) return;
-        if (session.mode === 'real' && session.real) {
-            session.real.clear();
-            session.real.focus();
-            return;
-        }
-        session.lines = [];
-        renderTerminal(true);
-    }
-
-    function completeInput() {
-        var session = getActiveSession();
-        if (!session || session.status !== 'connected') return;
-
-        var value = els.input.value;
-        var tokens = value.split(/\s+/);
-        var fragment = tokens[tokens.length - 1] || '';
-
-        if (tokens.length <= 1) {
-            var matched = COMMAND_NAMES.filter(function (name) {
-                return name.indexOf(fragment) === 0;
-            });
-            if (matched.length === 1) {
-                els.input.value = matched[0] + ' ';
-                setInputCaret();
-                return;
-            } else if (matched.length > 1) {
-                appendLine(session, S([{ t: matched.join('   ') }], 'dim'));
-                scrollTerminal();
-                return;
-            }
-            // 没有命令匹配时按路径处理，便于直接补全当前目录下的文件名
-            if (!fragment) return;
-        }
-
-        var slash = fragment.lastIndexOf('/');
-        var dirPart = slash >= 0 ? fragment.slice(0, slash + 1) : (fragment === '~' ? '~/' : '');
-        var basePart = fragment === '~' ? '' : (slash >= 0 ? fragment.slice(slash + 1) : fragment);
-        var dirNode = getNode(session, resolvePath(session, dirPart || '.'));
-
-        if (!dirNode || dirNode.type !== 'dir') return;
-
-        var names = Object.keys(dirNode.children).filter(function (name) {
-            if (name.charAt(0) === '.' && basePart.charAt(0) !== '.') return false;
-            if (tokens[0] === 'cd' && dirNode.children[name].type !== 'dir') return false;
-            return name.indexOf(basePart) === 0;
-        }).sort(function (a, b) {
-            var ad = dirNode.children[a].type === 'dir';
-            var bd = dirNode.children[b].type === 'dir';
-            if (ad !== bd) return ad ? -1 : 1;
-            return a.localeCompare(b);
-        });
-
-        if (names.length === 1) {
-            var name = names[0];
-            var isDir = dirNode.children[name].type === 'dir';
-            tokens[tokens.length - 1] = dirPart + name + (isDir ? '/' : ' ');
-            els.input.value = tokens.join(' ');
-            setInputCaret();
-        } else if (names.length > 1) {
-            appendLine(session, S(names.map(function (name, index) {
-                return {
-                    t: (index ? '   ' : '') + name + (dirNode.children[name].type === 'dir' ? '/' : ''),
-                    c: dirNode.children[name].type === 'dir' ? 'accent' : null
-                };
-            }), 'dim'));
-            scrollTerminal();
-        }
-    }
-
-    function setInputCaret() {
-        if (!els.input) return;
-        var end = els.input.value.length;
-        els.input.setSelectionRange(end, end);
+        if (!session || !session.real) return;
+        session.real.clear();
+        session.real.focus();
     }
 
     // ======================================================================
     // 真实 SSH 桥接设置
     // ======================================================================
-
-    function updateConnectModeUI() {
-        var modeEl = document.querySelector('input[name="ssh-connect-mode"]:checked');
-        var mode = modeEl ? modeEl.value : 'real';
-        var hint = $('ssh-connect-mode-hint');
-        if (hint) hint.classList.toggle('hidden', mode === 'sim');
-    }
 
     function updateBridgeIndicator(message) {
         var dot = els.bridgeDot;
@@ -3461,15 +2218,13 @@
         els.terminalTabs = $('terminal-tabs');
         els.terminalEmpty = $('terminal-empty');
         els.terminalScreen = $('terminal-screen');
-        els.lines = $('terminal-lines');
         els.realTerminal = $('real-terminal');
-        els.prompt = $('term-prompt');
-        els.input = $('terminal-input');
-        els.terminalForm = $('terminal-form');
         els.statusDot = $('term-status-dot');
         els.statusText = $('term-status-text');
         els.sessionMeta = $('term-session-meta');
-        els.modeBadge = $('term-mode-badge');
+        els.cwdWrap = $('term-cwd-wrap');
+        els.cwdPath = $('term-cwd-path');
+        els.copyCwd = $('btn-copy-cwd');
         els.bridgeDot = $('ssh-bridge-dot');
         els.bridgeStatusRow = $('ssh-bridge-status');
         els.bridgeStatusText = $('ssh-bridge-status-text');
@@ -3630,36 +2385,14 @@
         var clearBtn = $('btn-terminal-clear');
         if (clearBtn) clearBtn.addEventListener('click', clearActiveTerminal);
 
+        var copyCwdBtn = $('btn-copy-cwd');
+        if (copyCwdBtn) copyCwdBtn.addEventListener('click', copyCurrentCwd);
+
         var bridgeBtn = $('btn-ssh-bridge');
         if (bridgeBtn) bridgeBtn.addEventListener('click', openBridgeModal);
 
-        var modeBtn = $('btn-connection-mode');
-        if (modeBtn) {
-            modeBtn.addEventListener('click', function () {
-                ui.mode = ui.mode === 'sim' ? 'real' : 'sim';
-                saveUi();
-                updateModeButton();
-                updateConnectModeUI();
-                updateModeBadge(getActiveSession());
-                toast(ui.mode === 'real' ? '下次连接使用真实 SSH' : '下次连接使用本地模拟');
-            });
-        }
-
         var connectBridgeBtn = $('btn-connect-bridge-config');
         if (connectBridgeBtn) connectBridgeBtn.addEventListener('click', openBridgeModal);
-
-        Array.prototype.forEach.call(
-            document.querySelectorAll('input[name="ssh-connect-mode"]'),
-            function (radio) {
-                radio.addEventListener('change', function () {
-                    if (!radio.checked) return;
-                    ui.mode = radio.value === 'sim' ? 'sim' : 'real';
-                    saveUi();
-                    updateConnectModeUI();
-                    updateModeButton();
-                });
-            }
-        );
 
         var bridgeSave = $('btn-ssh-bridge-save');
         if (bridgeSave) bridgeSave.addEventListener('click', saveBridgeConfig);
@@ -3680,73 +2413,9 @@
         var emptyImport = $('btn-empty-import');
         if (emptyImport) emptyImport.addEventListener('click', importServers);
 
-        els.terminalScreen.addEventListener('click', function (e) {
-            if (e.target.closest('.terminal-input-row')) return;
+        els.terminalScreen.addEventListener('click', function () {
             if (window.getSelection() && String(window.getSelection()).length) return;
             focusInput();
-        });
-
-        els.terminalForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            submitTerminal();
-        });
-
-        els.input.addEventListener('keydown', function (e) {
-            if (e.isComposing || e.keyCode === 229) return;
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                submitTerminal();
-                return;
-            }
-            if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                historyStep(-1);
-                return;
-            }
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                historyStep(1);
-                return;
-            }
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                e.stopPropagation();
-                completeInput();
-                return;
-            }
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L')) {
-                e.preventDefault();
-                clearActiveTerminal();
-                return;
-            }
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
-                var selection = window.getSelection();
-                if (selection && String(selection).length) return;
-                e.preventDefault();
-                var session = getActiveSession();
-                if (session && session.status === 'connected') {
-                    appendLine(session, S(promptSegments(session).concat([
-                        { t: els.input.value },
-                        { t: '^C', c: 'warn' }
-                    ]), 'cmd'));
-                    els.input.value = '';
-                    scrollTerminal();
-                }
-            }
-        });
-
-        els.input.addEventListener('paste', function (e) {
-            var data = e.clipboardData || window.clipboardData;
-            var text = data ? data.getData('text') : '';
-            if (!text || !/[\r\n]/.test(text)) return;
-            e.preventDefault();
-            var session = getActiveSession();
-            if (!session || session.status !== 'connected') return;
-            text.split(/\r?\n/).map(function (line) { return line.trim(); })
-                .filter(Boolean)
-                .forEach(function (line) {
-                    if (session.status === 'connected') executeInput(session, line);
-                });
         });
 
         // 弹窗
@@ -3829,8 +2498,7 @@
                         ? data[UI_KEY].collapsed : {},
                     cmdCollapsed: (data[UI_KEY].cmdCollapsed && typeof data[UI_KEY].cmdCollapsed === 'object')
                         ? data[UI_KEY].cmdCollapsed : {},
-                    search: typeof data[UI_KEY].search === 'string' ? data[UI_KEY].search : '',
-                    mode: data[UI_KEY].mode === 'sim' ? 'sim' : 'real'
+                    search: typeof data[UI_KEY].search === 'string' ? data[UI_KEY].search : ''
                 };
             }
 
@@ -3845,8 +2513,6 @@
 
             bindStatic();
 
-            if (els.input) els.input.disabled = true;
-
             var search = $('ssh-search');
             if (search && ui.search) {
                 search.value = ui.search;
@@ -3859,8 +2525,6 @@
             renderCommands();
             renderSessionTabs();
             renderTerminal(false);
-            updateModeBadge(null);
-            updateModeButton();
             setTimeout(refreshBridgeStatus, 250);
         });
     }

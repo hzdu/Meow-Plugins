@@ -48,10 +48,10 @@
                     <span class="material-icons" style="font-size: 1.2rem; color: #666;">arrow_drop_down</span>
                 </div>
                 <div class="icons">
-                    <button id="btn-open-big-calendar" class="big-calendar-mini-btn" title="大日历视图">
-                        <span class="material-icons">calendar_month</span>
+                    <button id="btn-open-workbench" class="workbench-mini-btn" title="工作台">
+                        <span class="material-icons">dashboard</span>
                     </button>
-                    <button id="btn-open-smoking-chart" class="big-calendar-mini-btn" title="月戒烟报表" style="margin-right: 4px;">
+                    <button id="btn-open-smoking-chart" class="workbench-mini-btn" title="月戒烟报表" style="margin-right: 4px;">
                         <span class="material-icons">assessment</span>
                     </button>
                     <button id="today-btn" class="today-btn" data-i18n="today">今天</button>
@@ -1625,7 +1625,7 @@
     <script defer src="js/modules/popup-titlebar.js"></script>
     <script defer src="js/init_flatpickr.js"></script>
     <style>
-        .big-calendar-btn {
+        .workbench-btn {
             width: 100%;
             margin-top: 10px;
             padding: 10px;
@@ -1642,13 +1642,13 @@
             font-size: 14px;
             font-weight: 500;
         }
-        .big-calendar-btn:hover {
+        .workbench-btn:hover {
             background-color: #f5f3ff;
             border-color: #818cf8;
         }
         
-        /* 大日历小按钮（header中） */
-        .big-calendar-mini-btn {
+        /* 工作台小按钮（header中） */
+        .workbench-mini-btn {
             border: none;
             background: #f3f4f6;
             color: #4f46e5;
@@ -1662,10 +1662,10 @@
             justify-content: center;
             transition: all 0.2s ease;
         }
-        .big-calendar-mini-btn .material-icons {
+        .workbench-mini-btn .material-icons {
             font-size: 16px;
         }
-        .big-calendar-mini-btn:hover {
+        .workbench-mini-btn:hover {
             background: var(--primary-color);
             color: white;
         }

@@ -1,4 +1,4 @@
-<!-- views/big-calendar.html -->
+<!-- views/workbench.html -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 
@@ -6,8 +6,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meow Workbench</title>
-    <link rel="stylesheet" href="../css/big-calendar.css">
-    <link rel="stylesheet" href="../css/big-calendar-ssh.css">
+    <link rel="stylesheet" href="../css/workbench.css">
+    <link rel="stylesheet" href="../css/workbench-ssh.css">
     <link rel="stylesheet" href="../css/vendor/xterm.css">
     <link rel="stylesheet" href="../css/meow-confirm.css">
     <!-- 与侧边栏一致的 Font Awesome 图标集，必须走 js/cdn-styles.js 异步注入，
@@ -19,22 +19,14 @@
 </head>
 
 <body tabindex="-1">
-    <!-- 液态玻璃背景光斑 -->
-    <div class="aurora" aria-hidden="true">
-        <span class="aurora-blob blob-1"></span>
-        <span class="aurora-blob blob-2"></span>
-        <span class="aurora-blob blob-3"></span>
-        <span class="aurora-grid"></span>
-    </div>
-
     <div class="app-frame">
-        <!-- ================= 顶部：液态玻璃 TAB ================= -->
+        <!-- ================= 顶部：品牌 + 分段式 TAB ================= -->
         <header class="topbar">
             <div class="brand">
                 <img src="../images/icon.png" alt="Meow" class="brand-icon">
                 <div class="brand-text">
                     <span class="brand-name">Meow</span>
-                    <span class="brand-sub">WORKBENCH</span>
+                    <span class="brand-sub">工作台</span>
                 </div>
             </div>
 
@@ -46,7 +38,7 @@
                 </button>
                 <button class="glass-tab" type="button" role="tab" aria-selected="false"
                     aria-controls="view-calendar" data-tab="calendar">
-                    <i class="fa-regular fa-calendar-days"></i><span>大日历</span>
+                    <i class="fa-regular fa-calendar-days"></i><span>日历</span>
                 </button>
             </nav>
 
@@ -115,11 +107,6 @@
                                     <i class="fa-regular fa-plug"></i>
                                     <span class="bridge-dot" id="ssh-bridge-dot"></span>
                                 </button>
-                                <button type="button" id="btn-connection-mode" class="icon-ghost mode-btn"
-                                    title="下次连接方式：真实 SSH">
-                                    <i class="fa-regular fa-shuffle"></i>
-                                    <span class="mode-glyph" id="connection-mode-glyph">R</span>
-                                </button>
                                 <button type="button" id="btn-toggle-commands" class="icon-ghost commands-toggle"
                                     title="常用命令">
                                     <i class="fa-regular fa-bolt"></i>
@@ -139,8 +126,8 @@
                                     <i class="fa-regular fa-terminal"></i>
                                 </div>
                                 <h2>SSH 终端</h2>
-                                <p>连接真实服务器，或切换到本地模拟模式体验终端。<br>
-                                    真实 SSH 需要先启动本机桥接服务；支持分组、常用命令与多会话标签。</p>
+                                <p>连接真实服务器。首次使用需要先启动本机桥接服务；<br>
+                                    支持分组、常用命令与多会话标签。</p>
                                 <div class="empty-actions">
                                     <button type="button" class="glass-btn primary" id="btn-empty-add-server">
                                         <i class="fa-regular fa-plus"></i> 添加服务器
@@ -152,27 +139,27 @@
                             </div>
 
                             <div class="terminal-screen hidden" id="terminal-screen">
-                                <div class="terminal-lines" id="terminal-lines"></div>
                                 <div class="real-terminal hidden" id="real-terminal"></div>
-                                <form class="terminal-input-row" id="terminal-form" autocomplete="off">
-                                    <span class="term-prompt" id="term-prompt"></span>
-                                    <input type="text" id="terminal-input" class="term-input" spellcheck="false"
-                                        autocomplete="off" autocapitalize="off" autocorrect="off">
-                                </form>
                             </div>
                         </div>
 
                         <footer class="terminal-statusbar">
                             <div class="status-left">
+                                <div class="status-cwd empty" id="term-cwd-wrap">
+                                    <span class="status-cwd-path" id="term-cwd-path"
+                                        title="尚未获取当前目录" aria-live="polite">—</span>
+                                    <button type="button" class="status-copy" id="btn-copy-cwd"
+                                        title="复制当前目录" aria-label="复制当前目录" disabled>
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                                <span class="status-sep"></span>
                                 <span class="status-dot" id="term-status-dot"></span>
                                 <span id="term-status-text">未连接</span>
                                 <span class="status-sep"></span>
                                 <span id="term-session-meta">选择服务器开始</span>
                             </div>
                             <div class="status-right">
-                                <span class="sim-badge" id="term-mode-badge" title="连接模式">
-                                    <i class="fa-regular fa-flask"></i> 模拟
-                                </span>
                                 <span>UTF-8</span>
                                 <span id="term-clock">--:--:--</span>
                             </div>
@@ -215,8 +202,8 @@
                 </div>
             </section>
 
-            <!-- ================= TAB 2：大日历 ================= -->
-            <section class="tab-view" id="view-calendar" role="tabpanel" aria-label="大日历">
+            <!-- ================= TAB 2：日历 ================= -->
+            <section class="tab-view" id="view-calendar" role="tabpanel" aria-label="日历">
                 <div class="calendar-view">
                     <div class="calendar-toolbar glass-card">
                         <div class="date-controls">
@@ -400,22 +387,9 @@
                         <span id="ssh-connect-addr">—</span>
                     </div>
                 </div>
-                <div class="field">
-                    <span>连接方式</span>
-                    <div class="connect-mode-switch" id="ssh-connect-mode">
-                        <label class="connect-mode-option">
-                            <input type="radio" name="ssh-connect-mode" value="real" checked>
-                            <span><i class="fa-regular fa-plug"></i> 真实 SSH</span>
-                        </label>
-                        <label class="connect-mode-option">
-                            <input type="radio" name="ssh-connect-mode" value="sim">
-                            <span><i class="fa-regular fa-flask"></i> 本地模拟</span>
-                        </label>
-                    </div>
-                </div>
-                <p class="form-hint connect-mode-hint" id="ssh-connect-mode-hint">
+                <p class="form-hint">
                     <i class="fa-regular fa-circle-info"></i>
-                    真实 SSH 需要本机运行桥接服务。
+                    连接通过本机桥接服务完成，请确保桥接已启动。
                     <button type="button" class="text-link" id="btn-connect-bridge-config">配置桥接</button>
                 </p>
                 <label class="field">
@@ -580,12 +554,12 @@
     <script src="../js/lunar.min.js"></script>
     <script src="../js/i18n.js"></script>
     <script src="../js/meow-confirm.js"></script>
-    <script src="../js/big-calendar-shell.js"></script>
-    <script src="../js/big-calendar.js"></script>
+    <script src="../js/workbench-shell.js"></script>
+    <script src="../js/workbench.js"></script>
     <script src="../js/vendor/xterm.js"></script>
     <script src="../js/vendor/addon-fit.js"></script>
     <script src="../js/ssh-real.js"></script>
-    <script src="../js/big-calendar-ssh.js"></script>
+    <script src="../js/workbench-ssh.js"></script>
 </body>
 
 </html>

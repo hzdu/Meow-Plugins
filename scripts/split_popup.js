@@ -36,7 +36,7 @@ const modules = [
     ['popup-smoking.js',  3703, 4755, '戒烟规划 + 深呼吸 + 备注列表'],
     ['popup-events.js',   4756, 5204, '事件监听 + Tab拖放 + 财务导出 + 备份恢复'],
     ['popup-webdav.js',   5205, 5617, 'WebDAV功能 + 初始化调用(renderApp)'],
-    ['popup-charts.js',   5618, 7763, 'Big Calendar + 折线图报表 + 趋势Modal + 设置折叠'],
+    ['popup-charts.js',   5618, 7763, '工作台 + 折线图报表 + 趋势Modal + 设置折叠'],
     ['popup-exchange.js', 7764, 7944, '实时汇率换算'],
     ['popup-2fa.js',      7945, 8297, '2FA验证模块'],
     ['popup-ai.js',       8298, 8743, 'AI Provider + AI Setting'],

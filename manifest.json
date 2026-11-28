@@ -72,12 +72,12 @@
     "open-ip-tools": {
       "description": "打开IP地址信息工具"
     },
-    "open-big-calendar": {
+    "open-workbench": {
       "suggested_key": {
         "default": "Alt+R",
         "mac": "Alt+R"
       },
-      "description": "打开大日历"
+      "description": "打开工作台"
     },
     "open-ai-collection": {
       "description": "打开AI合集"

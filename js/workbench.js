@@ -1,4 +1,4 @@
-// big-calendar.js
+// workbench.js
 
 // Validates dependencies
 if (typeof meowI18n === 'undefined') {
@@ -497,7 +497,9 @@ if (editModal) {
 // Three Column Layout - Resizable Panels
 // ==========================================
 
-const LAYOUT_STORAGE_KEY = 'big_calendar_layout';
+const LAYOUT_STORAGE_KEY = 'meow_workbench_layout';
+const LEGACY_LAYOUT_STORAGE_KEY = 'big_calendar_layout';
+// Legacy layout key from old big-calendar version; kept for migration of saved layouts.
 const DEFAULT_LEFT_WIDTH = 250;
 const DEFAULT_RIGHT_WIDTH = 250;
 const MIN_PANEL_WIDTH = 150;
@@ -509,15 +511,15 @@ function initLayout() {
     const resizerLeft = document.getElementById('resizer-left');
     const resizerRight = document.getElementById('resizer-right');
     
-    // 新版页面已改为液态玻璃 TAB 布局，没有旧的左右面板；
+    // 新版页面已改为扁平式 TAB 布局，没有旧的左右面板；
     // 保留这段逻辑只为兼容旧版页面结构，缺失时直接跳过。
     if (!panelLeft || !panelRight || !resizerLeft || !resizerRight) {
         return;
     }
     
     // Load saved layout from storage
-    chrome.storage.sync.get([LAYOUT_STORAGE_KEY], (result) => {
-        const layout = result[LAYOUT_STORAGE_KEY] || {};
+    chrome.storage.sync.get([LAYOUT_STORAGE_KEY, LEGACY_LAYOUT_STORAGE_KEY], (result) => {
+        const layout = result[LAYOUT_STORAGE_KEY] || result[LEGACY_LAYOUT_STORAGE_KEY] || {};
         const leftWidth = layout.leftWidth || DEFAULT_LEFT_WIDTH;
         const rightWidth = layout.rightWidth || DEFAULT_RIGHT_WIDTH;
         

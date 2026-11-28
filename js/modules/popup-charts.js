@@ -1,4 +1,4 @@
-// popup-charts.js - Big Calendar + 折线图报表 + 趋势Modal + 设置折叠
+// popup-charts.js - 工作台 + 折线图报表 + 趋势Modal + 设置折叠
 // 此文件由 popup.js 拆分而来，请勿手动修改源文件 popup.js
 
 /**
@@ -16,11 +16,11 @@ function stripAIThinking(text) {
         .trim();
 }
 
-// === Big Calendar ===
-const btnOpenBigCalendar = document.getElementById('btn-open-big-calendar');
-if (btnOpenBigCalendar) {
-    btnOpenBigCalendar.addEventListener('click', () => {
-        chrome.tabs.create({ url: chrome.runtime.getURL('views/big-calendar.html') });
+// === Workbench ===
+const btnOpenWorkbench = document.getElementById('btn-open-workbench');
+if (btnOpenWorkbench) {
+    btnOpenWorkbench.addEventListener('click', () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('views/workbench.html') });
     });
 }
 

@@ -383,9 +383,9 @@ chrome.commands.onCommand.addListener(async (command) => {
     return;
   }
 
-  // 处理大日历快捷键 (Alt+R)
-  if (command === "open-big-calendar") {
-    chrome.tabs.create({ url: 'views/big-calendar.html' });
+  // 处理工作台快捷键 (Alt+R)
+  if (command === "open-workbench") {
+    chrome.tabs.create({ url: 'views/workbench.html' });
     return;
   }
 

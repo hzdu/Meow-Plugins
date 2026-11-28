@@ -33,6 +33,187 @@
         return url.toString();
     }
 
+    // 终端目录来源的优先级：OSC 7 最可靠，其次是 shell 提示符，最后是窗口标题。
+    // 有些服务器（例如 CyberPanel）只在登录时设置一次标题，之后 cd 不会更新标题，
+    // 因此不能让标题覆盖从提示符解析出的目录。
+    function cwdSourceRank(source) {
+        if (source === 'osc7') return 3;
+        if (source === 'prompt') return 2;
+        if (source === 'title') return 1;
+        return 0;
+    }
+
+    function normalizeCwd(value) {
+        var text = String(value == null ? '' : value).replace(/[\r\n]/g, '').trim();
+        if (!text || text.length > 4096) return '';
+        if (text.charAt(0) === '~' || text.charAt(0) === '/') return text;
+        if (/^[A-Za-z]:[\\/]/.test(text)) return text;
+        return '';
+    }
+
+    function cwdFromOsc7(data) {
+        var text = String(data || '');
+        var match = /^file:\/\/[^\/]*(\/.*)$/.exec(text);
+        if (!match) return '';
+        var value = match[1];
+        try { value = decodeURIComponent(value); } catch (e) { /* keep raw */ }
+        return normalizeCwd(value);
+    }
+
+    function cwdFromTitle(title) {
+        var text = String(title || '').trim();
+        if (!text) return '';
+        var colon = text.lastIndexOf(':');
+        var candidate = (colon >= 0 ? text.slice(colon + 1) : text).trim();
+        candidate = candidate
+            .replace(/\s+\([^)]*\)\s*$/, '')
+            .replace(/\s+-\s+.*$/, '')
+            .replace(/[#$%*]+\s*$/, '')
+            .trim();
+        return normalizeCwd(candidate);
+    }
+
+    function cwdFromPrompt(text) {
+        text = String(text || '').trim();
+        // 只有包含 user@host 的典型 shell 提示符才解析，避免把普通输出误认为是目录。
+        if (text.indexOf('@') === -1) return '';
+
+        var end = /[#$%\u276f\u279c](?=\s|$)/.exec(text);
+        if (!end) return '';
+
+        var prefix = text.slice(0, end.index).replace(/[\])}]+\s*$/, '').trim();
+        var colon = prefix.lastIndexOf(':');
+        if (colon >= 0) {
+            var candidate = prefix.slice(colon + 1).trim();
+            candidate = candidate
+                .replace(/\s+\([^)]*\)\s*$/, '')
+                .replace(/\s+-\s+.*$/, '')
+                .replace(/[\])}]+$/, '')
+                .trim();
+            var fromColon = normalizeCwd(candidate);
+            if (fromColon) return fromColon;
+        }
+
+        var parts = prefix.split(/\s+/);
+        for (var i = parts.length - 1; i >= 0; i--) {
+            var token = parts[i]
+                .replace(/^[\[({]+/, '')
+                .replace(/[\])}]+$/, '');
+            var value = normalizeCwd(token);
+            if (value) return value;
+        }
+        return '';
+    }
+
+    // xterm 默认把按下位置四舍五入到最近的字符中心。鼠标落在字符右半边时，
+    // 选区起点会跳到下一个字符，复制长命令时就会少掉首字符。这里在拖选结束后
+    // 根据真实按下/松开位置重新计算一次选区，确保首尾字符都被包含；不改变
+    // xterm 的鼠标上报和普通单击行为。
+    function installSelectionCorrection(term) {
+        if (!term || !term.element) return null;
+        var screen = term.element.querySelector('.xterm-screen');
+        if (!screen) return null;
+        var drag = null;
+        var applyTimer = null;
+
+        function pointToCell(event, isEnd) {
+            var render = term._core && term._core._renderService;
+            var dims = render && render.dimensions && render.dimensions.css;
+            var cell = dims && dims.cell;
+            if (!cell || !(cell.width > 0) || !(cell.height > 0)) return null;
+            var rect = screen.getBoundingClientRect();
+            var style = window.getComputedStyle(screen);
+            var padLeft = parseFloat(style.paddingLeft) || 0;
+            var padTop = parseFloat(style.paddingTop) || 0;
+            var maxCol = isEnd ? term.cols : term.cols - 1;
+            var rawCol = Math.floor((event.clientX - rect.left - padLeft + 0.5) / cell.width);
+            var rawRow = Math.floor((event.clientY - rect.top - padTop + 0.5) / cell.height);
+            var viewportY = term.buffer && term.buffer.active ? (term.buffer.active.viewportY || 0) : 0;
+            return {
+                col: Math.min(Math.max(rawCol, 0), maxCol),
+                row: Math.min(Math.max(rawRow, 0), term.rows - 1) + viewportY
+            };
+        }
+
+        function removeDocumentListeners() {
+            document.removeEventListener('mousemove', onMove, true);
+            document.removeEventListener('mouseup', onUp, true);
+        }
+
+        function onMove(event) {
+            if (!drag) return;
+            var point = pointToCell(event, true);
+            if (point) {
+                drag.moved = true;
+                drag.end = point;
+            }
+        }
+
+        function onUp(event) {
+            if (!drag) return;
+            var current = drag;
+            drag = null;
+            removeDocumentListeners();
+            var point = pointToCell(event, true);
+            if (point) current.end = point;
+            if (!current.moved) return;
+            var viewportY = term.buffer && term.buffer.active ? (term.buffer.active.viewportY || 0) : 0;
+            // 拖动触发自动滚动时不覆盖 xterm 已经选中的跨屏范围。
+            if (viewportY !== current.viewportY) return;
+            var rect = screen.getBoundingClientRect();
+            if (event.clientY < rect.top || event.clientY > rect.bottom) return;
+            applyTimer = setTimeout(function () {
+                applyTimer = null;
+                var a = current.start;
+                var b = current.end;
+                var forward = b.row > a.row || (b.row === a.row && b.col >= a.col);
+                var start = forward ? a : b;
+                var end = forward ? b : a;
+                var endCol = Math.min(end.col + 1, term.cols);
+                var length = (end.row - start.row) * term.cols + (endCol - start.col);
+                if (length > 0) term.select(start.col, start.row, length);
+            }, 0);
+        }
+
+        function onDown(event) {
+            if (event.button !== 0 || event.detail !== 1 || event.shiftKey || event.altKey) {
+                drag = null;
+                return;
+            }
+            if (term.modes && term.modes.mouseTrackingMode !== 'none') {
+                drag = null;
+                return;
+            }
+            if (applyTimer) {
+                clearTimeout(applyTimer);
+                applyTimer = null;
+            }
+            var point = pointToCell(event, false);
+            if (!point) {
+                drag = null;
+                return;
+            }
+            var viewportY = term.buffer && term.buffer.active ? (term.buffer.active.viewportY || 0) : 0;
+            drag = { start: point, end: point, moved: false, viewportY: viewportY };
+            document.addEventListener('mousemove', onMove, true);
+            document.addEventListener('mouseup', onUp, true);
+        }
+
+        screen.addEventListener('mousedown', onDown, false);
+
+        return {
+            dispose: function () {
+                screen.removeEventListener('mousedown', onDown, false);
+                drag = null;
+                removeDocumentListeners();
+                if (applyTimer) {
+                    clearTimeout(applyTimer);
+                    applyTimer = null;
+                }
+            }
+        };
+    }
+
     function probe(url, token, timeoutMs) {
         return new Promise(function (resolve, reject) {
             var ws;
@@ -119,6 +300,7 @@
 
         term.open(wrapper);
         if (term.element) term.element.classList.add('meow-xterm');
+        var selectionFix = installSelectionCorrection(term);
 
         var ws = null;
         var sessionId = options.id || ('real_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
@@ -128,6 +310,70 @@
         var closeNotified = false;
         var pendingError = null;
         var connectTimer = null;
+        var cwd = '';
+        var cwdSource = '';
+        var cwdScanTimer = null;
+        var cwdOscHandler = null;
+        var cwdTitleListener = null;
+        var cwdWriteListener = null;
+
+        function setCwd(next, source) {
+            var value = normalizeCwd(next);
+            if (!value) return;
+            var rank = cwdSourceRank(source);
+            var currentRank = cwdSourceRank(cwdSource);
+            if (rank < currentRank) return;
+            if (value === cwd) {
+                if (rank > currentRank) cwdSource = source;
+                return;
+            }
+            cwd = value;
+            cwdSource = source;
+            if (options.onCwd) {
+                try { options.onCwd(cwd, source); } catch (e) { /* ignore */ }
+            }
+        }
+
+        function scanPromptCwd() {
+            if (disposed || !connected) return;
+            try {
+                var buffer = term.buffer.active;
+                if (!buffer || (buffer.type && buffer.type !== 'normal')) return;
+                var line = buffer.getLine(buffer.baseY + buffer.cursorY);
+                if (!line) return;
+                var value = cwdFromPrompt(line.translateToString(true));
+                if (value) setCwd(value, 'prompt');
+            } catch (e) { /* terminal not ready */ }
+        }
+
+        function scheduleCwdScan() {
+            if (disposed || cwdScanTimer) return;
+            cwdScanTimer = setTimeout(function () {
+                cwdScanTimer = null;
+                scanPromptCwd();
+            }, 60);
+        }
+
+        if (term.parser && typeof term.parser.registerOscHandler === 'function') {
+            try {
+                cwdOscHandler = term.parser.registerOscHandler(7, function (data) {
+                    var value = cwdFromOsc7(data);
+                    if (value) setCwd(value, 'osc7');
+                    return true;
+                });
+            } catch (e) { /* optional API */ }
+        }
+
+        if (typeof term.onTitleChange === 'function') {
+            cwdTitleListener = term.onTitleChange(function (title) {
+                var value = cwdFromTitle(title);
+                if (value) setCwd(value, 'title');
+            });
+        }
+
+        if (typeof term.onWriteParsed === 'function') {
+            cwdWriteListener = term.onWriteParsed(scheduleCwdScan);
+        }
 
         function isOpen() {
             return ws && ws.readyState === WebSocket.OPEN;
@@ -247,6 +493,7 @@
                     setTimeout(function () {
                         fit();
                         focus();
+                        scanPromptCwd();
                     }, 30);
                 } else if (msg.type === 'data') {
                     if (disposed) return;
@@ -337,6 +584,26 @@
             intentionallyClosed = true;
             connected = false;
             clearConnectTimer();
+            if (cwdScanTimer) {
+                clearTimeout(cwdScanTimer);
+                cwdScanTimer = null;
+            }
+            if (cwdOscHandler) {
+                try { cwdOscHandler.dispose(); } catch (e) { /* ignore */ }
+                cwdOscHandler = null;
+            }
+            if (cwdTitleListener) {
+                try { cwdTitleListener.dispose(); } catch (e) { /* ignore */ }
+                cwdTitleListener = null;
+            }
+            if (cwdWriteListener) {
+                try { cwdWriteListener.dispose(); } catch (e) { /* ignore */ }
+                cwdWriteListener = null;
+            }
+            if (selectionFix) {
+                try { selectionFix.dispose(); } catch (e) { /* ignore */ }
+                selectionFix = null;
+            }
             try {
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'disconnect', id: sessionId }));
@@ -362,6 +629,7 @@
             sendLine: sendLine,
             paste: paste,
             clear: clear,
+            getCwd: function () { return cwd; },
             writeNotice: writeNotice,
             dispose: dispose,
             isConnected: function () { return connected; }

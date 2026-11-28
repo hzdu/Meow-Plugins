@@ -64,7 +64,7 @@ const translations = {
         "tab_alarms": "闹钟提醒",
         "tab_scratchpad": "全局暂存板",
         "tab_settings": "设置",
-        "btn_big_calendar": "大日历",
+        "btn_workbench": "工作台",
         
         "today": "今天",
         "month_begin": "月初余额",
@@ -677,7 +677,7 @@ const translations = {
         "tab_alarms": "鬧鐘提醒",
         "tab_scratchpad": "全域暫存板",
         "tab_settings": "設定",
-        "btn_big_calendar": "大日曆",
+        "btn_workbench": "工作台",
         
         "today": "今天",
         "month_begin": "月初餘額",
@@ -1285,7 +1285,7 @@ const translations = {
         "tab_alarms": "Alarms",
         "tab_scratchpad": "Scratchpad",
         "tab_settings": "Settings",
-        "btn_big_calendar": "Big Calendar",
+        "btn_workbench": "Workbench",
 
         "today": "Today",
         "month_begin": "Start",
