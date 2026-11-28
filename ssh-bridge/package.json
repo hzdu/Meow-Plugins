@@ -1,0 +1,17 @@
+{
+  "name": "meow-ssh-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local WebSocket SSH bridge for the Meow browser extension",
+  "main": "bridge.js",
+  "scripts": {
+    "start": "node bridge.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ssh2": "1.16.0",
+    "ws": "8.18.0"
+  }
+}

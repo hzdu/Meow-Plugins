@@ -4,6 +4,5 @@ wp-content/uploads/
 __MACOSX/
 .workbuddy/
 dev/
-ssh-bridge/
 node_modules/
 .freebuff/

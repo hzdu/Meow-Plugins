@@ -1,0 +1,8 @@
+node_modules/
+.bridge-token
+known_hosts.json
+known_hosts.json.tmp
+
+# 桌面版 exe 的构建中间产物与输出
+app/build/
+dist/
